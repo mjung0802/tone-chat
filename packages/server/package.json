@@ -1,0 +1,26 @@
+{
+  "name": "server",
+  "version": "0.0.0",
+  "description": "A server package to host tone-chat clients",
+  "homepage": "https://github.com/mjung0802/tone-chat#readme",
+  "bugs": {
+    "url": "https://github.com/mjung0802/tone-chat/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mjung0802/tone-chat.git"
+  },
+  "license": "MIT",
+  "author": "mjung0802 <daniel0802@gmail.com>",
+  "main": "lib/server.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "test": "node ./__tests__/server.test.js"
+  }
+}
