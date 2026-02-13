@@ -1,11 +1,3 @@
-# `server`
+# Tone-Chat Server
 
-> TODO: description
-
-## Usage
-
-```
-const server = require('server');
-
-// TODO: DEMONSTRATE API
-```
+* Built on Express.js and Socket.IO

@@ -1,11 +1,3 @@
-# `client`
+# Tone-Chat Client
 
-> TODO: description
-
-## Usage
-
-```
-const client = require('client');
-
-// TODO: DEMONSTRATE API
-```
+* Goal is to use React Native to achieve a web/mobile-compatible client to connect to Tone-Chat servers.
