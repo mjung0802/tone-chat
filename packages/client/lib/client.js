@@ -1,6 +1,6 @@
 'use strict';
 
-module.exports = client;
+export default client;
 
 function client() {
   return 'Hello from client';

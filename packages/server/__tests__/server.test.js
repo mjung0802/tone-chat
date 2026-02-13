@@ -1,7 +1,7 @@
 'use strict';
 
-const server = require('..');
-const assert = require('assert').strict;
+import server from '..';
+import { strict as assert } from 'assert';
 
 assert.strictEqual(server(), 'Hello from server');
 console.info('server tests passed');

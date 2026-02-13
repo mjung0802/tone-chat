@@ -1,6 +1,7 @@
 {
   "name": "root",
   "private": true,
+  "type": "module",
   "dependencies": {},
   "devDependencies": {
     "lerna": "^9.0.4"
