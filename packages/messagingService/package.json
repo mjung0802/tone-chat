@@ -1,0 +1,14 @@
+{
+  "name": "messagingservice",
+  "version": "1.0.0",
+  "description": "The backend service which controls messaging and 'server' data",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --env-file=.env --watch -r ts-node/register src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
