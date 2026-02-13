@@ -1,3 +1,4 @@
+# Messaging Service
 The backend service which controls messaging and 'server' data
 
 This is separate from the server, which distributes data to backend services as required. 'Servers' which should probably have a seaparate naming convention, denote the groups of channels or rooms in which users interact.

@@ -1,3 +1,4 @@
+# Attachment Service
 The backend service which controls attachments and files sent through Tone.
 
 This is separate from the messaging service for two reasons:
