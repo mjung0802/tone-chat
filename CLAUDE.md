@@ -39,32 +39,41 @@ docker-compose up   # Starts MongoDB on port 27017 and messaging service on port
 
 ## Architecture
 
-**Pattern**: Microservices with a Backend-For-Frontend (BFF)
+**Pattern**: Microservices with a Backend-For-Frontend (BFF). All backend packages are TypeScript with strict config (shared `tsconfig.base.json` at repo root). Services communicate via HTTP using native `fetch()`.
 
 ```
 React Native Client (packages/client)
-        ↓ WebSocket / HTTP
-BFF Server - Express.js + Socket.IO (packages/server)
-        ↓ routes to:
-  ┌─────────────────────────────────────────────┐
-  │  messagingService   │  attachmentsService   │  usersService  │
-  │  (servers, msgs,    │  (file uploads,       │  (global user  │
-  │   channels, users)  │   async processing)   │   accounts)    │
-  └─────────────────────────────────────────────┘
+        ↓ WebSocket + HTTP
+BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
+        ↓ HTTP (fetch)
+  ┌─────────────────────────────────────────────────────────────┐
+  │  messagingService :3001  │  usersService :3002  │  attachmentsService :3003  │
+  │  MongoDB :27017          │  PostgreSQL :5432     │  MinIO (S3) :9000          │
+  └─────────────────────────────────────────────────────────────┘
 ```
 
-- **client** (`packages/client`): React Native app (targets both web and mobile), connects to the BFF server
-- **server** (`packages/server`): Express.js 5 + Socket.IO 4 BFF — handles client WebSocket connections and routes to backend services. Currently broadcasts messages to all connected clients.
-- **messagingService** (`packages/messagingService`): TypeScript + MongoDB microservice managing server metadata, messages, channels, and server-scoped user data
-- **attachmentsService** (`packages/attachmentsService`): Planned — handles file uploads asynchronously so attachments don't block message delivery; attachments are server-agnostic
-- **usersService** (`packages/usersService`): Planned — global user accounts so users have one account across multiple servers
+- **client** (`packages/client`): React Native app (web + mobile), connects to the BFF
+- **server** (`packages/server`): BFF — JWT auth, routes all client requests to backend services, manages all Socket.IO connections (room-based channels). The only service exposed to clients.
+- **messagingService** (`packages/messagingService`): MongoDB (Mongoose). Manages servers, channels, messages, and server-scoped members. Collections: `servers`, `channels`, `messages`, `serverMembers`.
+- **usersService** (`packages/usersService`): PostgreSQL (postgres.js). Global user accounts, auth (bcrypt + JWT), token refresh/rotation. Tables: `users`, `refresh_tokens`.
+- **attachmentsService** (`packages/attachmentsService`): MinIO for file storage (S3-compatible, swappable to AWS S3). PostgreSQL for metadata. Async uploads so attachments don't block messages.
 
-## TypeScript (messagingService)
+### Auth Flow
+- JWT access tokens (15 min) + refresh tokens (7 day, rotated). BFF verifies JWTs locally.
+- BFF passes `X-User-Id` + `X-Internal-Key` headers to backend services (not internet-exposed).
+- Socket.IO auth via JWT in handshake `auth` field.
 
-Uses strict TypeScript with `nodenext` module resolution, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, and `verbatimModuleSyntax`. All packages use ESM (`"type": "module"`).
+### API Routes (BFF)
+All routes prefixed `/api/v1`. Auth routes → usersService. Server/channel/message/member routes → messagingService. Attachment routes → attachmentsService.
+
+## TypeScript
+
+All backend packages use strict TypeScript with `nodenext` module resolution, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, and `verbatimModuleSyntax`, extended from root `tsconfig.base.json`. All packages use ESM (`"type": "module"`).
 
 ## Key Design Decisions
 
-- **Why separate usersService from messagingService**: messagingService stores server-scoped user data (admin status, per-server settings); usersService stores global identity/accounts. Design overlap is a known open question.
+- **HTTP between services**: Keeps services independently deployable/scalable. Native `fetch()` (Node 22+), no extra HTTP client library needed.
+- **Why separate usersService from messagingService**: messagingService stores server-scoped user data (admin status, per-server settings); usersService stores global identity/accounts.
 - **Why separate attachmentsService**: Async processing and cross-server resource sharing — attachments don't belong to one server.
+- **MinIO for attachments**: Self-hosted S3-compatible storage. Uses `@aws-sdk/client-s3` so migration to real AWS S3 requires zero code changes.
 - Node.js 22+ is required (`"engines": {"node": ">=22.0.0"}`).
