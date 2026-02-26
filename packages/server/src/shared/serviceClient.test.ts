@@ -1,7 +1,7 @@
 import { mock, describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-await mock.module('../config/index.js', {
+mock.module('../config/index.js', {
   namedExports: { config: { internalApiKey: 'test-key' } },
 });
 
@@ -12,7 +12,7 @@ describe('serviceRequest', () => {
   let mockFetch: ReturnType<typeof mock.fn>;
 
   beforeEach(() => {
-    mockFetch = mock.fn();
+    mockFetch = mock.fn<AnyFn>();
     globalThis.fetch = mockFetch as any;
   });
 

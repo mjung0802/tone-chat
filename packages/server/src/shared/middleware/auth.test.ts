@@ -1,13 +1,13 @@
 import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-const mockVerify = mock.fn();
-await mock.module('jsonwebtoken', {
+const mockVerify = mock.fn<AnyFn>();
+mock.module('jsonwebtoken', {
   defaultExport: { verify: mockVerify },
   namedExports: { verify: mockVerify },
 });
 
-await mock.module('../../config/index.js', {
+mock.module('../../config/index.js', {
   namedExports: { config: { jwtSecret: 'test-secret' } },
 });
 

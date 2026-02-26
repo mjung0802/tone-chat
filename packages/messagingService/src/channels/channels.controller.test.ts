@@ -1,12 +1,12 @@
 import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-const mockChannelCreate = mock.fn();
-const mockChannelFind = mock.fn();
-const mockChannelFindOne = mock.fn();
-const mockChannelFindOneAndDelete = mock.fn();
+const mockChannelCreate = mock.fn<AnyFn>();
+const mockChannelFind = mock.fn<AnyFn>();
+const mockChannelFindOne = mock.fn<AnyFn>();
+const mockChannelFindOneAndDelete = mock.fn<AnyFn>();
 
-await mock.module('./channel.model.js', {
+mock.module('./channel.model.js', {
   namedExports: {
     Channel: {
       create: mockChannelCreate,

@@ -1,8 +1,8 @@
 import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-const mockCreateMessage = mock.fn();
-await mock.module('./messages.client.js', {
+const mockCreateMessage = mock.fn<AnyFn>();
+mock.module('./messages.client.js', {
   namedExports: { createMessage: mockCreateMessage },
 });
 

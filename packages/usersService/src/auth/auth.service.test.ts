@@ -2,25 +2,25 @@ import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 // Mock sql as a callable tagged-template + .begin()
-const mockSql: any = mock.fn((..._args: unknown[]) => []);
-mockSql.begin = mock.fn();
+const mockSql: any = mock.fn<AnyFn>((..._args: unknown[]) => []);
+mockSql.begin = mock.fn<AnyFn>();
 
-await mock.module('../config/database.js', { namedExports: { sql: mockSql } });
+mock.module('../config/database.js', { namedExports: { sql: mockSql } });
 
-const mockHash = mock.fn();
-const mockCompare = mock.fn();
-await mock.module('bcrypt', {
+const mockHash = mock.fn<AnyFn>();
+const mockCompare = mock.fn<AnyFn>();
+mock.module('bcrypt', {
   defaultExport: { hash: mockHash, compare: mockCompare },
   namedExports: { hash: mockHash, compare: mockCompare },
 });
 
-const mockSign = mock.fn();
-await mock.module('jsonwebtoken', {
+const mockSign = mock.fn<AnyFn>();
+mock.module('jsonwebtoken', {
   defaultExport: { sign: mockSign },
   namedExports: { sign: mockSign },
 });
 
-await mock.module('../config/index.js', {
+mock.module('../config/index.js', {
   namedExports: { config: { jwtSecret: 'secret', jwtAccessExpiresIn: '15m', jwtRefreshExpiresDays: 7 } },
 });
 

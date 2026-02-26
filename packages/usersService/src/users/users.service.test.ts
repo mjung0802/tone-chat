@@ -1,10 +1,10 @@
 import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-const mockSql: any = mock.fn((..._args: unknown[]) => []);
-mockSql.unsafe = mock.fn();
+const mockSql: any = mock.fn<AnyFn>((..._args: unknown[]) => []);
+mockSql.unsafe = mock.fn<AnyFn>();
 
-await mock.module('../config/database.js', { namedExports: { sql: mockSql } });
+mock.module('../config/database.js', { namedExports: { sql: mockSql } });
 
 const { getUserById, updateUser } = await import('./users.service.js');
 

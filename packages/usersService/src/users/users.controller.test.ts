@@ -1,10 +1,10 @@
 import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-const mockGetUserById = mock.fn();
-const mockUpdateUser = mock.fn();
+const mockGetUserById = mock.fn<AnyFn>();
+const mockUpdateUser = mock.fn<AnyFn>();
 
-await mock.module('./users.service.js', {
+mock.module('./users.service.js', {
   namedExports: { getUserById: mockGetUserById, updateUser: mockUpdateUser },
 });
 

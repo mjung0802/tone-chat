@@ -1,11 +1,11 @@
 import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-const mockRegisterUser = mock.fn();
-const mockLoginUser = mock.fn();
-const mockRefreshAccessToken = mock.fn();
+const mockRegisterUser = mock.fn<AnyFn>();
+const mockLoginUser = mock.fn<AnyFn>();
+const mockRefreshAccessToken = mock.fn<AnyFn>();
 
-await mock.module('./auth.service.js', {
+mock.module('./auth.service.js', {
   namedExports: {
     registerUser: mockRegisterUser,
     loginUser: mockLoginUser,

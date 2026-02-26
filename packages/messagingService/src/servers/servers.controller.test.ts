@@ -1,10 +1,10 @@
 import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-const mockServerCreate = mock.fn();
-const mockServerFindById = mock.fn();
-const mockServerFind = mock.fn();
-await mock.module('./server.model.js', {
+const mockServerCreate = mock.fn<AnyFn>();
+const mockServerFindById = mock.fn<AnyFn>();
+const mockServerFind = mock.fn<AnyFn>();
+mock.module('./server.model.js', {
   namedExports: {
     Server: {
       create: mockServerCreate,
@@ -14,14 +14,14 @@ await mock.module('./server.model.js', {
   },
 });
 
-const mockChannelCreate = mock.fn();
-await mock.module('../channels/channel.model.js', {
+const mockChannelCreate = mock.fn<AnyFn>();
+mock.module('../channels/channel.model.js', {
   namedExports: { Channel: { create: mockChannelCreate } },
 });
 
-const mockMemberCreate = mock.fn();
-const mockMemberFind = mock.fn();
-await mock.module('../members/serverMember.model.js', {
+const mockMemberCreate = mock.fn<AnyFn>();
+const mockMemberFind = mock.fn<AnyFn>();
+mock.module('../members/serverMember.model.js', {
   namedExports: {
     ServerMember: {
       create: mockMemberCreate,

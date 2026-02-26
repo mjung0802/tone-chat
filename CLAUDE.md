@@ -26,7 +26,7 @@ pnpm dev   # Runs: node --env-file=.env --watch -r ts-node/register src/index.ts
 
 ### Running Tests
 
-All backend packages use Node.js built-in `node:test` with `--experimental-strip-types`. Tests are colocated as `src/**/*.test.ts`.
+All backend packages use Node.js built-in `node:test` with `--experimental-strip-types`. Tests are colocated as `src/**/*.test.ts`. Run via `tsx --test --experimental-test-module-mocks`.
 
 ```bash
 # Per-package
@@ -38,6 +38,20 @@ pnpm --filter attachmentsservice test
 # All packages from root
 pnpm test
 ```
+
+### Test Mocking Pattern
+
+Tests use `mock.module()` (synchronous) for module mocking, followed by `await import()` for the module under test. The `mock.module()` call must come **before** the dynamic import so the mock is registered first.
+
+```ts
+// mock.module() is synchronous — no await
+mock.module('./dep.js', { namedExports: { fn: mockFn } });
+
+// import is async — await required
+const { handler } = await import('./module-under-test.js');
+```
+
+A global `AnyFn` type is declared in `test-types.d.ts` for use with `mock.fn<AnyFn>()`.
 
 ### Docker (messagingService)
 ```bash
@@ -81,6 +95,7 @@ All backend packages use strict TypeScript with `nodenext` module resolution, `n
 ### Type Safety Rules
 
 - **Never use `as unknown as T`** — this is an unsafe double-cast that bypasses the type system entirely. Find the correct type or fix the underlying type mismatch instead.
+- **Don't `await` synchronous functions** — e.g., `mock.module()` from `node:test` returns a `MockModuleContext` (not a Promise). Only `await` expressions that actually return a Promise (like `await import(...)`).
 - For Express 5 `req.params` values (`string | string[]`), use `as string` (single assertion, not a double-cast).
 - For `exactOptionalPropertyTypes`, use `null` instead of `undefined` where the target type doesn't include `undefined` (e.g., `fetch` body).
 

@@ -1,12 +1,12 @@
 import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-const mockInviteCreate = mock.fn();
-const mockInviteFind = mock.fn();
-const mockInviteFindOne = mock.fn();
-const mockInviteFindOneAndUpdate = mock.fn();
+const mockInviteCreate = mock.fn<AnyFn>();
+const mockInviteFind = mock.fn<AnyFn>();
+const mockInviteFindOne = mock.fn<AnyFn>();
+const mockInviteFindOneAndUpdate = mock.fn<AnyFn>();
 
-await mock.module('./invite.model.js', {
+mock.module('./invite.model.js', {
   namedExports: {
     Invite: {
       create: mockInviteCreate,
@@ -17,14 +17,14 @@ await mock.module('./invite.model.js', {
   },
 });
 
-const mockServerFindById = mock.fn();
-await mock.module('../servers/server.model.js', {
+const mockServerFindById = mock.fn<AnyFn>();
+mock.module('../servers/server.model.js', {
   namedExports: { Server: { findById: mockServerFindById } },
 });
 
-const mockMemberFindOne = mock.fn();
-const mockMemberCreate = mock.fn();
-await mock.module('../members/serverMember.model.js', {
+const mockMemberFindOne = mock.fn<AnyFn>();
+const mockMemberCreate = mock.fn<AnyFn>();
+mock.module('../members/serverMember.model.js', {
   namedExports: {
     ServerMember: { findOne: mockMemberFindOne, create: mockMemberCreate },
   },

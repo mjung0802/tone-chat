@@ -1,12 +1,12 @@
 import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-const mockMemberCreate = mock.fn();
-const mockMemberFind = mock.fn();
-const mockMemberFindOne = mock.fn();
-const mockMemberFindOneAndDelete = mock.fn();
+const mockMemberCreate = mock.fn<AnyFn>();
+const mockMemberFind = mock.fn<AnyFn>();
+const mockMemberFindOne = mock.fn<AnyFn>();
+const mockMemberFindOneAndDelete = mock.fn<AnyFn>();
 
-await mock.module('./serverMember.model.js', {
+mock.module('./serverMember.model.js', {
   namedExports: {
     ServerMember: {
       create: mockMemberCreate,
@@ -17,8 +17,8 @@ await mock.module('./serverMember.model.js', {
   },
 });
 
-const mockServerFindById = mock.fn();
-await mock.module('../servers/server.model.js', {
+const mockServerFindById = mock.fn<AnyFn>();
+mock.module('../servers/server.model.js', {
   namedExports: { Server: { findById: mockServerFindById } },
 });
 

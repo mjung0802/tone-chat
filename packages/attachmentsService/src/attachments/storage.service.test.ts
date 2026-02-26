@@ -1,12 +1,12 @@
 import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-const mockSend = mock.fn();
-await mock.module('../config/storage.js', {
+const mockSend = mock.fn<AnyFn>();
+mock.module('../config/storage.js', {
   namedExports: { s3: { send: mockSend } },
 });
 
-await mock.module('../config/index.js', {
+mock.module('../config/index.js', {
   namedExports: {
     config: {
       s3: { bucket: 'test-bucket', endpoint: 'http://localhost:9000', region: 'us-east-1' },

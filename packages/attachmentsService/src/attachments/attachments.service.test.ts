@@ -1,13 +1,13 @@
 import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-const mockSql: any = mock.fn((..._args: unknown[]) => []);
+const mockSql: any = mock.fn<AnyFn>((..._args: unknown[]) => []);
 
-await mock.module('../config/database.js', { namedExports: { sql: mockSql } });
+mock.module('../config/database.js', { namedExports: { sql: mockSql } });
 
-const mockUploadToS3 = mock.fn();
-const mockGetPublicUrl = mock.fn();
-await mock.module('./storage.service.js', {
+const mockUploadToS3 = mock.fn<AnyFn>();
+const mockGetPublicUrl = mock.fn<AnyFn>();
+mock.module('./storage.service.js', {
   namedExports: { uploadToS3: mockUploadToS3, getPublicUrl: mockGetPublicUrl },
 });
 
