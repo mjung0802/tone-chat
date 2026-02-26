@@ -9,6 +9,8 @@ services:
       - PORT=3000
     depends_on:
       - mongo-db
+    volumes:
+      - .:/app
   mongo-db:
     image: mongo:latest
     ports:
