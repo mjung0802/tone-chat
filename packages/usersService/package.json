@@ -1,0 +1,26 @@
+{
+  "name": "usersservice",
+  "version": "1.0.0",
+  "description": "Global user accounts, authentication, and profile management",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "node --env-file=.env --watch --experimental-strip-types src/index.ts",
+    "build": "tsc",
+    "test": "node --test --experimental-strip-types \"src/**/*.test.ts\"",
+    "migrate": "node --experimental-strip-types src/db/migrate.ts"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "postgres": "^3.4.7"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/express": "^5.0.3",
+    "@types/express-serve-static-core": "^5.1.1",
+    "@types/jsonwebtoken": "^9.0.9"
+  },
+  "license": "ISC"
+}

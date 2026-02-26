@@ -1,0 +1,14 @@
+services:
+  users-db:
+    image: postgres:17
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: tone
+      POSTGRES_PASSWORD: tone_dev
+      POSTGRES_DB: tone_users
+    volumes:
+      - users-pgdata:/var/lib/postgresql/data
+
+volumes:
+  users-pgdata:
