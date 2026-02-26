@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 ---
 services:
   db:
@@ -13,6 +14,8 @@ services:
     env_file:
       - .env
 =======
+=======
+>>>>>>> backend-gen
 services:
   users-db:
     image: postgres:17
@@ -27,4 +30,7 @@ services:
 
 volumes:
   users-pgdata:
+<<<<<<< HEAD
 >>>>>>> b942a6e (fix: resolve type errors across all packages for clean tsc --noEmit)
+=======
+>>>>>>> backend-gen
