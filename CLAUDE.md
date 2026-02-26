@@ -25,10 +25,18 @@ pnpm dev   # Runs: node --env-file=.env --watch -r ts-node/register src/index.ts
 ```
 
 ### Running Tests
+
+All backend packages use Node.js built-in `node:test` with `--experimental-strip-types`. Tests are colocated as `src/**/*.test.ts`.
+
 ```bash
-# Individual packages
-cd packages/server && node ./__tests__/server.test.js
-cd packages/client && node ./__tests__/client.test.js
+# Per-package
+pnpm --filter usersservice test
+pnpm --filter messagingservice test
+pnpm --filter tone-chat-server test
+pnpm --filter attachmentsservice test
+
+# All packages from root
+pnpm test
 ```
 
 ### Docker (messagingService)
@@ -69,6 +77,12 @@ All routes prefixed `/api/v1`. Auth routes → usersService. Server/channel/mess
 ## TypeScript
 
 All backend packages use strict TypeScript with `nodenext` module resolution, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, and `verbatimModuleSyntax`, extended from root `tsconfig.base.json`. All packages use ESM (`"type": "module"`).
+
+### Type Safety Rules
+
+- **Never use `as unknown as T`** — this is an unsafe double-cast that bypasses the type system entirely. Find the correct type or fix the underlying type mismatch instead.
+- For Express 5 `req.params` values (`string | string[]`), use `as string` (single assertion, not a double-cast).
+- For `exactOptionalPropertyTypes`, use `null` instead of `undefined` where the target type doesn't include `undefined` (e.g., `fetch` body).
 
 ## Key Design Decisions
 
