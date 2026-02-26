@@ -1,14 +1,21 @@
 {
   "name": "messagingservice",
   "version": "1.0.0",
-  "description": "The backend service which controls messaging and 'server' data",
-  "main": "index.js",
+  "description": "Backend service for servers, channels, messages, members, and invites",
+  "type": "module",
+  "main": "dist/index.js",
   "scripts": {
-    "dev": "node --env-file=.env --watch -r ts-node/register src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node --env-file=.env --watch --experimental-strip-types src/index.ts",
+    "build": "tsc",
+    "test": "node --test --experimental-strip-types \"src/**/*.test.ts\""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "module"
+  "dependencies": {
+    "express": "^5.2.1",
+    "mongoose": "^8.14.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/express-serve-static-core": "^5.1.1"
+  },
+  "license": "ISC"
 }

@@ -1,0 +1,27 @@
+services:
+  attachments-db:
+    image: postgres:17
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: tone
+      POSTGRES_PASSWORD: tone_dev
+      POSTGRES_DB: tone_attachments
+    volumes:
+      - attachments-pgdata:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+
+volumes:
+  attachments-pgdata:
+  minio-data:

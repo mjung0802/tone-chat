@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ---
 services:
   db:
@@ -11,3 +12,19 @@ services:
     command: sh -c "psql -p 5432 postgres < /tmp/seed.sql"
     env_file:
       - .env
+=======
+services:
+  users-db:
+    image: postgres:17
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: tone
+      POSTGRES_PASSWORD: tone_dev
+      POSTGRES_DB: tone_users
+    volumes:
+      - users-pgdata:/var/lib/postgresql/data
+
+volumes:
+  users-pgdata:
+>>>>>>> b942a6e (fix: resolve type errors across all packages for clean tsc --noEmit)
