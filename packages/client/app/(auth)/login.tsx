@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, HelperText } from 'react-native-paper';
+import { TextInput, Button, Text, HelperText, useTheme } from 'react-native-paper';
 import { Link } from 'expo-router';
 import { useLogin } from '../../src/hooks/useAuth';
 import { ApiClientError } from '../../src/api/client';
 
 export default function LoginScreen() {
+  const theme = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -29,6 +30,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
+        style={{ backgroundColor: theme.colors.background }}
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
