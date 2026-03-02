@@ -47,7 +47,7 @@ export function ChannelSidebar({
           />
         ) : null}
       </View>
-      <Divider />
+      <Divider style={{ backgroundColor: theme.colors.inverseSurface }} />
       <FlatList
         data={channels}
         renderItem={renderItem}

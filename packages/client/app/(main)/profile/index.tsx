@@ -50,6 +50,7 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView
+      style={{ backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >

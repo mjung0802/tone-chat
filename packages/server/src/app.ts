@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import { requireAuth } from './shared/middleware/auth.js';
 import { errorHandler } from './shared/middleware/errorHandler.js';
 import { authRouter } from './auth/auth.routes.js';
@@ -12,6 +13,7 @@ import { serverInvitesRouter, joinRouter } from './invites/invites.routes.js';
 
 export const app = express();
 
+app.use(cors());
 app.use(express.json());
 
 // Health check

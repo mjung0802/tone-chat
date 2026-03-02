@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, FlatList, StyleSheet, type ListRenderItemInfo } from 'react-native';
-import { FAB } from 'react-native-paper';
+import { FAB, useTheme } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useServers } from '../../../src/hooks/useServers';
 import { ServerListItem } from '../../../src/components/servers/ServerListItem';
@@ -11,6 +11,7 @@ import type { Server } from '../../../src/types/models';
 export default function ServersScreen() {
   const { data: servers, isLoading, refetch, isRefetching } = useServers();
   const router = useRouter();
+  const theme = useTheme();
 
   if (isLoading) {
     return <LoadingSpinner message="Loading servers..." />;
@@ -29,7 +30,7 @@ export default function ServersScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {!servers || servers.length === 0 ? (
         <EmptyState
           icon="server-network"

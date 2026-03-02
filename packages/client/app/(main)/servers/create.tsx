@@ -1,11 +1,13 @@
 import React from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
+import { useTheme } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { CreateServerForm } from '../../../src/components/servers/CreateServerForm';
 import { useCreateServer } from '../../../src/hooks/useServers';
 
 export default function CreateServerScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const createMutation = useCreateServer();
 
   const handleSubmit = (data: {
@@ -22,7 +24,8 @@ export default function CreateServerScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={styles.container}
+      style={{ backgroundColor: theme.colors.background }}
+      contentContainerStyle={[styles.container, { backgroundColor: theme.colors.background }]}
       keyboardShouldPersistTaps="handled"
     >
       <CreateServerForm onSubmit={handleSubmit} isLoading={createMutation.isPending} />

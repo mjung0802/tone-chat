@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { IconButton } from 'react-native-paper';
+import { IconButton, useTheme } from 'react-native-paper';
 import { useServer } from '../../../../src/hooks/useServers';
 import { useChannels } from '../../../../src/hooks/useChannels';
 import { ChannelSidebar } from '../../../../src/components/channels/ChannelSidebar';
@@ -23,6 +23,7 @@ export default function ServerLayout() {
   const isWide = width >= 768;
   const showSidebar = isWide || isSidebarOpen;
   const isOwner = server?.ownerId === userId;
+  const theme = useTheme();
 
   if (serverLoading || channelsLoading) {
     return <LoadingSpinner />;
@@ -45,7 +46,7 @@ export default function ServerLayout() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {showSidebar ? (
         <ChannelSidebar
           serverName={server.name}
@@ -55,9 +56,12 @@ export default function ServerLayout() {
           canManage={isOwner}
         />
       ) : null}
-      <View style={styles.content}>
+      <View style={[styles.content, { backgroundColor: theme.colors.background }]}>
         <Stack
           screenOptions={{
+            contentStyle: { backgroundColor: theme.colors.background },
+            headerStyle: { backgroundColor: theme.colors.surface },
+            headerTintColor: theme.colors.onSurface,
             headerLeft: () =>
             !isWide ? (
               <IconButton
@@ -100,5 +104,6 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    paddingTop: 1,
   },
 });

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
-import { Stack } from 'expo-router';
-import { PaperProvider } from 'react-native-paper';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { PaperProvider, useTheme } from 'react-native-paper';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -31,9 +31,13 @@ configureAuth({
 });
 
 function AppContent() {
+  const theme = useTheme();
   const isHydrated = useAuthStore((s) => s.isHydrated);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const hydrate = useAuthStore((s) => s.hydrate);
+
+  const router = useRouter();
+  const segments = useSegments();
 
   useSocketConnection();
 
@@ -41,18 +45,25 @@ function AppContent() {
     void hydrate();
   }, [hydrate]);
 
+  useEffect(() => {
+    if (!isHydrated) return;
+    const inAuthGroup = segments[0] === '(auth)';
+    if (isAuthenticated && inAuthGroup) {
+      router.replace('/(main)/servers');
+    } else if (!isAuthenticated && !inAuthGroup) {
+      router.replace('/(auth)/login');
+    }
+  }, [isAuthenticated, isHydrated, segments, router]);
+
   if (!isHydrated) {
     return <LoadingSpinner message="Loading..." />;
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }}>
       <Stack.Screen name="+not-found" />
-      {isAuthenticated ? (
-        <Stack.Screen name="(main)" />
-      ) : (
-        <Stack.Screen name="(auth)" />
-      )}
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(main)" />
     </Stack>
   );
 }
@@ -66,7 +77,7 @@ export default function RootLayout() {
   const theme = effectiveScheme === 'dark' ? darkTheme : lightTheme;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <PaperProvider theme={theme}>

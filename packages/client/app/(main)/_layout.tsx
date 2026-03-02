@@ -15,7 +15,7 @@ function CustomDrawerContent(props: any) {
   const theme = useTheme();
 
   return (
-    <DrawerContentScrollView {...props}>
+    <DrawerContentScrollView {...props} style={{ backgroundColor: theme.colors.background }}>
       <View style={styles.drawerHeader}>
         <Text variant="titleLarge">Tone Chat</Text>
       </View>
@@ -67,12 +67,16 @@ function CustomDrawerContent(props: any) {
 }
 
 export default function MainLayout() {
+  const theme = useTheme();
   return (
     <Drawer
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: true,
+        headerStyle: { backgroundColor: theme.colors.surface, borderBottomColor: 'white' },
+        headerTintColor: theme.colors.onSurface,
         drawerType: 'front',
+        drawerStyle: { backgroundColor: theme.colors.background },
       }}
     >
       <Drawer.Screen name="servers/index" options={{ title: 'Servers' }} />
