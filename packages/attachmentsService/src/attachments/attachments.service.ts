@@ -1,8 +1,15 @@
+import path from 'node:path';
 import { sql } from '../config/database.js';
 import { uploadToS3, getPublicUrl } from './storage.service.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
+
+function sanitizeFilename(name: string): string {
+  // Extract basename to strip path traversal, then remove control characters
+  const base = path.basename(name);
+  return base.replace(/[\x00-\x1f\x7f]/g, '');
+}
 
 interface Attachment {
   id: string;
@@ -27,7 +34,7 @@ export async function createAttachment(
   // Insert metadata with processing status
   const [attachment] = await sql<Attachment[]>`
     INSERT INTO attachments (uploader_id, filename, mime_type, size_bytes, storage_key, status)
-    VALUES (${uploaderId}, ${file.originalname}, ${file.mimetype}, ${file.size}, ${'pending'}, ${'processing'})
+    VALUES (${uploaderId}, ${sanitizeFilename(file.originalname)}, ${file.mimetype}, ${file.size}, ${'pending'}, ${'processing'})
     RETURNING *
   `;
 

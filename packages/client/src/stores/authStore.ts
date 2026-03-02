@@ -30,6 +30,10 @@ function isTokenExpired(token: string): boolean {
   return Date.now() >= payload.exp * 1000;
 }
 
+// SECURITY: On web, tokens are stored in localStorage which is vulnerable to XSS.
+// Native platforms use expo-secure-store (encrypted keychain/keystore).
+// Mitigation: helmet CSP headers restrict script injection on the BFF.
+// Future: migrate web storage to httpOnly cookies for refresh tokens.
 async function persistTokens(accessToken: string | null, refreshToken: string | null) {
   if (Platform.OS === 'web') {
     if (accessToken) {

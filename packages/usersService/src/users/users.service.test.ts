@@ -31,7 +31,7 @@ describe('getUserById', () => {
 
 describe('updateUser', () => {
   beforeEach(() => {
-    mockSql.unsafe.mock.resetCalls();
+    mockSql.mock.resetCalls();
   });
 
   it('throws NO_UPDATES when all values are undefined', async () => {
@@ -44,20 +44,16 @@ describe('updateUser', () => {
     );
   });
 
-  it('builds dynamic SET clause and returns updated user', async () => {
+  it('returns updated user via parameterized query', async () => {
     const updated = { id: 'u1', display_name: 'Alice', bio: 'Hi' };
-    mockSql.unsafe.mock.mockImplementation(() => [updated]);
+    mockSql.mock.mockImplementation(() => [updated]);
 
     const result = await updateUser('u1', { display_name: 'Alice', bio: 'Hi' });
     assert.deepEqual(result, updated);
-    // Check the query includes both fields
-    const query = mockSql.unsafe.mock.calls[0]!.arguments[0] as string;
-    assert.ok(query.includes('display_name'));
-    assert.ok(query.includes('bio'));
   });
 
   it('throws USER_NOT_FOUND when update returns empty', async () => {
-    mockSql.unsafe.mock.mockImplementation(() => []);
+    mockSql.mock.mockImplementation(() => []);
     await assert.rejects(() => updateUser('u1', { display_name: 'Alice' }), (err: any) => {
       assert.equal(err.code, 'USER_NOT_FOUND');
       return true;

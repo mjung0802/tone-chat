@@ -65,8 +65,9 @@ export async function loginUser(email: string, password: string): Promise<{ user
 export async function refreshAccessToken(token: string): Promise<{ accessToken: string; refreshToken: string }> {
   const tokenHash = hashToken(token);
 
+  // Atomic delete-and-return prevents race conditions with concurrent refresh requests
   const [existing] = await sql<{ id: string; user_id: string; expires_at: Date }[]>`
-    SELECT id, user_id, expires_at FROM refresh_tokens WHERE token_hash = ${tokenHash}
+    DELETE FROM refresh_tokens WHERE token_hash = ${tokenHash} RETURNING id, user_id, expires_at
   `;
 
   if (!existing) {
@@ -74,12 +75,8 @@ export async function refreshAccessToken(token: string): Promise<{ accessToken: 
   }
 
   if (new Date(existing.expires_at) < new Date()) {
-    await sql`DELETE FROM refresh_tokens WHERE id = ${existing.id}`;
     throw new AppError('TOKEN_EXPIRED', 'Refresh token has expired', 401);
   }
-
-  // Token rotation: delete old token, create new one
-  await sql`DELETE FROM refresh_tokens WHERE id = ${existing.id}`;
 
   const accessToken = generateAccessToken(existing.user_id);
   const refreshToken = await createRefreshToken(existing.user_id);

@@ -29,7 +29,7 @@ export async function listMessages(req: Request, res: Response): Promise<void> {
   const before = req.query['before'] as string | undefined;
 
   const filter: Record<string, unknown> = { channelId };
-  if (before) {
+  if (before && typeof before === 'string') {
     filter['_id'] = { $lt: before };
   }
 

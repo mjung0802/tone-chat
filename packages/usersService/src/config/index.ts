@@ -6,3 +6,16 @@ export const config = {
   jwtRefreshExpiresDays: Number(process.env['JWT_REFRESH_EXPIRES_DAYS'] ?? 7),
   internalApiKey: process.env['INTERNAL_API_KEY'] ?? 'dev-internal-key',
 } as const;
+
+const DEV_DEFAULTS = ['dev-secret-change-in-production', 'dev-internal-key'];
+
+export function validateConfig(): void {
+  if (process.env['NODE_ENV'] !== 'production') return;
+
+  if (DEV_DEFAULTS.includes(config.jwtSecret)) {
+    throw new Error('JWT_SECRET must be set in production');
+  }
+  if (DEV_DEFAULTS.includes(config.internalApiKey)) {
+    throw new Error('INTERNAL_API_KEY must be set in production');
+  }
+}

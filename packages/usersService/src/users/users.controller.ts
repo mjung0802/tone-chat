@@ -1,5 +1,11 @@
 import type { Request, Response } from 'express';
 import { getUserById, updateUser } from './users.service.js';
+import type { User } from '../shared/types.js';
+
+function stripPrivateFields(user: User): Omit<User, 'email'> {
+  const { email: _email, ...publicUser } = user;
+  return publicUser;
+}
 
 export async function getMe(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
@@ -26,5 +32,5 @@ export async function patchMe(req: Request, res: Response): Promise<void> {
 
 export async function getUser(req: Request, res: Response): Promise<void> {
   const user = await getUserById(req.params['id'] as string);
-  res.json({ user });
+  res.json({ user: stripPrivateFields(user) });
 }

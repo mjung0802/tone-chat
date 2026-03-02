@@ -1,8 +1,9 @@
 import { app } from './app.js';
-import { config } from './config/index.js';
+import { config, validateConfig } from './config/index.js';
 import { ensureBucket } from './config/storage.js';
 
 async function start(): Promise<void> {
+  validateConfig();
   await ensureBucket();
 
   app.listen(config.port, () => {

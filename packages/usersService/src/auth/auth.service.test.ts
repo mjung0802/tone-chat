@@ -165,27 +165,25 @@ describe('refreshAccessToken', () => {
     });
   });
 
-  it('throws TOKEN_EXPIRED when expired and deletes the token', async () => {
-    let callCount = 0;
+  it('throws TOKEN_EXPIRED when expired (atomic DELETE RETURNING)', async () => {
+    // Atomic: DELETE ... RETURNING returns the expired row in a single query
     mockSql.mock.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) return [{ id: 'rt1', user_id: 'u1', expires_at: new Date('2000-01-01') }];
-      return [];
+      return [{ id: 'rt1', user_id: 'u1', expires_at: new Date('2000-01-01') }];
     });
 
     await assert.rejects(() => refreshAccessToken('expired-token'), (err: any) => {
       assert.equal(err.code, 'TOKEN_EXPIRED');
       return true;
     });
-    // Should have called sql a second time (delete)
-    assert.ok(callCount >= 2);
   });
 
-  it('rotates: deletes old token and returns new tokens', async () => {
+  it('rotates: atomic delete + returns new tokens', async () => {
     let callCount = 0;
     mockSql.mock.mockImplementation(() => {
       callCount++;
+      // Call 1: DELETE ... RETURNING (returns existing valid token)
       if (callCount === 1) return [{ id: 'rt1', user_id: 'u1', expires_at: new Date(Date.now() + 86400000) }];
+      // Call 2: INSERT new refresh token
       return [];
     });
     mockSign.mock.mockImplementation(() => 'new-access');
@@ -193,5 +191,6 @@ describe('refreshAccessToken', () => {
     const result = await refreshAccessToken('valid-refresh');
     assert.equal(result.accessToken, 'new-access');
     assert.equal(typeof result.refreshToken, 'string');
+    assert.equal(callCount, 2); // DELETE RETURNING + INSERT (no separate SELECT)
   });
 });

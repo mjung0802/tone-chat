@@ -128,3 +128,16 @@ All backend packages use strict TypeScript with `nodenext` module resolution, `n
 - **Why separate attachmentsService**: Async processing and cross-server resource sharing — attachments don't belong to one server.
 - **MinIO for attachments**: Self-hosted S3-compatible storage. Uses `@aws-sdk/client-s3` so migration to real AWS S3 requires zero code changes.
 - Node.js 22+ is required (`"engines": {"node": ">=22.0.0"}`).
+
+## Security
+
+Follow these rules for ongoing development:
+
+- **Access control**: Every new route in messagingService must use `requireMember` (or `requireAdmin`) middleware from `src/shared/middleware/`. No route should be accessible without membership verification.
+- **SQL safety**: Never use `sql.unsafe()`. Use postgres.js tagged templates (`sql\`...\``) for queries and `sql(obj, ...columns)` for dynamic updates. Allowlist updateable fields explicitly.
+- **NoSQL safety**: Always validate query parameter types (e.g., confirm a value is a `string`, not an object) before passing them into MongoDB filters.
+- **Input validation**: Validate all Socket.IO event payloads with type guards before processing. Use multer `fileFilter` for upload MIME-type restrictions. Sanitize filenames with `path.basename` and strip control characters.
+- **Config & secrets**: All secrets have dev defaults — `validateConfig()` in each service blocks production startup if they're unchanged. When adding a new secret, add it to the service's `validateConfig()`.
+- **CORS**: Controlled via the `ALLOWED_ORIGINS` env var (comma-separated). Never revert to `origin: '*'` or `origin: true`.
+- **Rate limiting**: Auth endpoints use `express-rate-limit` (`packages/server/src/auth/auth.rateLimit.ts`). New public-facing endpoints should get rate limiters too.
+- **Data exposure**: `getUser()` strips `email` before returning. Any new PII field must follow the same strip-before-return pattern.

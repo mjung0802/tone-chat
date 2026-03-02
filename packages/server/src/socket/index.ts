@@ -2,12 +2,14 @@ import type { Server as HttpServer } from 'node:http';
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
+import { getMember } from '../members/members.client.js';
 import { registerMessageHandlers } from '../messages/messages.socket.js';
 
 export function setupSocketIO(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
     cors: {
-      origin: '*',
+      origin: config.allowedOrigins,
+      credentials: true,
     },
     connectionStateRecovery: {},
   });
@@ -33,8 +35,13 @@ export function setupSocketIO(httpServer: HttpServer): Server {
     const userId = socket.data['userId'] as string;
     console.log(`Socket connected: ${userId}`);
 
-    // Room management
-    socket.on('join_channel', (data: { serverId: string; channelId: string }) => {
+    // Room management — verify membership before joining
+    socket.on('join_channel', async (data: { serverId: string; channelId: string }) => {
+      const memberResult = await getMember(userId, data.serverId, userId);
+      if (memberResult.status !== 200) {
+        socket.emit('error', { message: 'Not a member of this server' });
+        return;
+      }
       const room = `server:${data.serverId}:channel:${data.channelId}`;
       void socket.join(room);
     });

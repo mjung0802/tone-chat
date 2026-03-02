@@ -10,30 +10,31 @@ export async function getUserById(id: string): Promise<User> {
   return user;
 }
 
+const ALLOWED_UPDATE_FIELDS = new Set(['display_name', 'pronouns', 'avatar_url', 'bio', 'status'] as const);
+
 export async function updateUser(
   id: string,
   updates: { [K in 'display_name' | 'pronouns' | 'avatar_url' | 'bio' | 'status']?: User[K] | undefined },
 ): Promise<User> {
-  const fields: string[] = [];
-  const values: (string | null)[] = [];
+  const safeUpdates: Record<string, string | null> = {};
 
   for (const [key, value] of Object.entries(updates)) {
-    if (value !== undefined) {
-      fields.push(key);
-      values.push(value);
+    if (value !== undefined && ALLOWED_UPDATE_FIELDS.has(key as any)) {
+      safeUpdates[key] = value;
     }
   }
 
-  if (fields.length === 0) {
+  const columns = Object.keys(safeUpdates);
+  if (columns.length === 0) {
     throw new AppError('NO_UPDATES', 'No fields to update', 400);
   }
 
-  // Build dynamic update — postgres.js handles parameterization
-  const setClauses = fields.map((field, i) => `${field} = $${i + 2}`);
-  const query = `UPDATE users SET ${setClauses.join(', ')}, updated_at = NOW() WHERE id = $1 RETURNING *`;
+  const [user] = await sql<User[]>`
+    UPDATE users SET ${sql(safeUpdates, ...columns)}, updated_at = NOW()
+    WHERE id = ${id}
+    RETURNING *
+  `;
 
-  const result = await sql.unsafe(query, [id, ...values]) as User[];
-  const user = result[0];
   if (!user) {
     throw new AppError('USER_NOT_FOUND', 'User not found', 404);
   }
