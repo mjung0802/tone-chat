@@ -1,21 +1,3 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
----
-services:
-  db:
-    image: postgres
-    restart: always
-    ports:
-      - "5001:5432"
-    volumes:
-      - ./db:/var/lib/postgresql/data
-      - ./src/sql/seed.sql:/tmp/seed.sql:rw
-    command: sh -c "psql -p 5432 postgres < /tmp/seed.sql"
-    env_file:
-      - .env
-=======
-=======
->>>>>>> backend-gen
 services:
   users-db:
     image: postgres:17
@@ -30,7 +12,3 @@ services:
 
 volumes:
   users-pgdata:
-<<<<<<< HEAD
->>>>>>> b942a6e (fix: resolve type errors across all packages for clean tsc --noEmit)
-=======
->>>>>>> backend-gen
