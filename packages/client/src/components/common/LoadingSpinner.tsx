@@ -1,15 +1,16 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { ActivityIndicator, Text } from 'react-native-paper';
+import { ActivityIndicator, Text, useTheme } from 'react-native-paper';
 
 interface LoadingSpinnerProps {
-  message?: string;
+  message?: string | undefined;
 }
 
 export function LoadingSpinner({ message }: LoadingSpinnerProps) {
+  const theme = useTheme();
   return (
     <View
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       accessibilityRole="progressbar"
       accessibilityLabel={message ?? 'Loading'}
     >

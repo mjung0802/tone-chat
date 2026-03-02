@@ -47,6 +47,7 @@ function AppContent() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="+not-found" />
       {isAuthenticated ? (
         <Stack.Screen name="(main)" />
       ) : (

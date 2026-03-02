@@ -32,7 +32,7 @@ export const useUiStore = create<UiState>((set, get) => ({
     const { themePreference } = get();
     if (themePreference === 'system') {
       const scheme = Appearance.getColorScheme();
-      return scheme === 'dark' ? 'dark' : 'light';
+      return scheme === 'light' ? 'light' : 'dark';
     }
     return themePreference;
   },

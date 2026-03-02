@@ -176,6 +176,11 @@ it('...', async () => {
 });
 ```
 
+## Theme & Loading Gotchas
+
+- **Always apply `theme.colors.background` to full-screen containers** — transparent containers inherit the browser's default white, which clashes with dark-mode text/spinners. Use `useTheme()` from `react-native-paper` and apply `{ backgroundColor: theme.colors.background }` as an inline style, as `LoadingSpinner` does.
+- **`app/+not-found.tsx`** — catch-all route that redirects unknown paths. Must exist so Expo Router doesn't render a blank screen on unmatched URLs.
+
 ## BFF Routes Reference
 
 All routes prefixed `/api/v1`. Auth routes are public; all others require `Authorization: Bearer <token>`.
