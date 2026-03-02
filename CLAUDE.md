@@ -53,6 +53,13 @@ const { handler } = await import('./module-under-test.js');
 
 A global `AnyFn` type is declared in `test-types.d.ts` for use with `mock.fn<AnyFn>()`.
 
+### Client (packages/client)
+```bash
+pnpm --filter tone-chat-client start --web   # Start Expo dev server (web)
+pnpm --filter tone-chat-client typecheck      # tsc --noEmit
+pnpm --filter tone-chat-client test           # Jest
+```
+
 ### Docker (messagingService)
 ```bash
 cd packages/messagingService
@@ -74,7 +81,7 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
   └─────────────────────────────────────────────────────────────┘
 ```
 
-- **client** (`packages/client`): React Native app (web + mobile), connects to the BFF
+- **client** (`packages/client`): React Native (Expo 55 + Expo Router v4) app targeting web, iOS, and Android. Connects to the BFF via HTTP and Socket.IO.
 - **server** (`packages/server`): BFF — JWT auth, routes all client requests to backend services, manages all Socket.IO connections (room-based channels). The only service exposed to clients.
 - **messagingService** (`packages/messagingService`): MongoDB (Mongoose). Manages servers, channels, messages, and server-scoped members. Collections: `servers`, `channels`, `messages`, `serverMembers`.
 - **usersService** (`packages/usersService`): PostgreSQL (postgres.js). Global user accounts, auth (bcrypt + JWT), token refresh/rotation. Tables: `users`, `refresh_tokens`.
@@ -98,6 +105,21 @@ All backend packages use strict TypeScript with `nodenext` module resolution, `n
 - **Don't `await` synchronous functions** — e.g., `mock.module()` from `node:test` returns a `MockModuleContext` (not a Promise). Only `await` expressions that actually return a Promise (like `await import(...)`).
 - For Express 5 `req.params` values (`string | string[]`), use `as string` (single assertion, not a double-cast).
 - For `exactOptionalPropertyTypes`, use `null` instead of `undefined` where the target type doesn't include `undefined` (e.g., `fetch` body).
+
+## Client Architecture (packages/client)
+
+**Stack**: Expo 55, Expo Router v4, React Native Paper v5 (MD3), TanStack Query v5, Zustand v5, socket.io-client v4.
+
+**Structure**:
+- `app/` — Expo Router file-based screens: `(auth)/` (login, register), `(main)/` (drawer with servers, channels, profile, invites)
+- `src/api/` — `client.ts` (fetch wrapper with auto-auth, 401→refresh→retry) + domain modules (`auth`, `users`, `servers`, `channels`, `messages`, `members`, `invites`, `attachments`)
+- `src/stores/` — Zustand: `authStore` (JWT + SecureStore persistence), `socketStore` (Socket.IO lifecycle), `uiStore` (theme, sidebar)
+- `src/hooks/` — TanStack Query hooks per domain. `useMessages` uses `useInfiniteQuery` (cursor pagination). `useSocket` manages room join/leave and injects `new_message` events into query cache.
+- `src/components/` — `chat/`, `servers/`, `channels/`, `members/`, `invites/`, `common/`
+- `src/theme/` — WCAG 2.1 AA color palette (4.5:1 contrast), light/dark, min 16px body text
+- `src/types/` — `models.ts`, `api.types.ts`, `socket.types.ts`
+
+**Client TypeScript**: Extends `expo/tsconfig.base` (NOT root `tsconfig.base.json`). Uses `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` but NOT `verbatimModuleSyntax` (incompatible with RN bundler). For `exactOptionalPropertyTypes` in component props, always use `prop?: Type | undefined` pattern.
 
 ## Key Design Decisions
 

@@ -1,0 +1,55 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import * as membersApi from '../api/members.api';
+import type { UpdateMemberRequest } from '../types/api.types';
+
+export function useMembers(serverId: string) {
+  return useQuery({
+    queryKey: ['servers', serverId, 'members'],
+    queryFn: () => membersApi.getMembers(serverId),
+    select: (data) => data.members,
+    enabled: !!serverId,
+  });
+}
+
+export function useMember(serverId: string, userId: string) {
+  return useQuery({
+    queryKey: ['servers', serverId, 'members', userId],
+    queryFn: () => membersApi.getMember(serverId, userId),
+    select: (data) => data.member,
+    enabled: !!serverId && !!userId,
+  });
+}
+
+export function useJoinServer(serverId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => membersApi.joinServer(serverId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['servers'] });
+      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
+    },
+  });
+}
+
+export function useUpdateMember(serverId: string, userId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UpdateMemberRequest) => membersApi.updateMember(serverId, userId, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
+    },
+  });
+}
+
+export function useRemoveMember(serverId: string, userId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => membersApi.removeMember(serverId, userId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
+    },
+  });
+}
