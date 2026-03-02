@@ -39,21 +39,21 @@ export function useSendMessage(serverId: string, channelId: string) {
       queryClient.setQueryData<{
         pages: MessagesResponse[];
         pageParams: (string | undefined)[];
-      }>(
-        ['servers', serverId, 'channels', channelId, 'messages'],
-        (old) => {
-          if (!old) return old;
-          const lastPage = old.pages[old.pages.length - 1];
-          if (!lastPage) return old;
-          return {
-            ...old,
-            pages: [
-              ...old.pages.slice(0, -1),
-              { messages: [...lastPage.messages, response.message] },
-            ],
-          };
-        },
-      );
+          }>(
+          ['servers', serverId, 'channels', channelId, 'messages'],
+          (old) => {
+            if (!old) return old;
+            const lastPage = old.pages[old.pages.length - 1];
+            if (!lastPage) return old;
+            return {
+              ...old,
+              pages: [
+                ...old.pages.slice(0, -1),
+                { messages: [...lastPage.messages, response.message] },
+              ],
+            };
+          },
+          );
     },
   });
 }
@@ -80,24 +80,24 @@ export function injectMessage(
   queryClient.setQueryData<{
     pages: MessagesResponse[];
     pageParams: (string | undefined)[];
-  }>(
-    ['servers', message.serverId, 'channels', message.channelId, 'messages'],
-    (old) => {
-      if (!old) return old;
-      const lastPage = old.pages[old.pages.length - 1];
-      if (!lastPage) return old;
+      }>(
+      ['servers', message.serverId, 'channels', message.channelId, 'messages'],
+      (old) => {
+        if (!old) return old;
+        const lastPage = old.pages[old.pages.length - 1];
+        if (!lastPage) return old;
 
-      // Avoid duplicates
-      const exists = lastPage.messages.some((m) => m._id === message._id);
-      if (exists) return old;
+        // Avoid duplicates
+        const exists = lastPage.messages.some((m) => m._id === message._id);
+        if (exists) return old;
 
-      return {
-        ...old,
-        pages: [
-          ...old.pages.slice(0, -1),
-          { messages: [...lastPage.messages, message] },
-        ],
-      };
-    },
-  );
+        return {
+          ...old,
+          pages: [
+            ...old.pages.slice(0, -1),
+            { messages: [...lastPage.messages, message] },
+          ],
+        };
+      },
+      );
 }

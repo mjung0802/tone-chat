@@ -7,7 +7,7 @@ import { Server } from 'socket.io';
 const app = express();
 const server = createServer(app);
 const io = new Server(server, {
-  connectionStateRecovery: {}
+  connectionStateRecovery: {},
 });
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

@@ -5,19 +5,13 @@
   "engines": {
     "node": ">=22.0.0"
   },
-  "devDependencies": {
-    "@types/node": "^25.2.3",
-    "lerna": "^9.0.4",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
-  },
   "version": "1.0.0",
   "description": "A tone-based chat app",
   "main": "index.js",
   "scripts": {
     "test": "pnpm --filter \"*\" test",
-    "typecheck": "pnpm --filter \"*\" exec tsc --noEmit"
+    "typecheck": "pnpm --filter \"*\" exec tsc --noEmit",
+    "lint": "eslint . --fix"
   },
   "repository": {
     "type": "git",
@@ -34,5 +28,21 @@
     "overrides": {
       "pretty-format": "^29.7.0"
     }
+  },
+  "dependencies": {
+    "jiti": "^2.6.1",
+    "pg": "^8.19.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.2.3",
+    "@types/pg": "^8.18.0",
+    "eslint": "^10.0.2",
+    "globals": "^17.4.0",
+    "lerna": "^9.0.4",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1"
   }
 }

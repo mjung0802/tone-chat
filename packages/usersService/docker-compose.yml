@@ -7,6 +7,7 @@ services:
       POSTGRES_USER: tone
       POSTGRES_PASSWORD: tone_dev
       POSTGRES_DB: tone_users
+
     volumes:
       - users-pgdata:/var/lib/postgresql/data
 
