@@ -38,6 +38,11 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
+// Clear any lingering timers after each test to prevent worker exit warnings
+afterEach(() => {
+  jest.clearAllTimers();
+});
+
 // Silence noisy warnings in test output
 const originalConsoleError = console.error;
 console.error = (...args: unknown[]) => {

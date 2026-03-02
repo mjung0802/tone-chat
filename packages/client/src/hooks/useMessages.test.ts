@@ -28,7 +28,7 @@ describe('injectMessage', () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
-    queryClient = new QueryClient();
+    queryClient = createTestQueryClient();
   });
 
   it('appends message to last page', () => {

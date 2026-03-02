@@ -2,7 +2,7 @@ import { renderHook, act } from '@testing-library/react-native';
 import { QueryClient } from '@tanstack/react-query';
 import { useSocketStore } from '../stores/socketStore';
 import { useChannelSocket, useTypingEmit } from './useSocket';
-import { createHookWrapper } from '../test-utils/renderWithProviders';
+import { createHookWrapper, createTestQueryClient } from '../test-utils/renderWithProviders';
 import { makeMessage } from '../test-utils/fixtures';
 import type { MessagesResponse } from '../types/api.types';
 import type { TypingEvent } from '../types/socket.types';
@@ -42,7 +42,7 @@ describe('useChannelSocket', () => {
   beforeEach(() => {
     mockSocket = createMockSocket();
     useSocketStore.setState({ socket: mockSocket as never, isConnected: true });
-    queryClient = new QueryClient();
+    queryClient = createTestQueryClient();
   });
 
   afterEach(() => {
@@ -141,12 +141,13 @@ describe('useTypingEmit', () => {
   let mockSocket: ReturnType<typeof createMockSocket>;
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    jest.useFakeTimers({ doNotFake: ['setTimeout', 'setInterval', 'clearTimeout', 'clearInterval', 'setImmediate', 'clearImmediate'] });
     mockSocket = createMockSocket();
     useSocketStore.setState({ socket: mockSocket as never, isConnected: true });
   });
 
   afterEach(() => {
+    jest.clearAllTimers();
     jest.useRealTimers();
     useSocketStore.setState({ socket: null, isConnected: false });
   });
