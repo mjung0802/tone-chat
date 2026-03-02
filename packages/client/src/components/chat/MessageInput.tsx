@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { TextInput, IconButton, useTheme } from 'react-native-paper';
 
 interface MessageInputProps {
@@ -40,7 +40,15 @@ export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) 
         accessibilityLabel="Message input"
         accessibilityHint="Type your message and press send"
         onSubmitEditing={handleSend}
-        blurOnSubmit={false}
+        submitBehavior="newline"
+        onKeyPress={(e) => {
+          if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter') {
+            const { shiftKey } = e.nativeEvent as { key: string; shiftKey?: boolean };
+            if (!shiftKey) {
+              handleSend();
+            }
+          }
+        }}
       />
       <IconButton
         icon="send"

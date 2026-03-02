@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 're
 import { TextInput, Button, Text, HelperText, useTheme } from 'react-native-paper';
 import { Link } from 'expo-router';
 import { useLogin } from '../../src/hooks/useAuth';
-import { ApiClientError } from '../../src/api/client';
+import { getAuthErrorMessage } from '../../src/api/errors';
 
 export default function LoginScreen() {
   const theme = useTheme();
@@ -12,12 +12,7 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const loginMutation = useLogin();
 
-  const errorMessage =
-    loginMutation.error instanceof ApiClientError
-      ? loginMutation.error.message
-      : loginMutation.error
-        ? 'An unexpected error occurred'
-        : '';
+  const errorMessage = getAuthErrorMessage(loginMutation.error, 'login');
 
   const handleLogin = () => {
     if (!email.trim() || !password) return;

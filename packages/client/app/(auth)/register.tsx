@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 're
 import { TextInput, Button, Text, HelperText, useTheme } from 'react-native-paper';
 import { Link } from 'expo-router';
 import { useRegister } from '../../src/hooks/useAuth';
-import { ApiClientError } from '../../src/api/client';
+import { getAuthErrorMessage } from '../../src/api/errors';
 
 export default function RegisterScreen() {
   const theme = useTheme();
@@ -13,12 +13,7 @@ export default function RegisterScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const registerMutation = useRegister();
 
-  const errorMessage =
-    registerMutation.error instanceof ApiClientError
-      ? registerMutation.error.message
-      : registerMutation.error
-        ? 'An unexpected error occurred'
-        : '';
+  const errorMessage = getAuthErrorMessage(registerMutation.error, 'register');
 
   const handleRegister = () => {
     if (!username.trim() || !email.trim() || !password) return;
