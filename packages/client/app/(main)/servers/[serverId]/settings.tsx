@@ -9,11 +9,14 @@ import {
   useTheme,
 } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQueries } from '@tanstack/react-query';
 import { useServer, useUpdateServer, useDeleteServer } from '../../../../src/hooks/useServers';
 import { useChannels, useCreateChannel, useDeleteChannel } from '../../../../src/hooks/useChannels';
 import { useMembers, useRemoveMember } from '../../../../src/hooks/useMembers';
 import { useInvites, useCreateInvite, useRevokeInvite } from '../../../../src/hooks/useInvites';
 import { useAuthStore } from '../../../../src/stores/authStore';
+import * as usersApi from '../../../../src/api/users.api';
+import type { User } from '../../../../src/types/models';
 import { ConfirmDialog } from '../../../../src/components/common/ConfirmDialog';
 import { LoadingSpinner } from '../../../../src/components/common/LoadingSpinner';
 import { MemberList } from '../../../../src/components/members/MemberList';
@@ -31,6 +34,20 @@ export default function ServerSettingsScreen() {
   const { data: channels } = useChannels(sid);
   const { data: members } = useMembers(sid);
   const { data: invites } = useInvites(sid);
+
+  const memberUserIds = members?.map(m => m.userId) ?? [];
+  const userQueries = useQueries({
+    queries: memberUserIds.map(id => ({
+      queryKey: ['users', id],
+      queryFn: () => usersApi.getUser(id),
+      select: (data: { user: User }) => data.user,
+    })),
+  });
+  const displayNames: Record<string, string> = {};
+  memberUserIds.forEach((id, i) => {
+    const user = userQueries[i]?.data;
+    if (user) displayNames[id] = user.display_name ?? user.username;
+  });
 
   const updateServer = useUpdateServer(sid);
   const deleteServer = useDeleteServer(sid);
@@ -159,7 +176,7 @@ export default function ServerSettingsScreen() {
       <Text variant="titleLarge" style={styles.section}>
         Members ({members?.length ?? 0})
       </Text>
-      <MemberList members={members ?? []} />
+      <MemberList members={members ?? []} displayNames={displayNames} />
 
       <Divider style={styles.divider} />
 

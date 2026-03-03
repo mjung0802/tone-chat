@@ -21,6 +21,9 @@ export function CreateServerForm({ onSubmit, isLoading }: CreateServerFormProps)
       description: description.trim() || undefined,
       visibility,
     });
+    setName('');
+    setDescription('');
+    setVisibility('private');
   };
 
   return (

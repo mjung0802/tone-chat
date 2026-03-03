@@ -11,6 +11,7 @@ interface ChannelSidebarProps {
   onChannelPress: (channel: Channel) => void;
   onCreateChannel?: (() => void) | undefined;
   canManage?: boolean | undefined;
+  onGoHome?: (() => void) | undefined;
 }
 
 export function ChannelSidebar({
@@ -20,6 +21,7 @@ export function ChannelSidebar({
   onChannelPress,
   onCreateChannel,
   canManage,
+  onGoHome,
 }: ChannelSidebarProps) {
   const theme = useTheme();
 
@@ -34,6 +36,15 @@ export function ChannelSidebar({
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
       <View style={styles.header}>
+        {onGoHome ? (
+          <IconButton
+            icon="arrow-left"
+            size={20}
+            onPress={onGoHome}
+            accessibilityLabel="Back to server list"
+            accessibilityHint="Returns to the server selection screen"
+          />
+        ) : null}
         <Text variant="titleMedium" numberOfLines={1} style={styles.title}>
           {serverName}
         </Text>

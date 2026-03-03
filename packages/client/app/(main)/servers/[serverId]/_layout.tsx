@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { IconButton, useTheme } from 'react-native-paper';
+import { IconButton, useTheme, Portal, Dialog, TextInput as PaperTextInput, Button } from 'react-native-paper';
 import { useServer } from '../../../../src/hooks/useServers';
-import { useChannels } from '../../../../src/hooks/useChannels';
+import { useChannels, useCreateChannel } from '../../../../src/hooks/useChannels';
 import { ChannelSidebar } from '../../../../src/components/channels/ChannelSidebar';
 import { LoadingSpinner } from '../../../../src/components/common/LoadingSpinner';
 import { useUiStore } from '../../../../src/stores/uiStore';
@@ -25,6 +25,10 @@ export default function ServerLayout() {
   const isOwner = server?.ownerId === userId;
   const theme = useTheme();
 
+  const [createDialogVisible, setCreateDialogVisible] = useState(false);
+  const [newChannelName, setNewChannelName] = useState('');
+  const createChannel = useCreateChannel(serverId ?? '');
+
   if (serverLoading || channelsLoading) {
     return <LoadingSpinner />;
   }
@@ -41,8 +45,19 @@ export default function ServerLayout() {
   };
 
   const handleCreateChannel = () => {
-    // Navigate to a create channel flow — for now just create via the settings
-    router.push(`/(main)/servers/${serverId}/settings`);
+    setNewChannelName('');
+    setCreateDialogVisible(true);
+  };
+
+  const handleSubmitChannel = () => {
+    const name = newChannelName.trim();
+    if (!name) return;
+    createChannel.mutate({ name }, {
+      onSuccess: (data) => {
+        setCreateDialogVisible(false);
+        router.push(`/(main)/servers/${serverId}/channels/${data.channel._id}`);
+      },
+    });
   };
 
   return (
@@ -54,6 +69,7 @@ export default function ServerLayout() {
           onChannelPress={handleChannelPress}
           onCreateChannel={handleCreateChannel}
           canManage={isOwner}
+          onGoHome={() => router.push('/(main)/servers')}
         />
       ) : null}
       <View style={[styles.content, { backgroundColor: theme.colors.background }]}>
@@ -93,6 +109,36 @@ export default function ServerLayout() {
           />
         </Stack>
       </View>
+      <Portal>
+        <Dialog
+          visible={createDialogVisible}
+          onDismiss={() => setCreateDialogVisible(false)}
+          style={styles.dialog}
+        >
+          <Dialog.Title>New Channel</Dialog.Title>
+          <Dialog.Content>
+            <PaperTextInput
+              label="Channel name"
+              value={newChannelName}
+              onChangeText={setNewChannelName}
+              autoFocus
+              onSubmitEditing={handleSubmitChannel}
+              returnKeyType="done"
+              accessibilityLabel="Channel name"
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setCreateDialogVisible(false)}>Cancel</Button>
+            <Button
+              onPress={handleSubmitChannel}
+              loading={createChannel.isPending}
+              disabled={!newChannelName.trim() || createChannel.isPending}
+            >
+              Create
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
@@ -105,5 +151,10 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingTop: 1,
+  },
+  dialog: {
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'center',
   },
 });

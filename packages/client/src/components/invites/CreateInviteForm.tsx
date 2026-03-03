@@ -22,6 +22,8 @@ export function CreateInviteForm({ onSubmit, isLoading }: CreateInviteFormProps)
       data.expiresIn = parsedHours * 3600;
     }
     onSubmit(data);
+    setMaxUses('');
+    setExpiresInHours('');
   };
 
   return (

@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { TextInput, Button, Text, Avatar, HelperText, useTheme } from 'react-native-paper';
 import { useMe, useUpdateProfile } from '../../../src/hooks/useUser';
+import { useLogout } from '../../../src/hooks/useAuth';
 import { LoadingSpinner } from '../../../src/components/common/LoadingSpinner';
 import { ApiClientError } from '../../../src/api/client';
 
 export default function ProfileScreen() {
   const { data: user, isLoading } = useMe();
   const updateProfile = useUpdateProfile();
+  const logout = useLogout();
   const theme = useTheme();
 
   const [displayName, setDisplayName] = useState('');
@@ -127,6 +129,16 @@ export default function ProfileScreen() {
       >
         Save Changes
       </Button>
+
+      <Button
+        mode="outlined"
+        onPress={logout}
+        accessibilityLabel="Log out of your account"
+        style={[styles.button, styles.logoutButton]}
+        textColor={theme.colors.error}
+      >
+        Log Out
+      </Button>
     </ScrollView>
   );
 }
@@ -155,5 +167,8 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 8,
     width: '100%',
+  },
+  logoutButton: {
+    marginTop: 24,
   },
 });

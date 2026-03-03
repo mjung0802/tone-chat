@@ -176,6 +176,31 @@ it('...', async () => {
 });
 ```
 
+## Routing Patterns
+
+### Declarative redirects — use `<Redirect>`, not `useEffect` + `router.replace()`
+
+`router.replace()` called inside a `useEffect` during component mount is unreliable in Expo Router v4 — the navigation framework may not have settled the route yet, so the call is silently dropped (resulting in a spinner that never resolves).
+
+Use the declarative `<Redirect>` component instead:
+
+```tsx
+// WRONG — replace call may be dropped before navigation settles
+import { useRouter } from 'expo-router';
+
+useEffect(() => {
+  if (target) router.replace(`/some/path/${target}`);
+}, [target, router]);
+
+return <LoadingSpinner message="Redirecting..." />;
+
+// CORRECT — declarative, handles timing correctly
+import { Redirect } from 'expo-router';
+
+if (!target) return <EmptyState ... />;
+return <Redirect href={`/some/path/${target}`} />;
+```
+
 ## Theme & Loading Gotchas
 
 - **Always apply `theme.colors.background` to full-screen containers** — transparent containers inherit the browser's default white, which clashes with dark-mode text/spinners. Use `useTheme()` from `react-native-paper` and apply `{ backgroundColor: theme.colors.background }` as an inline style, as `LoadingSpinner` does.

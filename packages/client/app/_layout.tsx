@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { PaperProvider, useTheme } from 'react-native-paper';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -75,16 +76,19 @@ export default function RootLayout() {
   const effectiveScheme =
     themePreference === 'system' ? colorScheme : themePreference;
   const theme = effectiveScheme === 'dark' ? darkTheme : lightTheme;
+  const rnTheme = effectiveScheme === 'dark' ? DarkTheme : DefaultTheme;
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <PaperProvider theme={theme}>
-            <ErrorBoundary>
-              <AppContent />
-            </ErrorBoundary>
-          </PaperProvider>
+          <ThemeProvider value={rnTheme}>
+            <PaperProvider theme={theme}>
+              <ErrorBoundary>
+                <AppContent />
+              </ErrorBoundary>
+            </PaperProvider>
+          </ThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
