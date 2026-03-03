@@ -18,7 +18,7 @@ export function ServerListItem({ server, onPress }: ServerListItemProps) {
       accessibilityRole="button"
       accessibilityLabel={`${server.name} server${server.description ? `, ${server.description}` : ''}`}
       accessibilityHint="Opens this server"
-      style={{ minHeight: 56 }}
+      style={{ minHeight: 56, paddingLeft: 12 }}
     />
   );
 }

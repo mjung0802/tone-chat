@@ -201,6 +201,19 @@ if (!target) return <EmptyState ... />;
 return <Redirect href={`/some/path/${target}`} />;
 ```
 
+## Form Best Practices
+
+- **Reset fields after successful submission** — call the relevant `setState` setters immediately after `onSubmit()` in each form's `handleSubmit`. This prevents stale values from appearing if the user opens the form again. Forms that navigate away on success still benefit, since the component may be kept alive in the navigation stack.
+
+```ts
+const handleSubmit = () => {
+  if (!name.trim()) return;
+  onSubmit({ name: name.trim(), ... });
+  setName('');          // reset after submit
+  setOtherField('');
+};
+```
+
 ## Theme & Loading Gotchas
 
 - **Always apply `theme.colors.background` to full-screen containers** — transparent containers inherit the browser's default white, which clashes with dark-mode text/spinners. Use `useTheme()` from `react-native-paper` and apply `{ backgroundColor: theme.colors.background }` as an inline style, as `LoadingSpinner` does.
