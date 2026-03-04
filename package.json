@@ -10,8 +10,9 @@
   "main": "index.js",
   "scripts": {
     "test": "pnpm --filter \"*\" test",
-    "test:integration": "pnpm --filter usersservice --filter messagingservice --filter attachmentsservice --if-present run test:integration",
+    "test:integration": "tsx --env-file=packages/usersService/.env.test packages/usersService/src/db/migrate.ts && tsx --env-file=packages/attachmentsService/.env.test packages/attachmentsService/src/db/migrate.ts && pnpm --filter usersservice --filter messagingservice --filter attachmentsservice --if-present run test:integration && pnpm --filter tone-chat-server test:integration",
     "test:integration:up": "docker compose -f docker-compose.test.yml up -d --wait && pnpm test:integration && docker compose -f docker-compose.test.yml down -v",
+    "test:integration:down": "docker compose -f docker-compose.test.yml down -v",
     "typecheck": "pnpm -r run typecheck",
     "lint": "eslint . --fix"
   },
