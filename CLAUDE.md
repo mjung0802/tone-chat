@@ -36,13 +36,7 @@ pnpm --filter tone-chat-server test
 pnpm --filter attachmentsservice test
 pnpm test
 
-# Integration tests (require Docker test containers)
-docker compose -f docker-compose.test.yml up -d --wait
-pnpm test:integration                    # Run all integration tests
-pnpm --filter usersservice test:integration   # Per-service
-docker compose -f docker-compose.test.yml down -v
-
-# One-command: start containers, run tests, tear down
+# Integration tests — always use the one-command form so migrations run first
 pnpm test:integration:up
 ```
 
@@ -106,6 +100,9 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
 - JWT access tokens (15 min) + refresh tokens (7 day, rotated). BFF verifies JWTs locally.
 - BFF passes `X-User-Id` + `X-Internal-Key` headers to backend services (not internet-exposed).
 - Socket.IO auth via JWT in handshake `auth` field.
+
+### Socket.IO Event Payloads
+- The `new_message` event payload is the full messagingService JSON response: `{ message: { content, authorId, ... } }` (wrapped in `message` key), not the message object directly. This is because `messages.socket.ts` emits `result.data` from `serviceRequest`, which includes the response wrapper.
 
 ### API Routes (BFF)
 All routes prefixed `/api/v1`. Auth routes → usersService. Server/channel/message/member routes → messagingService. Attachment routes → attachmentsService.
