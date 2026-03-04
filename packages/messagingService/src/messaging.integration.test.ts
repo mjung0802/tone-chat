@@ -189,6 +189,35 @@ describe('Channel lifecycle', () => {
     assert.equal(res2.status, 200);
   });
 
+  it('DELETE: admin can delete, non-admin cannot', async () => {
+    const { serverId } = await createTestServer('user-1');
+
+    // Create a second channel to delete (can't delete general)
+    const createRes = await fetch(`${baseUrl}/servers/${serverId}/channels`, {
+      method: 'POST',
+      headers: headersFor('user-1'),
+      body: JSON.stringify({ name: 'to-delete' }),
+    });
+    const { channel } = await createRes.json() as { channel: { _id: string } };
+
+    // Add non-admin member
+    await ServerMember.create({ serverId, userId: 'user-2' });
+
+    // Non-admin cannot delete
+    const res = await fetch(`${baseUrl}/servers/${serverId}/channels/${channel._id}`, {
+      method: 'DELETE',
+      headers: headersFor('user-2'),
+    });
+    assert.equal(res.status, 403);
+
+    // Admin can delete
+    const res2 = await fetch(`${baseUrl}/servers/${serverId}/channels/${channel._id}`, {
+      method: 'DELETE',
+      headers: headersFor('user-1'),
+    });
+    assert.equal(res2.status, 204);
+  });
+
   it('returns 403 for non-member', async () => {
     const { serverId } = await createTestServer('user-1');
 
@@ -343,6 +372,25 @@ describe('Member lifecycle', () => {
     assert.equal(body.member.nickname, 'Bobby');
   });
 
+  it('GET single member; non-member cannot fetch', async () => {
+    const { serverId } = await createTestServer('user-1');
+    await ServerMember.create({ serverId, userId: 'user-2' });
+
+    // Member can fetch another member
+    const res = await fetch(`${baseUrl}/servers/${serverId}/members/user-2`, {
+      headers: headersFor('user-1'),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json() as { member: { userId: string } };
+    assert.equal(body.member.userId, 'user-2');
+
+    // Non-member cannot fetch
+    const res2 = await fetch(`${baseUrl}/servers/${serverId}/members/user-1`, {
+      headers: headersFor('non-member'),
+    });
+    assert.equal(res2.status, 403);
+  });
+
   it('DELETE: self-leave and admin kick', async () => {
     const { serverId } = await createTestServer('user-1');
     await ServerMember.create({ serverId, userId: 'user-2' });
@@ -458,6 +506,47 @@ describe('Invite lifecycle', () => {
     assert.equal(joinRes.status, 410);
   });
 
+  it('GET lists active invites; non-admin cannot list', async () => {
+    const { serverId } = await createTestServer('user-1');
+
+    // Create two invites
+    const res1 = await fetch(`${baseUrl}/servers/${serverId}/invites`, {
+      method: 'POST',
+      headers: headersFor('user-1'),
+      body: JSON.stringify({}),
+    });
+    const { invite: invite1 } = await res1.json() as { invite: { code: string } };
+
+    const res2 = await fetch(`${baseUrl}/servers/${serverId}/invites`, {
+      method: 'POST',
+      headers: headersFor('user-1'),
+      body: JSON.stringify({}),
+    });
+    const { invite: invite2 } = await res2.json() as { invite: { code: string } };
+
+    // Revoke the second invite
+    await fetch(`${baseUrl}/servers/${serverId}/invites/${invite2.code}`, {
+      method: 'DELETE',
+      headers: headersFor('user-1'),
+    });
+
+    // Admin can list invites — only active ones
+    const listRes = await fetch(`${baseUrl}/servers/${serverId}/invites`, {
+      headers: headersFor('user-1'),
+    });
+    assert.equal(listRes.status, 200);
+    const body = await listRes.json() as { invites: Array<{ code: string }> };
+    assert.equal(body.invites.length, 1);
+    assert.equal(body.invites[0]!.code, invite1.code);
+
+    // Non-admin cannot list
+    await ServerMember.create({ serverId, userId: 'user-2' });
+    const forbiddenRes = await fetch(`${baseUrl}/servers/${serverId}/invites`, {
+      headers: headersFor('user-2'),
+    });
+    assert.equal(forbiddenRes.status, 403);
+  });
+
   it('returns 409 for already-member', async () => {
     const { serverId } = await createTestServer('user-1');
 
@@ -474,5 +563,18 @@ describe('Invite lifecycle', () => {
       headers: headersFor('user-1'),
     });
     assert.equal(joinRes.status, 409);
+  });
+});
+
+// ─── Internal Auth ─────────────────────────────────────────
+
+describe('internalAuth middleware', () => {
+  it('returns 401 for wrong x-internal-key', async () => {
+    const res = await fetch(`${baseUrl}/servers`, {
+      headers: { 'x-internal-key': 'wrong-key', 'x-user-id': 'user-1' },
+    });
+    assert.equal(res.status, 401);
+    const body = await res.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'UNAUTHORIZED');
   });
 });

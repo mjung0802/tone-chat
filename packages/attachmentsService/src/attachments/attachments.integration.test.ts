@@ -128,3 +128,14 @@ describe('GET /attachments/:id', () => {
     assert.equal(res.status, 404);
   });
 });
+
+describe('internalAuth middleware', () => {
+  it('returns 401 for wrong x-internal-key', async () => {
+    const res = await fetch(`${baseUrl}/attachments/00000000-0000-0000-0000-000000000000`, {
+      headers: { 'x-internal-key': 'wrong-key' },
+    });
+    assert.equal(res.status, 401);
+    const body = await res.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'UNAUTHORIZED');
+  });
+});

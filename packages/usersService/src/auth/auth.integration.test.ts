@@ -142,6 +142,19 @@ describe('POST /auth/login', () => {
   });
 });
 
+describe('internalAuth middleware', () => {
+  it('returns 401 for wrong x-internal-key', async () => {
+    const res = await fetch(`${baseUrl}/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-internal-key': 'wrong-key' },
+      body: JSON.stringify({ email: 'alice@test.com', password: 'password123' }),
+    });
+    assert.equal(res.status, 401);
+    const body = await res.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'UNAUTHORIZED');
+  });
+});
+
 describe('POST /auth/refresh', () => {
   it('returns new tokens and invalidates the old refresh token', async () => {
     const registerRes = await fetch(`${baseUrl}/auth/register`, {
