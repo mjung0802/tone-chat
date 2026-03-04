@@ -69,6 +69,8 @@ export default function LoginScreen() {
           textContentType="password"
           accessibilityLabel="Password"
           accessibilityHint="Enter your password"
+          returnKeyType="go"
+          onSubmitEditing={handleLogin}
           right={
             <TextInput.Icon
               icon={showPassword ? 'eye-off' : 'eye'}

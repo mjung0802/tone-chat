@@ -48,9 +48,11 @@ export interface ServerMember {
   _id: string;
   serverId: string;
   userId: string;
-  nickname?: string;
+  nickname?: string | undefined;
   roles: string[];
   joinedAt: string;
+  username?: string | undefined;
+  display_name?: string | null | undefined;
 }
 
 export interface Invite {

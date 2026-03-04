@@ -12,3 +12,11 @@ export function patchMe(userId: string, body: Record<string, unknown>) {
 export function getUser(userId: string, targetId: string) {
   return serviceRequest(config.usersServiceUrl, `/users/${targetId}`, { userId });
 }
+
+export function getUsersBatch(userId: string, ids: string[]) {
+  return serviceRequest(config.usersServiceUrl, '/users/batch', {
+    userId,
+    method: 'POST',
+    body: { ids },
+  });
+}

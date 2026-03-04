@@ -6,7 +6,7 @@ mockSql.unsafe = mock.fn<AnyFn>();
 
 mock.module('../config/database.js', { namedExports: { sql: mockSql } });
 
-const { getUserById, updateUser } = await import('./users.service.js');
+const { getUserById, getUsersByIds, updateUser } = await import('./users.service.js');
 
 describe('getUserById', () => {
   beforeEach(() => {
@@ -26,6 +26,29 @@ describe('getUserById', () => {
     mockSql.mock.mockImplementation(() => [user]);
     const result = await getUserById('u1');
     assert.deepEqual(result, user);
+  });
+});
+
+describe('getUsersByIds', () => {
+  beforeEach(() => {
+    mockSql.mock.resetCalls();
+  });
+
+  it('returns empty array for empty input without hitting SQL', async () => {
+    const result = await getUsersByIds([]);
+    assert.deepEqual(result, []);
+    assert.equal(mockSql.mock.callCount(), 0);
+  });
+
+  it('returns users for given ids', async () => {
+    const users = [
+      { id: 'u1', username: 'alice' },
+      { id: 'u2', username: 'bob' },
+    ];
+    mockSql.mock.mockImplementation(() => users);
+    const result = await getUsersByIds(['u1', 'u2']);
+    assert.deepEqual(result, users);
+    assert.equal(mockSql.mock.callCount(), 1);
   });
 });
 

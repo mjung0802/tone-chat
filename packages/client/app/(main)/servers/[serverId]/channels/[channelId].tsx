@@ -77,7 +77,7 @@ export default function ChannelScreen() {
   // Build author name map from members
   const authorNames: Record<string, string> = {};
   members?.forEach((m) => {
-    authorNames[m.userId] = m.nickname ?? m.userId;
+    authorNames[m.userId] = m.nickname ?? m.display_name ?? m.username ?? m.userId;
   });
 
   const typingUserNames = Array.from(typingUsers.keys()).map(

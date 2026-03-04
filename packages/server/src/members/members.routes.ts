@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { AuthRequest } from '../shared/middleware/auth.js';
 import * as client from './members.client.js';
+import * as usersClient from '../users/users.client.js';
 
 export const membersRouter = Router({ mergeParams: true });
 
@@ -11,7 +12,34 @@ membersRouter.post('/', async (req: AuthRequest, res) => {
 
 membersRouter.get('/', async (req: AuthRequest, res) => {
   const result = await client.listMembers(req.userId!, req.params['serverId'] as string);
-  res.status(result.status).json(result.data);
+  if (result.status !== 200) {
+    res.status(result.status).json(result.data);
+    return;
+  }
+  const { members } = result.data as { members: Array<Record<string, unknown>> };
+  const userIds = members.map((m) => m.userId as string);
+  if (userIds.length > 0) {
+    const BATCH_SIZE = 100;
+    const userMap = new Map<string, { id: string; username: string; display_name: string | null }>();
+    for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+      const batch = userIds.slice(i, i + BATCH_SIZE);
+      const usersResult = await usersClient.getUsersBatch(req.userId!, batch);
+      if (usersResult.status === 200) {
+        const { users } = usersResult.data as { users: Array<{ id: string; username: string; display_name: string | null }> };
+        for (const u of users) {
+          userMap.set(u.id, u);
+        }
+      }
+    }
+    for (const member of members) {
+      const user = userMap.get(member.userId as string);
+      if (user) {
+        member.username = user.username;
+        member.display_name = user.display_name;
+      }
+    }
+  }
+  res.json({ members });
 });
 
 membersRouter.get('/:userId', async (req: AuthRequest, res) => {

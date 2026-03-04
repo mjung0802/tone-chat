@@ -2,6 +2,11 @@ import { sql } from '../config/database.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
 import type { User } from '../shared/types.js';
 
+export async function getUsersByIds(ids: string[]): Promise<User[]> {
+  if (ids.length === 0) return [];
+  return sql<User[]>`SELECT * FROM users WHERE id = ANY(${ids})`;
+}
+
 export async function getUserById(id: string): Promise<User> {
   const [user] = await sql<User[]>`SELECT * FROM users WHERE id = ${id}`;
   if (!user) {

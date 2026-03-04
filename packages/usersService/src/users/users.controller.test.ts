@@ -2,13 +2,14 @@ import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
 const mockGetUserById = mock.fn<AnyFn>();
+const mockGetUsersByIds = mock.fn<AnyFn>();
 const mockUpdateUser = mock.fn<AnyFn>();
 
 mock.module('./users.service.js', {
-  namedExports: { getUserById: mockGetUserById, updateUser: mockUpdateUser },
+  namedExports: { getUserById: mockGetUserById, getUsersByIds: mockGetUsersByIds, updateUser: mockUpdateUser },
 });
 
-const { getMe, patchMe, getUser } = await import('./users.controller.js');
+const { getMe, patchMe, getUser, getUsersBatch } = await import('./users.controller.js');
 
 function makeReq(overrides: Partial<{ body: any; params: any; headers: any; query: any }> = {}) {
   return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as any;
@@ -69,5 +70,51 @@ describe('getUser', () => {
     await getUser(makeReq({ params: { id: 'u2' } }), res);
     assert.equal(res.statusCode, 200);
     assert.deepEqual(res._json.user, user);
+  });
+});
+
+describe('getUsersBatch', () => {
+  beforeEach(() => mockGetUsersByIds.mock.resetCalls());
+
+  it('returns 400 when ids is not an array', async () => {
+    const res = makeRes();
+    await getUsersBatch(makeReq({ body: { ids: 'not-array' } }), res);
+    assert.equal(res.statusCode, 400);
+    assert.equal(res._json.error.code, 'INVALID_IDS');
+  });
+
+  it('returns 400 when ids is empty', async () => {
+    const res = makeRes();
+    await getUsersBatch(makeReq({ body: { ids: [] } }), res);
+    assert.equal(res.statusCode, 400);
+  });
+
+  it('returns 400 when ids contains non-string elements', async () => {
+    const res = makeRes();
+    await getUsersBatch(makeReq({ body: { ids: [123, null] } }), res);
+    assert.equal(res.statusCode, 400);
+    assert.equal(res._json.error.code, 'INVALID_IDS');
+  });
+
+  it('returns 400 when batch size exceeds 100', async () => {
+    const res = makeRes();
+    const ids = Array.from({ length: 101 }, (_, i) => `u${i}`);
+    await getUsersBatch(makeReq({ body: { ids } }), res);
+    assert.equal(res.statusCode, 400);
+    assert.equal(res._json.error.code, 'BATCH_TOO_LARGE');
+  });
+
+  it('returns 200 with users (email stripped)', async () => {
+    const users = [
+      { id: 'u1', username: 'alice', email: 'alice@test.com' },
+      { id: 'u2', username: 'bob', email: 'bob@test.com' },
+    ];
+    mockGetUsersByIds.mock.mockImplementation(async () => users);
+    const res = makeRes();
+    await getUsersBatch(makeReq({ body: { ids: ['u1', 'u2'] } }), res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res._json.users.length, 2);
+    assert.equal(res._json.users[0].email, undefined);
+    assert.equal(res._json.users[1].email, undefined);
   });
 });
