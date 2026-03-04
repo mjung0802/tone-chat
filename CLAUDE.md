@@ -26,18 +26,33 @@ pnpm dev   # Runs: node --env-file=.env --watch -r ts-node/register src/index.ts
 
 ### Running Tests
 
-All backend packages use Node.js built-in `node:test` with `--experimental-strip-types`. Tests are colocated as `src/**/*.test.ts`. Run via `tsx --test --experimental-test-module-mocks`.
+All backend packages use Node.js built-in `node:test` with `--experimental-strip-types`. Unit tests are colocated as `src/**/*.test.ts`, integration tests as `src/**/*.integration.test.ts`. Unit test scripts use extglob `!(*.integration).test.ts` to exclude integration files.
 
 ```bash
-# Per-package
+# Unit tests (per-package or all)
 pnpm --filter usersservice test
 pnpm --filter messagingservice test
 pnpm --filter tone-chat-server test
 pnpm --filter attachmentsservice test
-
-# All packages from root
 pnpm test
+
+# Integration tests (require Docker test containers)
+docker compose -f docker-compose.test.yml up -d --wait
+pnpm test:integration                    # Run all integration tests
+pnpm --filter usersservice test:integration   # Per-service
+docker compose -f docker-compose.test.yml down -v
+
+# One-command: start containers, run tests, tear down
+pnpm test:integration:up
 ```
+
+### Integration Test Pattern
+
+Integration tests hit real databases via Docker (`docker-compose.test.yml` — isolated ports, tmpfs). Each test file imports the real `app`, listens on an ephemeral port, and uses `beforeEach` to truncate/clear data. Env vars loaded via `--env-file=.env.test`. All requests need `x-internal-key: dev-internal-key` header; user identity via `x-user-id`.
+
+- **File naming**: `*.integration.test.ts` (must have a prefix before `.integration`, e.g. `auth.integration.test.ts`, NOT `integration.test.ts`)
+- **Test containers**: MongoDB:27018, PG(users):5442, PG(attachments):5443, MinIO:9002
+- PG services run migrations before tests: `tsx --env-file=.env.test src/db/migrate.ts`
 
 ### Test Mocking Pattern
 

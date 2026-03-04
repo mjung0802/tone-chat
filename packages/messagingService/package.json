@@ -8,7 +8,8 @@
     "dev": "tsx watch --env-file=.env src/index.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test --experimental-test-module-mocks \"src/**/*.test.ts\""
+    "test": "tsx --test --experimental-test-module-mocks \"src/**/!(*.integration).test.ts\"",
+    "test:integration": "tsx --env-file=.env.test --test \"src/**/*.integration.test.ts\""
   },
   "dependencies": {
     "express": "^5.2.1",

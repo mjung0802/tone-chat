@@ -10,6 +10,8 @@
   "main": "index.js",
   "scripts": {
     "test": "pnpm --filter \"*\" test",
+    "test:integration": "pnpm --filter usersservice --filter messagingservice --filter attachmentsservice --if-present run test:integration",
+    "test:integration:up": "docker compose -f docker-compose.test.yml up -d --wait && pnpm test:integration && docker compose -f docker-compose.test.yml down -v",
     "typecheck": "pnpm -r run typecheck",
     "lint": "eslint . --fix"
   },

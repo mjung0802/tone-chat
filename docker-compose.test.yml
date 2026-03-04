@@ -1,0 +1,40 @@
+services:
+  mongo-test:
+    image: mongo:latest
+    ports:
+      - "27018:27017"
+    tmpfs:
+      - /data/db
+
+  users-db-test:
+    image: postgres:17
+    ports:
+      - "5442:5432"
+    environment:
+      POSTGRES_USER: tone
+      POSTGRES_PASSWORD: tone_dev
+      POSTGRES_DB: tone_users_test
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  attachments-db-test:
+    image: postgres:17
+    ports:
+      - "5443:5432"
+    environment:
+      POSTGRES_USER: tone
+      POSTGRES_PASSWORD: tone_dev
+      POSTGRES_DB: tone_attachments_test
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  minio-test:
+    image: minio/minio:latest
+    ports:
+      - "9002:9000"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data
+    tmpfs:
+      - /data
