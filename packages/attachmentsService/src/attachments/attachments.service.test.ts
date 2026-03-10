@@ -6,9 +6,9 @@ const mockSql: any = mock.fn<AnyFn>((..._args: unknown[]) => []);
 mock.module('../config/database.js', { namedExports: { sql: mockSql } });
 
 const mockUploadToS3 = mock.fn<AnyFn>();
-const mockGetPublicUrl = mock.fn<AnyFn>();
+const mockGetPresignedUrl = mock.fn<AnyFn>();
 mock.module('./storage.service.js', {
-  namedExports: { uploadToS3: mockUploadToS3, getPublicUrl: mockGetPublicUrl },
+  namedExports: { uploadToS3: mockUploadToS3, getPresignedUrl: mockGetPresignedUrl },
 });
 
 const { createAttachment, getAttachment } = await import('./attachments.service.js');
@@ -17,7 +17,7 @@ describe('createAttachment', () => {
   beforeEach(() => {
     mockSql.mock.resetCalls();
     mockUploadToS3.mock.resetCalls();
-    mockGetPublicUrl.mock.resetCalls();
+    mockGetPresignedUrl.mock.resetCalls();
   });
 
   it('throws FILE_TOO_LARGE over 25MB', async () => {
@@ -38,14 +38,14 @@ describe('createAttachment', () => {
       return [updated]; // UPDATE to ready
     });
     mockUploadToS3.mock.mockImplementation(async () => 'uuid-key.png');
-    mockGetPublicUrl.mock.mockImplementation(() => 'http://cdn/key.png');
+    mockGetPresignedUrl.mock.mockImplementation(async () => 'http://cdn/key.png');
 
     const file = { buffer: Buffer.from('data'), mimetype: 'image/png', originalname: 'pic.png', size: 1000 };
     const result = await createAttachment('u1', file);
 
     assert.equal(result.status, 'ready');
     assert.equal(mockUploadToS3.mock.callCount(), 1);
-    assert.equal(mockGetPublicUrl.mock.callCount(), 1);
+    assert.equal(mockGetPresignedUrl.mock.callCount(), 1);
   });
 
   it('updates to failed on S3 error and re-throws', async () => {
@@ -79,10 +79,39 @@ describe('getAttachment', () => {
     });
   });
 
-  it('returns attachment on success', async () => {
-    const attachment = { id: 'a1', status: 'ready' };
+  it('returns attachment with fresh presigned URL when ready', async () => {
+    const attachment = { id: 'a1', status: 'ready', storage_key: 'key.png', url: 'old-url' };
     mockSql.mock.mockImplementation(() => [attachment]);
+    mockGetPresignedUrl.mock.mockImplementation(async () => 'https://fresh-signed-url');
     const result = await getAttachment('a1');
-    assert.deepEqual(result, attachment);
+    assert.equal(result.url, 'https://fresh-signed-url');
+    assert.equal(mockGetPresignedUrl.mock.callCount(), 1);
+  });
+
+  it('does not generate presigned URL for non-ready attachment', async () => {
+    const attachment = { id: 'a1', status: 'processing', storage_key: 'pending', url: null };
+    mockSql.mock.mockImplementation(() => [attachment]);
+    mockGetPresignedUrl.mock.resetCalls();
+    const result = await getAttachment('a1');
+    assert.equal(result.url, null);
+    assert.equal(mockGetPresignedUrl.mock.callCount(), 0);
+  });
+
+  it('does not generate presigned URL when storage_key is pending', async () => {
+    const attachment = { id: 'a1', status: 'ready', storage_key: 'pending', url: 'old-url' };
+    mockSql.mock.mockImplementation(() => [attachment]);
+    mockGetPresignedUrl.mock.resetCalls();
+    const result = await getAttachment('a1');
+    assert.equal(result.url, 'old-url');
+    assert.equal(mockGetPresignedUrl.mock.callCount(), 0);
+  });
+
+  it('does not generate presigned URL when storage_key is null', async () => {
+    const attachment = { id: 'a1', status: 'ready', storage_key: null, url: null };
+    mockSql.mock.mockImplementation(() => [attachment]);
+    mockGetPresignedUrl.mock.resetCalls();
+    const result = await getAttachment('a1');
+    assert.equal(result.url, null);
+    assert.equal(mockGetPresignedUrl.mock.callCount(), 0);
   });
 });

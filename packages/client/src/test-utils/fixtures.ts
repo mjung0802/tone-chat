@@ -1,4 +1,4 @@
-import type { Message, User } from '../types/models';
+import type { Attachment, Message, User } from '../types/models';
 
 export function encodeJwtPayload(payload: Record<string, unknown>): string {
   const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
@@ -29,6 +29,21 @@ export function makeMessage(overrides: Partial<Message> = {}): Message {
     content: 'Hello world',
     attachmentIds: [],
     createdAt: '2025-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+export function makeAttachment(overrides: Partial<Attachment> = {}): Attachment {
+  return {
+    id: 'att-1',
+    uploader_id: 'user-123',
+    filename: 'photo.png',
+    mime_type: 'image/png',
+    size_bytes: 12345,
+    storage_key: 'uploads/photo.png',
+    status: 'ready',
+    url: 'http://localhost:9000/uploads/photo.png',
+    created_at: '2025-01-01T00:00:00.000Z',
     ...overrides,
   };
 }

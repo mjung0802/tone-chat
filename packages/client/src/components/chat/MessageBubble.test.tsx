@@ -1,7 +1,15 @@
 import React from 'react';
+import { fireEvent } from '@testing-library/react-native';
 import { MessageBubble } from './MessageBubble';
 import { renderWithProviders } from '../../test-utils/renderWithProviders';
 import { makeMessage } from '../../test-utils/fixtures';
+
+jest.mock('./AttachmentBubble', () => ({
+  AttachmentBubble: ({ attachmentId }: { attachmentId: string }) => {
+    const { Text } = require('react-native');
+    return <Text testID={`attachment-${attachmentId}`}>AttachmentBubble</Text>;
+  },
+}));
 
 describe('MessageBubble', () => {
   it('renders message content', () => {
@@ -58,5 +66,58 @@ describe('MessageBubble', () => {
     // accessibilityLabel format: "{author} said: {content}. {time}{edited}"
     const element = getByLabelText(/Carol said: Hi there/);
     expect(element).toBeTruthy();
+  });
+
+  it('renders AttachmentBubble for each attachment ID', () => {
+    const msg = makeMessage({ attachmentIds: ['att-1', 'att-2'] });
+    const { getByTestId } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+    );
+
+    expect(getByTestId('attachment-att-1')).toBeTruthy();
+    expect(getByTestId('attachment-att-2')).toBeTruthy();
+  });
+
+  it('does not render AttachmentBubble when attachmentIds is empty', () => {
+    const msg = makeMessage({ attachmentIds: [] });
+    const { queryByTestId } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+    );
+
+    expect(queryByTestId(/^attachment-/)).toBeNull();
+  });
+
+  it('accessibility label includes attachment count', () => {
+    const msg = makeMessage({ content: 'Check this', attachmentIds: ['att-1', 'att-2'] });
+    const { getByLabelText } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Bob" />,
+    );
+
+    expect(getByLabelText(/2 attachments/)).toBeTruthy();
+  });
+
+  it('renders content even without text when attachments present', () => {
+    const msg = makeMessage({ content: '', attachmentIds: ['att-1'] });
+    const { getByTestId } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+    );
+
+    expect(getByTestId('attachment-att-1')).toBeTruthy();
+  });
+
+  it('calls onLongPress when bubble is touched', () => {
+    const msg = makeMessage({ content: 'Press me' });
+    const onLongPress = jest.fn();
+    const { getByText } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Alice" onLongPress={onLongPress} />,
+    );
+
+    // The bubble uses onTouchEnd to trigger onLongPress
+    const bubble = getByText('Press me');
+    // Find the parent View with onTouchEnd — the bubble wrapper
+    const bubbleView = bubble.parent!;
+    fireEvent(bubbleView, 'onTouchEnd');
+
+    expect(onLongPress).toHaveBeenCalledWith(msg);
   });
 });

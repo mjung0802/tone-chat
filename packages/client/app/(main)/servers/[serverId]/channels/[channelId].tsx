@@ -9,8 +9,10 @@ import { useAuthStore } from '../../../../../src/stores/authStore';
 import { MessageList } from '../../../../../src/components/chat/MessageList';
 import { MessageInput } from '../../../../../src/components/chat/MessageInput';
 import { TypingIndicator } from '../../../../../src/components/chat/TypingIndicator';
+import { AttachmentViewer } from '../../../../../src/components/chat/AttachmentViewer';
 import { LoadingSpinner } from '../../../../../src/components/common/LoadingSpinner';
 import type { TypingEvent } from '../../../../../src/types/socket.types';
+import type { Attachment } from '../../../../../src/types/models';
 
 const TYPING_TIMEOUT = 3000;
 
@@ -38,6 +40,20 @@ export default function ChannelScreen() {
   // Typing state
   const [typingUsers, setTypingUsers] = useState<Map<string, number>>(new Map());
   const typingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  // Attachment viewer state
+  const [viewerAttachment, setViewerAttachment] = useState<Attachment | null>(null);
+  const [viewerVisible, setViewerVisible] = useState(false);
+
+  const handleImagePress = useCallback((attachment: Attachment) => {
+    setViewerAttachment(attachment);
+    setViewerVisible(true);
+  }, []);
+
+  const handleViewerClose = useCallback(() => {
+    setViewerVisible(false);
+    setViewerAttachment(null);
+  }, []);
 
   const handleTyping = useCallback(
     (event: TypingEvent) => {
@@ -85,8 +101,11 @@ export default function ChannelScreen() {
   );
 
   const handleSend = useCallback(
-    (content: string) => {
-      sendMessage.mutate({ content });
+    (content: string, attachmentIds: string[]) => {
+      sendMessage.mutate({
+        content,
+        attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
+      });
     },
     [sendMessage],
   );
@@ -112,12 +131,18 @@ export default function ChannelScreen() {
         authorNames={authorNames}
         onLoadMore={handleLoadMore}
         isLoadingMore={isFetchingNextPage}
+        onImagePress={handleImagePress}
       />
       <TypingIndicator userNames={typingUserNames} />
       <MessageInput
         onSend={handleSend}
         onTyping={emitTyping}
         disabled={sendMessage.isPending}
+      />
+      <AttachmentViewer
+        visible={viewerVisible}
+        attachment={viewerAttachment}
+        onClose={handleViewerClose}
       />
     </View>
   );

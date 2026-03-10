@@ -57,10 +57,10 @@ src/
     useMessages.ts            # useInfiniteQuery (cursor pagination), optimistic sends
     useMembers.ts             # Member queries/mutations
     useInvites.ts             # Invite CRUD + join-via-code
-    useAttachments.ts         # Upload mutation
+    useAttachments.ts         # Upload mutation + attachment query (staleTime: Infinity)
     useSocket.ts              # Socket.IO room lifecycle, cache injection, typing
   components/
-    chat/                     # MessageBubble, MessageInput, MessageList, TypingIndicator, AttachmentPicker
+    chat/                     # MessageBubble, MessageInput, MessageList, TypingIndicator, AttachmentPicker, AttachmentPreview, AttachmentBubble, AttachmentViewer
     servers/                  # ServerIcon, ServerListItem, CreateServerForm
     channels/                 # ChannelListItem, ChannelSidebar
     members/                  # MemberListItem, MemberList
@@ -131,6 +131,16 @@ loading={isLoading ?? false}    // not loading={isLoading}
 - `useTypingEmit(serverId, channelId)` — debounced typing emission (2s throttle)
 - Room format: `server:<serverId>:channel:<channelId>`
 
+## Attachments
+
+Upload and display of file attachments on messages. Files are sent to `attachmentsService` via the BFF as raw binary (`uploadRaw`).
+
+- **`AttachmentPicker`** — `expo-document-picker` button, calls `onPick` with selected `DocumentPickerAsset[]`. Allowed MIME types: images, mp4/webm, mp3/ogg, pdf, plain text.
+- **`AttachmentPreview`** — chips bar above `MessageInput` showing pending uploads with filename (truncated to 20 chars), spinner while uploading, error indicator, and remove button. Exports `PendingAttachment` type.
+- **`AttachmentBubble`** — inline in `MessageBubble`, fetches attachment metadata via `useAttachment(id)`. Renders image (pressable → `AttachmentViewer`) or file card (pressable → `Linking.openURL`). Shows "Attachment unavailable" for errors/non-ready status.
+- **`AttachmentViewer`** — fullscreen modal with pinch-to-zoom for image attachments. Opened from `MessageBubble` → `onImagePress` → `ChannelScreen` state.
+- **`MessageInput`** orchestrates the flow: pick → upload (via `useUpload().mutateAsync`) → collect IDs → pass to `onSend(content, attachmentIds)`. Max 5 attachments per message.
+
 ## Accessibility (WCAG 2.1 AA)
 
 - All interactive elements have `accessibilityRole`, `accessibilityLabel`
@@ -157,6 +167,20 @@ jest.mocked(messagesApi.sendMessage).mockResolvedValueOnce(...);
 const messagesApi = require('../api/messages.api') as typeof import('../api/messages.api');
 (messagesApi.sendMessage as jest.Mock).mockResolvedValueOnce(...);
 ```
+
+### Mocking `expo-document-picker`
+
+`expo-document-picker` uses native modules that crash Jest. Use a **factory mock** (not a bare `jest.mock()` call) so the module never loads:
+
+```ts
+jest.mock('expo-document-picker', () => ({
+  getDocumentAsync: jest.fn(),
+}));
+
+const DocumentPicker = jest.requireMock('expo-document-picker') as { getDocumentAsync: jest.Mock };
+```
+
+Any test file that imports a component which transitively imports `expo-document-picker` (e.g. `MessageInput` → `AttachmentPicker`) must also include this factory mock.
 
 ### Module-level state in tests (`client.ts`)
 

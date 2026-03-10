@@ -3,7 +3,7 @@ import { FlatList, StyleSheet, type ListRenderItemInfo } from 'react-native';
 import { MessageBubble } from './MessageBubble';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { EmptyState } from '../common/EmptyState';
-import type { Message } from '../../types/models';
+import type { Message, Attachment } from '../../types/models';
 
 interface MessageListProps {
   messages: Message[];
@@ -12,6 +12,7 @@ interface MessageListProps {
   onLoadMore?: (() => void) | undefined;
   isLoadingMore?: boolean | undefined;
   onMessageLongPress?: ((message: Message) => void) | undefined;
+  onImagePress?: ((attachment: Attachment) => void) | undefined;
 }
 
 export function MessageList({
@@ -21,6 +22,7 @@ export function MessageList({
   onLoadMore,
   isLoadingMore,
   onMessageLongPress,
+  onImagePress,
 }: MessageListProps) {
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<Message>) => (
@@ -29,9 +31,10 @@ export function MessageList({
         isOwn={item.authorId === currentUserId}
         authorName={authorNames?.[item.authorId]}
         onLongPress={onMessageLongPress}
+        onImagePress={onImagePress}
       />
     ),
-    [currentUserId, authorNames, onMessageLongPress],
+    [currentUserId, authorNames, onMessageLongPress, onImagePress],
   );
 
   const keyExtractor = useCallback((item: Message) => item._id, []);

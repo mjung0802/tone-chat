@@ -7,8 +7,8 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
   const { serverId, channelId } = req.params;
   const { content, attachmentIds } = req.body as { content: string; attachmentIds?: string[] };
 
-  if (!content) {
-    res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'content is required', status: 400 } });
+  if (!content && (!attachmentIds || attachmentIds.length === 0)) {
+    res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'content or attachments required', status: 400 } });
     return;
   }
 

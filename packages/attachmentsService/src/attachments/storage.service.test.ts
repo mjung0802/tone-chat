@@ -14,7 +14,11 @@ mock.module('../config/index.js', {
   },
 });
 
-const { uploadToS3, getFromS3, getPublicUrl } = await import('./storage.service.js');
+mock.module('@aws-sdk/s3-request-presigner', {
+  namedExports: { getSignedUrl: mock.fn<AnyFn>(async () => 'https://signed-url') },
+});
+
+const { uploadToS3, getFromS3, getPresignedUrl } = await import('./storage.service.js');
 
 describe('uploadToS3', () => {
   beforeEach(() => mockSend.mock.resetCalls());
@@ -51,9 +55,9 @@ describe('getFromS3', () => {
   });
 });
 
-describe('getPublicUrl', () => {
-  it('returns {endpoint}/{bucket}/{key}', () => {
-    const url = getPublicUrl('abc-123.jpg');
-    assert.equal(url, 'http://localhost:9000/test-bucket/abc-123.jpg');
+describe('getPresignedUrl', () => {
+  it('returns a presigned URL', async () => {
+    const url = await getPresignedUrl('abc-123.jpg');
+    assert.equal(url, 'https://signed-url');
   });
 });

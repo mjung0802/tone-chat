@@ -1,4 +1,5 @@
 import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { s3 } from '../config/storage.js';
 import { config } from '../config/index.js';
 import crypto from 'node:crypto';
@@ -25,6 +26,11 @@ export async function getFromS3(storageKey: string) {
   return result;
 }
 
-export function getPublicUrl(storageKey: string): string {
-  return `${config.s3.endpoint}/${config.s3.bucket}/${storageKey}`;
+export async function getPresignedUrl(storageKey: string): Promise<string> {
+  const command = new GetObjectCommand({
+    Bucket: config.s3.bucket,
+    Key: storageKey,
+  });
+  // @ts-expect-error — AWS SDK type incompatibility: S3Client vs presigner's Client (private 'handlers' differs under exactOptionalPropertyTypes)
+  return getSignedUrl(s3, command, { expiresIn: 3600 });
 }

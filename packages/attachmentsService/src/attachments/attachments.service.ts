@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { sql } from '../config/database.js';
-import { uploadToS3, getPublicUrl } from './storage.service.js';
+import { uploadToS3, getPresignedUrl } from './storage.service.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
@@ -40,7 +40,7 @@ export async function createAttachment(
 
   try {
     const storageKey = await uploadToS3(file);
-    const url = getPublicUrl(storageKey);
+    const url = await getPresignedUrl(storageKey);
 
     const [updated] = await sql<Attachment[]>`
       UPDATE attachments SET storage_key = ${storageKey}, status = 'ready', url = ${url}
@@ -57,6 +57,9 @@ export async function getAttachment(id: string): Promise<Attachment> {
   const [attachment] = await sql<Attachment[]>`SELECT * FROM attachments WHERE id = ${id}`;
   if (!attachment) {
     throw new AppError('ATTACHMENT_NOT_FOUND', 'Attachment not found', 404);
+  }
+  if (attachment.status === 'ready' && attachment.storage_key && attachment.storage_key !== 'pending') {
+    attachment.url = await getPresignedUrl(attachment.storage_key);
   }
   return attachment;
 }

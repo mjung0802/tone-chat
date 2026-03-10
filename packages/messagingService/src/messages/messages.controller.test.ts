@@ -42,6 +42,31 @@ describe('createMessage', () => {
     assert.equal(res._json.error.code, 'MISSING_FIELDS');
   });
 
+  it('returns 201 with attachments only (no content)', async () => {
+    const message = { _id: 'm2', content: '', attachmentIds: ['att-1'] };
+    mockMessageCreate.mock.mockImplementation(async () => message);
+
+    const res = makeRes();
+    await createMessage(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1', channelId: 'c1' },
+      body: { attachmentIds: ['att-1'] },
+    }), res);
+    assert.equal(res.statusCode, 201);
+    assert.deepEqual(res._json.message, message);
+  });
+
+  it('returns 400 with empty attachments and no content', async () => {
+    const res = makeRes();
+    await createMessage(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1', channelId: 'c1' },
+      body: { attachmentIds: [] },
+    }), res);
+    assert.equal(res.statusCode, 400);
+    assert.equal(res._json.error.code, 'MISSING_FIELDS');
+  });
+
   it('returns 201 with message', async () => {
     const message = { _id: 'm1', content: 'hello' };
     mockMessageCreate.mock.mockImplementation(async () => message);
