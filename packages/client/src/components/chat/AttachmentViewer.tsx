@@ -20,7 +20,7 @@ export function AttachmentViewer({ visible, attachment, onClose }: AttachmentVie
       onRequestClose={onClose}
       accessibilityViewIsModal
     >
-      <View style={styles.backdrop}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
         <View style={styles.header}>
           <Text variant="titleSmall" numberOfLines={1} style={styles.filename}>
             {attachment.filename}
@@ -47,7 +47,7 @@ export function AttachmentViewer({ visible, attachment, onClose }: AttachmentVie
             accessibilityLabel={attachment.filename}
           />
         </ScrollView>
-      </View>
+      </Pressable>
     </Modal>
   );
 }
