@@ -419,6 +419,24 @@ describe('Socket.IO send_message', () => {
     await disconnectAll(aliceSocket, bobSocket);
   });
 
+  it('broadcasts message with attachmentIds', async () => {
+    const { accessToken } = await registerUser('alice', 'alice@test.com', 'password123');
+    const { serverId, channelId } = await createTestServer(accessToken);
+
+    const socket = await connectSocket(accessToken);
+    socket.emit('join_channel', { serverId, channelId });
+    await new Promise(r => setTimeout(r, 100));
+
+    const msgPromise = waitForEvent<{ message: { content: string; attachmentIds: string[] } }>(socket, 'new_message');
+    socket.emit('send_message', { serverId, channelId, content: 'Check this out', attachmentIds: ['att-1'] });
+
+    const msg = await msgPromise;
+    assert.equal(msg.message.content, 'Check this out');
+    assert.deepEqual(msg.message.attachmentIds, ['att-1']);
+
+    await disconnectAll(socket);
+  });
+
   it('silently ignores empty content', async () => {
     const { accessToken } = await registerUser('alice', 'alice@test.com', 'password123');
     const { serverId, channelId } = await createTestServer(accessToken);

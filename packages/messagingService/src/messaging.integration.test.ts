@@ -275,6 +275,35 @@ describe('Message lifecycle', () => {
     assert.equal(body2.messages.length, 2);
   });
 
+  it('POST creates message with attachmentIds and no content', async () => {
+    const { serverId, channelId } = await createTestServer('user-1');
+
+    const res = await fetch(`${baseUrl}/servers/${serverId}/channels/${channelId}/messages`, {
+      method: 'POST',
+      headers: headersFor('user-1'),
+      body: JSON.stringify({ attachmentIds: ['att-1', 'att-2'] }),
+    });
+
+    assert.equal(res.status, 201);
+    const body = await res.json() as { message: { content: string; attachmentIds: string[] } };
+    assert.equal(body.message.content, '');
+    assert.deepEqual(body.message.attachmentIds, ['att-1', 'att-2']);
+  });
+
+  it('POST returns 400 when no content and no attachments', async () => {
+    const { serverId, channelId } = await createTestServer('user-1');
+
+    const res = await fetch(`${baseUrl}/servers/${serverId}/channels/${channelId}/messages`, {
+      method: 'POST',
+      headers: headersFor('user-1'),
+      body: JSON.stringify({}),
+    });
+
+    assert.equal(res.status, 400);
+    const body = await res.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'MISSING_FIELDS');
+  });
+
   it('PATCH is author-only', async () => {
     const { serverId, channelId } = await createTestServer('user-1');
 

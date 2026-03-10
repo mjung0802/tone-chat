@@ -616,8 +616,39 @@ describe('BFF Attachments', () => {
       headers: authHeaders(accessToken),
     });
     assert.equal(getRes.status, 200);
-    const getBody = await getRes.json() as { attachment: { id: string; filename: string } };
+    const getBody = await getRes.json() as { attachment: { id: string; filename: string; url: string } };
     assert.equal(getBody.attachment.id, body.attachment.id);
     assert.equal(getBody.attachment.filename, 'test.txt');
+    assert.ok(getBody.attachment.url, 'presigned URL should be present on retrieval');
+  });
+
+  it('creates message with attachment IDs', async () => {
+    const { accessToken } = await registerUser('alice', 'alice@test.com', 'password123');
+    const { serverId, channelId } = await createTestServer(accessToken);
+
+    // Upload an attachment
+    const uploadRes = await fetch(`${bffUrl}/api/v1/attachments/upload?filename=doc.txt`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'text/plain' },
+      body: Buffer.from('hello'),
+    });
+    assert.equal(uploadRes.status, 201);
+    const { attachment } = await uploadRes.json() as { attachment: { id: string } };
+
+    // Send message with only attachmentIds
+    const msgBase = `${bffUrl}/api/v1/servers/${serverId}/channels/${channelId}/messages`;
+    const msgRes = await fetch(msgBase, {
+      method: 'POST',
+      headers: authHeaders(accessToken),
+      body: JSON.stringify({ attachmentIds: [attachment.id] }),
+    });
+    assert.equal(msgRes.status, 201);
+    const msgBody = await msgRes.json() as { message: { content: string; attachmentIds: string[] } };
+    assert.deepEqual(msgBody.message.attachmentIds, [attachment.id]);
+
+    // Verify message appears in list
+    const listRes = await fetch(msgBase, { headers: authHeaders(accessToken) });
+    const listBody = await listRes.json() as { messages: Array<{ attachmentIds: string[] }> };
+    assert.ok(listBody.messages.some(m => m.attachmentIds.includes(attachment.id)));
   });
 });

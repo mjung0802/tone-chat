@@ -96,7 +96,7 @@ describe('POST /attachments/upload', () => {
 });
 
 describe('GET /attachments/:id', () => {
-  it('returns attachment metadata', async () => {
+  it('returns attachment metadata with presigned URL', async () => {
     // Upload first
     const formData = new FormData();
     formData.append('file', new Blob([Buffer.from('data')], { type: 'text/plain' }), 'doc.txt');
@@ -106,18 +106,20 @@ describe('GET /attachments/:id', () => {
       headers: { ...HEADERS, 'x-user-id': '00000000-0000-0000-0000-000000000001' },
       body: formData,
     });
-    const { attachment } = await uploadRes.json() as { attachment: { id: string } };
+    const { attachment } = await uploadRes.json() as { attachment: { id: string; url: string } };
 
-    // Retrieve
+    // Retrieve — should regenerate presigned URL
     const res = await fetch(`${baseUrl}/attachments/${attachment.id}`, {
       headers: HEADERS,
     });
 
     assert.equal(res.status, 200);
-    const body = await res.json() as { attachment: { id: string; filename: string; status: string } };
+    const body = await res.json() as { attachment: { id: string; filename: string; status: string; url: string } };
     assert.equal(body.attachment.id, attachment.id);
     assert.equal(body.attachment.filename, 'doc.txt');
     assert.equal(body.attachment.status, 'ready');
+    assert.ok(body.attachment.url, 'presigned URL should be present');
+    assert.equal(typeof body.attachment.url, 'string');
   });
 
   it('returns 404 for non-existent ID', async () => {
