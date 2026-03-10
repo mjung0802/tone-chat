@@ -139,7 +139,7 @@ Upload and display of file attachments on messages. Files are sent to `attachmen
 - **`AttachmentPreview`** — chips bar above `MessageInput` showing pending uploads with filename (truncated to 20 chars), spinner while uploading, error indicator, and remove button. Exports `PendingAttachment` type.
 - **`AttachmentBubble`** — inline in `MessageBubble`, fetches attachment metadata via `useAttachment(id)`. Renders image (pressable → `AttachmentViewer`) or file card (pressable → `Linking.openURL`). Shows "Attachment unavailable" for errors/non-ready status.
 - **`AttachmentViewer`** — fullscreen modal with pinch-to-zoom for image attachments. Opened from `MessageBubble` → `onImagePress` → `ChannelScreen` state.
-- **`MessageInput`** orchestrates the flow: pick → upload (via `useUpload().mutateAsync`) → collect IDs → pass to `onSend(content, attachmentIds)`. Max 5 attachments per message.
+- **`MessageInput`** orchestrates the flow: pick → upload (via `useUpload().mutateAsync`) → collect IDs → pass to `onSend(content, attachmentIds)`. Max 6 attachments per message.
 
 ## Accessibility (WCAG 2.1 AA)
 

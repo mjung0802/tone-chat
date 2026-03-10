@@ -263,13 +263,13 @@ describe('MessageInput', () => {
     expect(isDisabled).toBeTruthy();
   });
 
-  it('disables picker at MAX_ATTACHMENTS (5)', async () => {
+  it('disables picker at MAX_ATTACHMENTS (6)', async () => {
     const attachment = makeAttachment();
     const mutateAsync = jest.fn().mockResolvedValue({ attachment });
     mockUseUpload({ mutateAsync });
 
-    // Pick 5 files at once
-    const assets = Array.from({ length: 5 }, (_, i) => ({
+    // Pick 6 files at once
+    const assets = Array.from({ length: 6 }, (_, i) => ({
       uri: `file://file-${i}.png`,
       name: `file-${i}.png`,
       mimeType: 'image/png',
@@ -287,7 +287,7 @@ describe('MessageInput', () => {
     fireEvent.press(getByLabelText('Attach file'));
 
     await waitFor(() => {
-      expect(mutateAsync).toHaveBeenCalledTimes(5);
+      expect(mutateAsync).toHaveBeenCalledTimes(6);
     });
 
     const attachButton = getByLabelText('Attach file');

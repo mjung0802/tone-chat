@@ -16,14 +16,6 @@ pnpm --filter messagingservice <script>
 pnpm --filter tone-chat-client <script>
 ```
 
-## Development Commands
-
-### messagingService (the only package with a dev script)
-```bash
-cd packages/messagingService
-pnpm dev   # Runs: node --env-file=.env --watch -r ts-node/register src/index.ts
-```
-
 ### Running Tests
 
 All backend packages use Node.js built-in `node:test` with `--experimental-strip-types`. Unit tests are colocated as `src/**/*.test.ts`, integration tests as `src/**/*.integration.test.ts`. Unit test scripts use extglob `!(*.integration).test.ts` to exclude integration files.
@@ -94,7 +86,7 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
 - **server** (`packages/server`): BFF — JWT auth, routes all client requests to backend services, manages all Socket.IO connections (room-based channels). The only service exposed to clients.
 - **messagingService** (`packages/messagingService`): MongoDB (Mongoose). Manages servers, channels, messages, and server-scoped members. Collections: `servers`, `channels`, `messages`, `serverMembers`.
 - **usersService** (`packages/usersService`): PostgreSQL (postgres.js). Global user accounts, auth (bcrypt + JWT), token refresh/rotation. Tables: `users`, `refresh_tokens`.
-- **attachmentsService** (`packages/attachmentsService`): MinIO for file storage (S3-compatible, swappable to AWS S3). PostgreSQL for metadata. Async uploads so attachments don't block messages.
+- **attachmentsService** (`packages/attachmentsService`): MinIO for file storage (S3-compatible, swappable to AWS S3). PostgreSQL for metadata. Async uploads so attachments don't block messages. `GET /attachments/:id` regenerates a presigned URL (1h TTL) on each request for `ready` attachments.
 
 ### Auth Flow
 - JWT access tokens (15 min) + refresh tokens (7 day, rotated). BFF verifies JWTs locally.
@@ -103,6 +95,11 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
 
 ### Socket.IO Event Payloads
 - The `new_message` event payload is the full messagingService JSON response: `{ message: { content, authorId, ... } }` (wrapped in `message` key), not the message object directly. This is because `messages.socket.ts` emits `result.data` from `serviceRequest`, which includes the response wrapper.
+
+### Message Attachments
+- Messages require **either `content` or `attachmentIds`** (or both). Empty messages return 400 (`MISSING_FIELDS`).
+- `attachmentIds` is a `string[]` on the message model (MongoDB, default `[]`). The messagingService stores IDs only — actual files live in attachmentsService.
+- Socket.IO `send_message` type guard (`isValidSendMessage`) accepts optional `attachmentIds` (max 6 items) but still requires `content` (1–4000 chars). HTTP controller is more lenient (content optional when attachments present).
 
 ### API Routes (BFF)
 All routes prefixed `/api/v1`. Auth routes → usersService. Server/channel/message/member routes → messagingService. Attachment routes → attachmentsService.

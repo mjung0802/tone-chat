@@ -6,7 +6,7 @@ import { AttachmentPreview, type PendingAttachment } from './AttachmentPreview';
 import { useUpload } from '../../hooks/useAttachments';
 import type { DocumentPickerAsset } from 'expo-document-picker';
 
-const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENTS = 6;
 
 interface MessageInputProps {
   onSend: (content: string, attachmentIds: string[]) => void;

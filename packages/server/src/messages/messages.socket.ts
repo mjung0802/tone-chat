@@ -8,7 +8,7 @@ function isValidSendMessage(data: unknown): data is { serverId: string; channelI
   if (typeof d['content'] !== 'string' || d['content'].length < 1 || d['content'].length > 4000) return false;
   if (d['attachmentIds'] !== undefined) {
     if (!Array.isArray(d['attachmentIds'])) return false;
-    if (d['attachmentIds'].length > 10) return false;
+    if (d['attachmentIds'].length > 6) return false;
     if (!d['attachmentIds'].every((id: unknown) => typeof id === 'string')) return false;
   }
   return true;
