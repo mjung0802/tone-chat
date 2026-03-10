@@ -3,3 +3,6 @@ dist/
 .claude/
 .env
 .expo/
+e2e/.auth/
+playwright-report/
+test-results/

@@ -107,6 +107,16 @@ pnpm --filter attachmentsservice test
 pnpm --filter tone-chat-client test
 ```
 
+### Client E2E (Playwright)
+
+```bash
+# First time: install Chromium
+pnpm --filter tone-chat-client exec playwright install chromium
+
+# Run all E2E tests
+pnpm --filter tone-chat-client test:e2e
+```
+
 ## Type Checking
 
 ```bash

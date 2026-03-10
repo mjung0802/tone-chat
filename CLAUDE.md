@@ -59,6 +59,13 @@ A global `AnyFn` type is declared in `test-types.d.ts` for use with `mock.fn<Any
 pnpm --filter tone-chat-client start --web   # Start Expo dev server (web)
 pnpm --filter tone-chat-client typecheck      # tsc --noEmit
 pnpm --filter tone-chat-client test           # Jest
+pnpm --filter tone-chat-client test:e2e       # Playwright E2E tests (starts Metro on :19081)
+pnpm --filter tone-chat-client test:e2e:ui    # Playwright UI mode (interactive debugging)
+```
+
+First time only — install the Chromium browser:
+```bash
+pnpm --filter tone-chat-client exec playwright install chromium
 ```
 
 ### Docker (messagingService)

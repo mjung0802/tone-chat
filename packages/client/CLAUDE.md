@@ -8,6 +8,8 @@ pnpm start --android      # Expo dev server (Android)
 pnpm start --ios          # Expo dev server (iOS)
 pnpm run typecheck        # tsc --noEmit
 pnpm test                 # Jest
+pnpm test:e2e             # Playwright E2E (all tests)
+pnpm test:e2e:ui          # Playwright UI mode
 ```
 
 ## Tech Stack
@@ -20,6 +22,7 @@ pnpm test                 # Jest
 | Client state | Zustand v5 |
 | Real-time | socket.io-client v4 |
 | Testing | Jest + React Native Testing Library |
+| E2E testing | Playwright 1.44+ |
 
 ## Project Structure
 
@@ -143,12 +146,9 @@ Upload and display of file attachments on messages. Files are sent to `attachmen
 
 ## Accessibility (WCAG 2.1 AA)
 
-- All interactive elements have `accessibilityRole`, `accessibilityLabel`
-- Form errors use `accessibilityLiveRegion="polite"`
-- Touch targets min 44x44 dp
-- New messages announced via `AccessibilityInfo.announceForAccessibility`
-- Color contrast: 4.5:1 normal text, 3:1 large text
-- `AccessiblePressable` component enforces a11y props via TypeScript
+- All interactive elements need `accessibilityRole` + `accessibilityLabel`; use `AccessiblePressable` to enforce this at the type level.
+- Form errors: `accessibilityLiveRegion="polite"`. New messages: `AccessibilityInfo.announceForAccessibility`.
+- Touch targets min 44×44 dp. Color contrast 4.5:1 normal text, 3:1 large text.
 
 ## Testing Patterns
 
@@ -168,36 +168,39 @@ const messagesApi = require('../api/messages.api') as typeof import('../api/mess
 (messagesApi.sendMessage as jest.Mock).mockResolvedValueOnce(...);
 ```
 
-### Mocking `expo-document-picker`
+## E2E Testing (Playwright)
 
-`expo-document-picker` uses native modules that crash Jest. Use a **factory mock** (not a bare `jest.mock()` call) so the module never loads:
+E2E tests live in `e2e/` and run against the Expo web dev server (Metro on `:19081`). All BFF calls are intercepted with `page.route()` — no real backend is needed.
 
-```ts
-jest.mock('expo-document-picker', () => ({
-  getDocumentAsync: jest.fn(),
-}));
+### Structure
 
-const DocumentPicker = jest.requireMock('expo-document-picker') as { getDocumentAsync: jest.Mock };
+```
+e2e/
+  helpers/
+    fixtures.ts       # Mock data (MOCK_USER, MOCK_SERVER, MOCK_CHANNEL, etc.)
+    mocks.ts          # page.route() registration functions (mockAuthRoutes, mockServersRoutes, etc.)
+  auth.setup.ts       # Playwright setup project — logs in, saves storageState to e2e/.auth/user.json
+  auth.spec.ts        # Login/logout flows (unauthenticated context)
+  servers.spec.ts     # Server list, empty state, navigation
+  chat.spec.ts        # Message display, send, send-button state
+  profile.spec.ts     # Profile view and save
+  tsconfig.json       # Standalone tsconfig (commonjs/node — does NOT extend expo/tsconfig.base)
 ```
 
-Any test file that imports a component which transitively imports `expo-document-picker` (e.g. `MessageInput` → `AttachmentPicker`) must also include this factory mock.
+### Running E2E Tests
 
-### Module-level state in tests (`client.ts`)
+```bash
+# First time only — install Chromium
+pnpm --filter tone-chat-client exec playwright install chromium
 
-`babel-preset-expo` does **not** downcompile dynamic `import()` to `require()` inside callbacks — `jest.resetModules()` + `await import()` and `jest.isolateModulesAsync()` + `await import()` both fail with "A dynamic import callback was invoked without --experimental-vm-modules".
+# Run all tests (Metro auto-starts on :19081)
+pnpm --filter tone-chat-client test:e2e
 
-The correct approach for `client.ts` tests: use a **static import** at the top of the test file. `configureAuth()` resets all module-level state (`isRefreshing`, `refreshPromise`, auth callbacks), so calling it at the start of each test provides the same isolation as re-importing the module.
+# Interactive debug UI
+pnpm --filter tone-chat-client test:e2e:ui
 
-```ts
-// CORRECT — static import, reset via configureAuth() each test
-import { configureAuth, get, ApiClientError } from './client';
-
-beforeEach(() => { mockFetch.mockReset(); });
-
-it('...', async () => {
-  configureAuth({ getAccessToken: () => 'token', ... }); // resets state
-  ...
-});
+# Typecheck E2E files only
+npx tsc -p e2e/tsconfig.json --noEmit
 ```
 
 ## Routing Patterns
@@ -224,24 +227,6 @@ import { Redirect } from 'expo-router';
 if (!target) return <EmptyState ... />;
 return <Redirect href={`/some/path/${target}`} />;
 ```
-
-## Form Best Practices
-
-- **Reset fields after successful submission** — call the relevant `setState` setters immediately after `onSubmit()` in each form's `handleSubmit`. This prevents stale values from appearing if the user opens the form again. Forms that navigate away on success still benefit, since the component may be kept alive in the navigation stack.
-
-```ts
-const handleSubmit = () => {
-  if (!name.trim()) return;
-  onSubmit({ name: name.trim(), ... });
-  setName('');          // reset after submit
-  setOtherField('');
-};
-```
-
-## Theme & Loading Gotchas
-
-- **Always apply `theme.colors.background` to full-screen containers** — transparent containers inherit the browser's default white, which clashes with dark-mode text/spinners. Use `useTheme()` from `react-native-paper` and apply `{ backgroundColor: theme.colors.background }` as an inline style, as `LoadingSpinner` does.
-- **`app/+not-found.tsx`** — catch-all route that redirects unknown paths. Must exist so Expo Router doesn't render a blank screen on unmatched URLs.
 
 ## BFF Routes Reference
 

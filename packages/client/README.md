@@ -12,6 +12,7 @@ React Native client for Tone — a Discord-style chat app. Targets iOS, Android,
 | Client state | Zustand v5 |
 | Real-time | socket.io-client v4 |
 | Testing | Jest + React Native Testing Library |
+| E2E testing | Playwright 1.44+ |
 
 ## App Structure
 
@@ -120,6 +121,8 @@ pnpm android          # Expo dev server (Android)
 pnpm ios              # Expo dev server (iOS)
 pnpm typecheck        # tsc --noEmit
 pnpm test             # Jest
+pnpm test:e2e         # Playwright E2E tests
+pnpm test:e2e:ui      # Playwright UI mode (debugging)
 ```
 
 ## TypeScript
