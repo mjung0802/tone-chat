@@ -31,7 +31,7 @@ after(async () => {
 });
 
 beforeEach(async () => {
-  await sql`TRUNCATE users, credentials, refresh_tokens CASCADE`;
+  await sql`TRUNCATE users, credentials, refresh_tokens, email_verification_tokens CASCADE`;
 });
 
 describe('GET /users/me', () => {
