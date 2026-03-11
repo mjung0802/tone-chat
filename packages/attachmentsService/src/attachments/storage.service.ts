@@ -18,14 +18,6 @@ export async function uploadToS3(file: { buffer: Buffer; mimetype: string; origi
   return storageKey;
 }
 
-export async function getFromS3(storageKey: string) {
-  const result = await s3.send(new GetObjectCommand({
-    Bucket: config.s3.bucket,
-    Key: storageKey,
-  }));
-  return result;
-}
-
 export async function getPresignedUrl(storageKey: string): Promise<string> {
   const command = new GetObjectCommand({
     Bucket: config.s3.bucket,

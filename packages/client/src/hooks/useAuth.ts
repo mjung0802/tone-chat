@@ -4,37 +4,35 @@ import { useAuthStore } from '../stores/authStore';
 import { useSocketStore } from '../stores/socketStore';
 import type { RegisterRequest, LoginRequest, VerifyEmailRequest } from '../types/api.types';
 
-export function useLogin() {
+function useAuthSuccess() {
   const setTokens = useAuthStore((s) => s.setTokens);
   const connect = useSocketStore((s) => s.connect);
   const queryClient = useQueryClient();
 
+  return (response: { accessToken: string; refreshToken: string; user: { email_verified: boolean } }) => {
+    setTokens(response.accessToken, response.refreshToken, response.user.email_verified);
+    if (response.user.email_verified) {
+      connect(response.accessToken);
+    }
+    queryClient.clear();
+  };
+}
+
+export function useLogin() {
+  const handleAuthSuccess = useAuthSuccess();
+
   return useMutation({
     mutationFn: (data: LoginRequest) => authApi.login(data),
-    onSuccess: (response) => {
-      setTokens(response.accessToken, response.refreshToken, response.user.email_verified);
-      if (response.user.email_verified) {
-        connect(response.accessToken);
-      }
-      queryClient.clear();
-    },
+    onSuccess: handleAuthSuccess,
   });
 }
 
 export function useRegister() {
-  const setTokens = useAuthStore((s) => s.setTokens);
-  const connect = useSocketStore((s) => s.connect);
-  const queryClient = useQueryClient();
+  const handleAuthSuccess = useAuthSuccess();
 
   return useMutation({
     mutationFn: (data: RegisterRequest) => authApi.register(data),
-    onSuccess: (response) => {
-      setTokens(response.accessToken, response.refreshToken, response.user.email_verified);
-      if (response.user.email_verified) {
-        connect(response.accessToken);
-      }
-      queryClient.clear();
-    },
+    onSuccess: handleAuthSuccess,
   });
 }
 

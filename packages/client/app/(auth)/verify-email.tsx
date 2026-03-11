@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, Text, HelperText, useTheme } from 'react-native-paper';
 import { useVerifyEmail, useResendVerification } from '../../src/hooks/useAuth';

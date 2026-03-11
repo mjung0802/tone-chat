@@ -23,4 +23,7 @@ export function validateConfig(): void {
   if (DEV_DEFAULTS.includes(config.internalApiKey)) {
     throw new Error('INTERNAL_API_KEY must be set in production');
   }
+  if (!config.smtpHost) {
+    throw new Error('SMTP_HOST must be set in production');
+  }
 }

@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'node:crypto';
 import { sql } from '../config/database.js';
 import { config } from '../config/index.js';
+import { hashSha256 } from '../shared/crypto.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
 import type { User } from '../shared/types.js';
 import { sendVerificationOtp } from './verification.service.js';
@@ -23,10 +24,11 @@ export async function registerUser(username: string, email: string, password: st
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
+  // postgres.js TransactionSql loses call signatures due to Omit — (tx as any) is required
   const [user] = await sql.begin(async (tx) => {
-    const [newUser] = await (tx as any)`
+    const [newUser] = await (tx as any)<User[]>`
       INSERT INTO users (username, email) VALUES (${username}, ${email}) RETURNING *
-    ` as User[];
+    `;
     await (tx as any)`
       INSERT INTO credentials (user_id, password_hash) VALUES (${newUser!.id}, ${passwordHash})
     `;
@@ -108,6 +110,4 @@ async function createRefreshToken(userId: string): Promise<string> {
   return token;
 }
 
-function hashToken(token: string): string {
-  return crypto.createHash('sha256').update(token).digest('hex');
-}
+const hashToken = hashSha256;

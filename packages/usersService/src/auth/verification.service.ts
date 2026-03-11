@@ -1,11 +1,10 @@
 import crypto from 'node:crypto';
 import { sql } from '../config/database.js';
+import { hashSha256 } from '../shared/crypto.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
 import { sendVerificationEmail } from '../email/email.service.js';
 
-function hashCode(code: string): string {
-  return crypto.createHash('sha256').update(code).digest('hex');
-}
+const hashCode = hashSha256;
 
 export async function sendVerificationOtp(userId: string, email: string): Promise<void> {
   // Delete any existing tokens for this user
