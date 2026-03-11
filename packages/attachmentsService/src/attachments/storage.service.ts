@@ -32,5 +32,5 @@ export async function getPresignedUrl(storageKey: string): Promise<string> {
     Key: storageKey,
   });
   // @ts-expect-error — AWS SDK type incompatibility: S3Client vs presigner's Client (private 'handlers' differs under exactOptionalPropertyTypes)
-  return getSignedUrl(s3, command, { expiresIn: 3600 });
+  return getSignedUrl(s3, command, { expiresIn: 900 });
 }

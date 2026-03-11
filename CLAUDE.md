@@ -93,7 +93,7 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
 - **server** (`packages/server`): BFF — JWT auth, routes all client requests to backend services, manages all Socket.IO connections (room-based channels). The only service exposed to clients.
 - **messagingService** (`packages/messagingService`): MongoDB (Mongoose). Manages servers, channels, messages, and server-scoped members. Collections: `servers`, `channels`, `messages`, `serverMembers`.
 - **usersService** (`packages/usersService`): PostgreSQL (postgres.js). Global user accounts, auth (bcrypt + JWT), token refresh/rotation. Tables: `users`, `refresh_tokens`.
-- **attachmentsService** (`packages/attachmentsService`): MinIO for file storage (S3-compatible, swappable to AWS S3). PostgreSQL for metadata. Async uploads so attachments don't block messages. `GET /attachments/:id` regenerates a presigned URL (1h TTL) on each request for `ready` attachments.
+- **attachmentsService** (`packages/attachmentsService`): MinIO for file storage (S3-compatible, swappable to AWS S3). PostgreSQL for metadata. Async uploads so attachments don't block messages. `GET /attachments/:id` regenerates a presigned URL (15min TTL) on each request for `ready` attachments.
 
 ### Auth Flow
 - JWT access tokens (15 min) + refresh tokens (7 day, rotated). BFF verifies JWTs locally.
