@@ -126,6 +126,7 @@ loading={isLoading ?? false}    // not loading={isLoading}
 3. On app launch, `authStore.hydrate()` loads tokens and validates expiry
 4. Socket.IO connects with `auth: { token }` in handshake
 5. API client auto-refreshes expired access tokens transparently
+6. After registration, the user must verify their email via a 6-digit OTP before gaining full access. The BFF exposes `POST /auth/verify-email` and `POST /auth/resend-verification`.
 
 ## Socket.IO Integration
 

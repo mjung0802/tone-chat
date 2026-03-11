@@ -100,6 +100,11 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
 - BFF passes `X-User-Id` + `X-Internal-Key` headers to backend services (not internet-exposed).
 - Socket.IO auth via JWT in handshake `auth` field.
 
+### Email Verification
+- Registration sends a 6-digit OTP to the user's email. Users must verify before full access.
+- **Dev mode** (no `SMTP_HOST`): OTP is logged to the usersService console instead of emailed.
+- **Local email testing**: `docker compose up` starts Mailpit (SMTP on `:1025`, web UI on `:8025`). Set `SMTP_HOST=localhost` and `SMTP_PORT=1025` in `packages/usersService/.env` to route emails to Mailpit. View caught emails at `http://localhost:8025`.
+
 ### Socket.IO Event Payloads
 - The `new_message` event payload is the full messagingService JSON response: `{ message: { content, authorId, ... } }` (wrapped in `message` key), not the message object directly. This is because `messages.socket.ts` emits `result.data` from `serviceRequest`, which includes the response wrapper.
 
