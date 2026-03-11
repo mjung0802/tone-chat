@@ -35,6 +35,7 @@ function AppContent() {
   const theme = useTheme();
   const isHydrated = useAuthStore((s) => s.isHydrated);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const emailVerified = useAuthStore((s) => s.emailVerified);
   const hydrate = useAuthStore((s) => s.hydrate);
 
   const router = useRouter();
@@ -48,13 +49,18 @@ function AppContent() {
 
   useEffect(() => {
     if (!isHydrated) return;
-    const inAuthGroup = segments[0] === '(auth)';
-    if (isAuthenticated && inAuthGroup) {
+    const segs = segments as string[];
+    const inAuthGroup = segs[0] === '(auth)';
+    const inVerifyScreen = segs[1] === 'verify-email';
+
+    if (isAuthenticated && emailVerified && inAuthGroup) {
       router.replace('/(main)/servers');
+    } else if (isAuthenticated && !emailVerified && !inVerifyScreen) {
+      router.replace('/(auth)/verify-email');
     } else if (!isAuthenticated && !inAuthGroup) {
       router.replace('/(auth)/login');
     }
-  }, [isAuthenticated, isHydrated, segments, router]);
+  }, [isAuthenticated, emailVerified, isHydrated, segments, router]);
 
   if (!isHydrated) {
     return <LoadingSpinner message="Loading..." />;

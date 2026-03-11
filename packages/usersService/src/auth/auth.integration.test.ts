@@ -1,5 +1,6 @@
 import { before, after, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import { app } from '../app.js';
@@ -21,7 +22,7 @@ after(async () => {
 });
 
 beforeEach(async () => {
-  await sql`TRUNCATE users, credentials, refresh_tokens CASCADE`;
+  await sql`TRUNCATE users, credentials, refresh_tokens, email_verification_tokens CASCADE`;
 });
 
 describe('POST /auth/register', () => {
@@ -33,9 +34,10 @@ describe('POST /auth/register', () => {
     });
 
     assert.equal(res.status, 201);
-    const body = await res.json() as { user: { id: string; username: string; email: string }; accessToken: string; refreshToken: string };
+    const body = await res.json() as { user: { id: string; username: string; email: string; email_verified: boolean }; accessToken: string; refreshToken: string };
     assert.equal(body.user.username, 'alice');
     assert.equal(body.user.email, 'alice@test.com');
+    assert.equal(body.user.email_verified, false);
     assert.ok(body.accessToken);
     assert.ok(body.refreshToken);
   });
@@ -185,5 +187,195 @@ describe('POST /auth/refresh', () => {
     });
 
     assert.equal(reuse.status, 401);
+  });
+});
+
+// Helper: register a user and capture the OTP from dev console.log
+async function registerAndCaptureOtp(
+  baseUrl: string,
+  username: string,
+  email: string,
+): Promise<{ userId: string; code: string }> {
+  let capturedCode: string | null = null;
+  const originalLog = console.log;
+  console.log = (...args: unknown[]) => {
+    if (typeof args[0] === 'string' && args[0] === '[EMAIL DEV] code:') {
+      capturedCode = String(args[1]);
+    }
+    originalLog.apply(console, args as Parameters<typeof console.log>);
+  };
+
+  let userId: string;
+  try {
+    const res = await fetch(`${baseUrl}/auth/register`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({ username, email, password: 'password123' }),
+    });
+    const body = await res.json() as { user: { id: string } };
+    userId = body.user.id;
+
+    // Wait for fire-and-forget sendVerificationOtp to complete and log the OTP
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  } finally {
+    console.log = originalLog;
+  }
+
+  assert.ok(capturedCode, 'Expected OTP to be logged via [EMAIL DEV]');
+  return { userId, code: capturedCode! };
+}
+
+describe('POST /auth/verify-email', () => {
+  it('returns 400 MISSING_FIELDS when code is absent', async () => {
+    const { userId } = await registerAndCaptureOtp(baseUrl, 'alice', 'alice@test.com');
+
+    const res = await fetch(`${baseUrl}/auth/verify-email`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'x-user-id': userId },
+      body: JSON.stringify({}),
+    });
+
+    assert.equal(res.status, 400);
+    const body = await res.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'MISSING_FIELDS');
+  });
+
+  it('returns 400 INVALID_CODE for wrong code', async () => {
+    const { userId } = await registerAndCaptureOtp(baseUrl, 'alice', 'alice@test.com');
+
+    const res = await fetch(`${baseUrl}/auth/verify-email`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'x-user-id': userId },
+      body: JSON.stringify({ code: '000000' }),
+    });
+
+    assert.equal(res.status, 400);
+    const body = await res.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'INVALID_CODE');
+  });
+
+  it('returns 400 CODE_EXPIRED for an expired token', async () => {
+    const { userId } = await registerAndCaptureOtp(baseUrl, 'alice', 'alice@test.com');
+
+    // Replace the token with an expired one using a known code
+    const knownCode = '999999';
+    const codeHash = crypto.createHash('sha256').update(knownCode).digest('hex');
+    await sql`DELETE FROM email_verification_tokens WHERE user_id = ${userId}`;
+    await sql`
+      INSERT INTO email_verification_tokens (user_id, code_hash, expires_at)
+      VALUES (${userId}, ${codeHash}, NOW() - INTERVAL '1 second')
+    `;
+
+    const res = await fetch(`${baseUrl}/auth/verify-email`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'x-user-id': userId },
+      body: JSON.stringify({ code: knownCode }),
+    });
+
+    assert.equal(res.status, 400);
+    const body = await res.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'CODE_EXPIRED');
+  });
+
+  it('returns 200 and marks user as verified on happy path', async () => {
+    const { userId, code } = await registerAndCaptureOtp(baseUrl, 'alice', 'alice@test.com');
+
+    const res = await fetch(`${baseUrl}/auth/verify-email`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'x-user-id': userId },
+      body: JSON.stringify({ code }),
+    });
+
+    assert.equal(res.status, 200);
+    const body = await res.json() as { message: string };
+    assert.equal(body.message, 'Email verified');
+
+    // DB: email_verified should be true
+    const [user] = await sql<{ email_verified: boolean }[]>`
+      SELECT email_verified FROM users WHERE id = ${userId}
+    `;
+    assert.equal(user!.email_verified, true);
+
+    // DB: token should be deleted
+    const tokens = await sql<{ id: string }[]>`
+      SELECT id FROM email_verification_tokens WHERE user_id = ${userId}
+    `;
+    assert.equal(tokens.length, 0);
+  });
+
+  it('replay prevention: second call with same code returns 400 INVALID_CODE', async () => {
+    const { userId, code } = await registerAndCaptureOtp(baseUrl, 'alice', 'alice@test.com');
+
+    // First call succeeds
+    await fetch(`${baseUrl}/auth/verify-email`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'x-user-id': userId },
+      body: JSON.stringify({ code }),
+    });
+
+    // Second call with same code
+    const res = await fetch(`${baseUrl}/auth/verify-email`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'x-user-id': userId },
+      body: JSON.stringify({ code }),
+    });
+
+    assert.equal(res.status, 400);
+    const body = await res.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'INVALID_CODE');
+  });
+});
+
+describe('POST /auth/resend-verification', () => {
+  it('returns 200 and creates exactly one token for the user', async () => {
+    const { userId } = await registerAndCaptureOtp(baseUrl, 'alice', 'alice@test.com');
+
+    // Clear existing tokens to test clean resend
+    await sql`DELETE FROM email_verification_tokens WHERE user_id = ${userId}`;
+
+    const res = await fetch(`${baseUrl}/auth/resend-verification`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'x-user-id': userId },
+      body: null,
+    });
+
+    assert.equal(res.status, 200);
+    const body = await res.json() as { message: string };
+    assert.equal(body.message, 'Verification email sent');
+
+    const tokens = await sql<{ id: string }[]>`
+      SELECT id FROM email_verification_tokens WHERE user_id = ${userId}
+    `;
+    assert.equal(tokens.length, 1);
+  });
+
+  it('replaces old token: still exactly 1 row after resend', async () => {
+    const { userId } = await registerAndCaptureOtp(baseUrl, 'alice', 'alice@test.com');
+
+    // At this point there should be 1 token from registration; resend replaces it
+    await fetch(`${baseUrl}/auth/resend-verification`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'x-user-id': userId },
+      body: null,
+    });
+
+    const tokens = await sql<{ id: string }[]>`
+      SELECT id FROM email_verification_tokens WHERE user_id = ${userId}
+    `;
+    assert.equal(tokens.length, 1);
+  });
+
+  it('returns 404 USER_NOT_FOUND for a non-existent userId', async () => {
+    const fakeId = '00000000-0000-0000-0000-000000000000';
+
+    const res = await fetch(`${baseUrl}/auth/resend-verification`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'x-user-id': fakeId },
+      body: null,
+    });
+
+    assert.equal(res.status, 404);
+    const body = await res.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'USER_NOT_FOUND');
   });
 });

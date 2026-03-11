@@ -13,7 +13,23 @@ mock.module('./auth.service.js', {
   },
 });
 
-const { register, login, refresh } = await import('./auth.controller.js');
+const mockVerifyOtp = mock.fn<AnyFn>();
+const mockSendVerificationOtp = mock.fn<AnyFn>();
+
+mock.module('./verification.service.js', {
+  namedExports: {
+    verifyOtp: mockVerifyOtp,
+    sendVerificationOtp: mockSendVerificationOtp,
+  },
+});
+
+const mockGetUserById = mock.fn<AnyFn>();
+
+mock.module('../users/users.service.js', {
+  namedExports: { getUserById: mockGetUserById },
+});
+
+const { register, login, refresh, verifyEmail, resendVerification } = await import('./auth.controller.js');
 
 function makeReq(overrides: Partial<{ body: any; params: any; headers: any; query: any }> = {}) {
   return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as any;
@@ -97,5 +113,93 @@ describe('refresh', () => {
     await refresh(makeReq({ body: { refreshToken: 'old-rt' } }), res);
     assert.equal(res.statusCode, 200);
     assert.equal(res._json.accessToken, 'new-at');
+  });
+});
+
+describe('verifyEmail', () => {
+  beforeEach(() => {
+    mockVerifyOtp.mock.resetCalls();
+  });
+
+  it('returns 400 MISSING_FIELDS when code is absent', async () => {
+    const res = makeRes();
+    await verifyEmail(makeReq({ headers: { 'x-user-id': 'u1' }, body: {} }), res);
+    assert.equal(res.statusCode, 400);
+    assert.equal(res._json.error.code, 'MISSING_FIELDS');
+  });
+
+  it('calls verifyOtp with userId from x-user-id header and code from body', async () => {
+    mockVerifyOtp.mock.mockImplementation(async () => {});
+    const res = makeRes();
+    await verifyEmail(makeReq({ headers: { 'x-user-id': 'u1' }, body: { code: '123456' } }), res);
+    assert.equal(mockVerifyOtp.mock.callCount(), 1);
+    assert.equal(mockVerifyOtp.mock.calls[0]!.arguments[0], 'u1');
+    assert.equal(mockVerifyOtp.mock.calls[0]!.arguments[1], '123456');
+  });
+
+  it('returns 200 { message: "Email verified" } on success', async () => {
+    mockVerifyOtp.mock.mockImplementation(async () => {});
+    const res = makeRes();
+    await verifyEmail(makeReq({ headers: { 'x-user-id': 'u1' }, body: { code: '123456' } }), res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res._json.message, 'Email verified');
+  });
+
+  it('propagates AppError from verifyOtp', async () => {
+    const { AppError } = await import('../shared/middleware/errorHandler.js');
+    mockVerifyOtp.mock.mockImplementation(async () => {
+      throw new AppError('INVALID_CODE', 'Invalid verification code', 400);
+    });
+    const res = makeRes();
+    await assert.rejects(
+      () => verifyEmail(makeReq({ headers: { 'x-user-id': 'u1' }, body: { code: '000000' } }), res),
+      (err: any) => {
+        assert.equal(err.code, 'INVALID_CODE');
+        return true;
+      },
+    );
+  });
+});
+
+describe('resendVerification', () => {
+  beforeEach(() => {
+    mockGetUserById.mock.resetCalls();
+    mockSendVerificationOtp.mock.resetCalls();
+  });
+
+  it('calls getUserById and sendVerificationOtp with userId from header', async () => {
+    const user = { id: 'u1', email: 'user@test.com' };
+    mockGetUserById.mock.mockImplementation(async () => user);
+    mockSendVerificationOtp.mock.mockImplementation(async () => {});
+    const res = makeRes();
+    await resendVerification(makeReq({ headers: { 'x-user-id': 'u1' } }), res);
+    assert.equal(mockGetUserById.mock.calls[0]!.arguments[0], 'u1');
+    assert.equal(mockSendVerificationOtp.mock.calls[0]!.arguments[0], 'u1');
+    assert.equal(mockSendVerificationOtp.mock.calls[0]!.arguments[1], 'user@test.com');
+  });
+
+  it('returns 200 { message: "Verification email sent" } on success', async () => {
+    const user = { id: 'u1', email: 'user@test.com' };
+    mockGetUserById.mock.mockImplementation(async () => user);
+    mockSendVerificationOtp.mock.mockImplementation(async () => {});
+    const res = makeRes();
+    await resendVerification(makeReq({ headers: { 'x-user-id': 'u1' } }), res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res._json.message, 'Verification email sent');
+  });
+
+  it('propagates AppError from getUserById', async () => {
+    const { AppError } = await import('../shared/middleware/errorHandler.js');
+    mockGetUserById.mock.mockImplementation(async () => {
+      throw new AppError('USER_NOT_FOUND', 'User not found', 404);
+    });
+    const res = makeRes();
+    await assert.rejects(
+      () => resendVerification(makeReq({ headers: { 'x-user-id': 'nonexistent' } }), res),
+      (err: any) => {
+        assert.equal(err.code, 'USER_NOT_FOUND');
+        return true;
+      },
+    );
   });
 });

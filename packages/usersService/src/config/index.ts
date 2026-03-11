@@ -5,6 +5,11 @@ export const config = {
   jwtAccessExpiresIn: process.env['JWT_ACCESS_EXPIRES_IN'] ?? '15m',
   jwtRefreshExpiresDays: Number(process.env['JWT_REFRESH_EXPIRES_DAYS'] ?? 7),
   internalApiKey: process.env['INTERNAL_API_KEY'] ?? 'dev-internal-key',
+  smtpHost: process.env['SMTP_HOST'] ?? '',
+  smtpPort: Number(process.env['SMTP_PORT'] ?? 587),
+  smtpUser: process.env['SMTP_USER'] ?? '',
+  smtpPass: process.env['SMTP_PASS'] ?? '',
+  smtpFrom: process.env['SMTP_FROM'] ?? 'noreply@tone-chat.dev',
 } as const;
 
 const DEV_DEFAULTS = ['dev-secret-change-in-production', 'dev-internal-key'];

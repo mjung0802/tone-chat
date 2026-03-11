@@ -24,4 +24,20 @@ export const authRateLimiters = {
     legacyHeaders: false,
     message: { error: { code: 'TOO_MANY_REQUESTS', message: 'Too many refresh attempts. Try again later.', status: 429 } },
   }),
+
+  verifyEmail: rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 10,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: { code: 'TOO_MANY_REQUESTS', message: 'Too many verification attempts. Try again later.', status: 429 } },
+  }),
+
+  resendVerification: rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    limit: 5,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: { error: { code: 'TOO_MANY_REQUESTS', message: 'Too many resend attempts. Try again later.', status: 429 } },
+  }),
 };

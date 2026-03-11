@@ -7,7 +7,9 @@ interface AuthState {
   userId: string | null;
   isAuthenticated: boolean;
   isHydrated: boolean;
-  setTokens: (accessToken: string, refreshToken: string) => void;
+  emailVerified: boolean;
+  setTokens: (accessToken: string, refreshToken: string, emailVerified?: boolean | undefined) => void;
+  setEmailVerified: (verified: boolean) => void;
   clearAuth: () => void;
   hydrate: () => Promise<void>;
 }
@@ -34,7 +36,7 @@ function isTokenExpired(token: string): boolean {
 // Native platforms use expo-secure-store (encrypted keychain/keystore).
 // Mitigation: helmet CSP headers restrict script injection on the BFF.
 // Future: migrate web storage to httpOnly cookies for refresh tokens.
-async function persistTokens(accessToken: string | null, refreshToken: string | null) {
+async function persistTokens(accessToken: string | null, refreshToken: string | null, emailVerified: boolean) {
   if (Platform.OS === 'web') {
     if (accessToken) {
       localStorage.setItem('accessToken', accessToken);
@@ -46,6 +48,7 @@ async function persistTokens(accessToken: string | null, refreshToken: string | 
     } else {
       localStorage.removeItem('refreshToken');
     }
+    localStorage.setItem('emailVerified', emailVerified ? 'true' : 'false');
   } else {
     const SecureStore = await import('expo-secure-store');
     if (accessToken) {
@@ -58,20 +61,23 @@ async function persistTokens(accessToken: string | null, refreshToken: string | 
     } else {
       await SecureStore.deleteItemAsync('refreshToken');
     }
+    await SecureStore.setItemAsync('emailVerified', emailVerified ? 'true' : 'false');
   }
 }
 
-async function loadTokens(): Promise<{ accessToken: string | null; refreshToken: string | null }> {
+async function loadTokens(): Promise<{ accessToken: string | null; refreshToken: string | null; emailVerified: boolean }> {
   if (Platform.OS === 'web') {
     return {
       accessToken: localStorage.getItem('accessToken'),
       refreshToken: localStorage.getItem('refreshToken'),
+      emailVerified: localStorage.getItem('emailVerified') === 'true',
     };
   }
   const SecureStore = await import('expo-secure-store');
   return {
     accessToken: await SecureStore.getItemAsync('accessToken'),
     refreshToken: await SecureStore.getItemAsync('refreshToken'),
+    emailVerified: (await SecureStore.getItemAsync('emailVerified')) === 'true',
   };
 }
 
@@ -81,16 +87,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   userId: null,
   isAuthenticated: false,
   isHydrated: false,
+  emailVerified: false,
 
-  setTokens: (accessToken: string, refreshToken: string) => {
+  setTokens: (accessToken: string, refreshToken: string, emailVerified?: boolean | undefined) => {
     const payload = parseJwtPayload(accessToken);
-    set({
+    set((state) => ({
       accessToken,
       refreshToken,
       userId: payload?.sub ?? null,
       isAuthenticated: true,
-    });
-    void persistTokens(accessToken, refreshToken);
+      emailVerified: emailVerified !== undefined ? emailVerified : state.emailVerified,
+    }));
+    const resolvedEmailVerified = emailVerified !== undefined ? emailVerified : get().emailVerified;
+    void persistTokens(accessToken, refreshToken, resolvedEmailVerified);
+  },
+
+  setEmailVerified: (verified: boolean) => {
+    set({ emailVerified: verified });
+    const state = get();
+    void persistTokens(state.accessToken, state.refreshToken, verified);
   },
 
   clearAuth: () => {
@@ -99,12 +114,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       refreshToken: null,
       userId: null,
       isAuthenticated: false,
+      emailVerified: false,
     });
-    void persistTokens(null, null);
+    void persistTokens(null, null, false);
   },
 
   hydrate: async () => {
-    const { accessToken, refreshToken } = await loadTokens();
+    const { accessToken, refreshToken, emailVerified } = await loadTokens();
     if (accessToken && !isTokenExpired(accessToken)) {
       const payload = parseJwtPayload(accessToken);
       set({
@@ -113,6 +129,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         userId: payload?.sub ?? null,
         isAuthenticated: true,
         isHydrated: true,
+        emailVerified,
       });
     } else if (refreshToken) {
       // Access token expired but we have a refresh token — let the API client handle refresh
@@ -122,6 +139,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         userId: null,
         isAuthenticated: false,
         isHydrated: true,
+        emailVerified,
       });
     } else {
       set({ isHydrated: true });

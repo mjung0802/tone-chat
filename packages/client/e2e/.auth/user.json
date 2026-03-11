@@ -11,6 +11,10 @@
         {
           "name": "refreshToken",
           "value": "mock-refresh-token-opaque-string"
+        },
+        {
+          "name": "emailVerified",
+          "value": "true"
         }
       ]
     }

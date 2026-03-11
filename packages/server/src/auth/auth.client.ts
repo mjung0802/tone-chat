@@ -12,3 +12,11 @@ export function loginUser(body: { email: string; password: string }) {
 export function refreshToken(body: { refreshToken: string }) {
   return serviceRequest(config.usersServiceUrl, '/auth/refresh', { method: 'POST', body });
 }
+
+export function verifyEmail(body: { code: string }, userId: string) {
+  return serviceRequest(config.usersServiceUrl, '/auth/verify-email', { method: 'POST', body, userId });
+}
+
+export function resendVerification(userId: string) {
+  return serviceRequest(config.usersServiceUrl, '/auth/resend-verification', { method: 'POST', body: {}, userId });
+}

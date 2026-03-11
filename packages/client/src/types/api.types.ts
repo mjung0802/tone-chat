@@ -87,6 +87,18 @@ export interface MessagesQuery {
   before?: string | undefined;
 }
 
+export interface VerifyEmailRequest {
+  code: string;
+}
+
+export interface VerifyEmailResponse {
+  message: string;
+}
+
+export interface ResendVerificationResponse {
+  message: string;
+}
+
 // Response wrappers
 export interface UserResponse { user: User }
 export interface ServerResponse { server: Server }

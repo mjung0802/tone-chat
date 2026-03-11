@@ -24,6 +24,11 @@ mock.module('../config/index.js', {
   namedExports: { config: { jwtSecret: 'secret', jwtAccessExpiresIn: '15m', jwtRefreshExpiresDays: 7 } },
 });
 
+const mockSendVerificationOtp = mock.fn<AnyFn>(async () => {});
+mock.module('./verification.service.js', {
+  namedExports: { sendVerificationOtp: mockSendVerificationOtp },
+});
+
 const { registerUser, loginUser, refreshAccessToken } = await import('./auth.service.js');
 
 function makeUser(overrides: Record<string, unknown> = {}) {
@@ -36,6 +41,8 @@ describe('registerUser', () => {
     mockSql.begin.mock.resetCalls();
     mockHash.mock.resetCalls();
     mockSign.mock.resetCalls();
+    mockSendVerificationOtp.mock.resetCalls();
+    mockSendVerificationOtp.mock.mockImplementation(async () => {});
   });
 
   it('throws WEAK_PASSWORD when password < 8 chars', async () => {
@@ -98,6 +105,44 @@ describe('registerUser', () => {
     assert.equal(result.user.id, 'u1');
     assert.equal(result.accessToken, 'access-tok');
     assert.equal(typeof result.refreshToken, 'string');
+  });
+
+  it('calls sendVerificationOtp with userId and email after successful registration', async () => {
+    mockSql.mock.mockImplementation(() => []);
+    mockHash.mock.mockImplementation(async () => 'hashed');
+    mockSign.mock.mockImplementation(() => 'access-tok');
+    const user = makeUser();
+    mockSql.begin.mock.mockImplementation(async (fn: Function) => {
+      const tx = mock.fn(() => [user]);
+      return fn(tx);
+    });
+
+    await registerUser('alice', 'a@test.com', 'password123');
+
+    // Fire-and-forget: give it a tick to run
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(mockSendVerificationOtp.mock.callCount(), 1);
+    assert.equal(mockSendVerificationOtp.mock.calls[0]!.arguments[0], 'u1');
+    assert.equal(mockSendVerificationOtp.mock.calls[0]!.arguments[1], 'a@test.com');
+  });
+
+  it('still returns result when sendVerificationOtp rejects (fire-and-forget)', async () => {
+    mockSql.mock.mockImplementation(() => []);
+    mockHash.mock.mockImplementation(async () => 'hashed');
+    mockSign.mock.mockImplementation(() => 'access-tok');
+    const user = makeUser();
+    mockSql.begin.mock.mockImplementation(async (fn: Function) => {
+      const tx = mock.fn(() => [user]);
+      return fn(tx);
+    });
+    mockSendVerificationOtp.mock.mockImplementation(async () => {
+      throw new Error('SMTP failed');
+    });
+
+    const result = await registerUser('alice', 'a@test.com', 'password123');
+    assert.equal(result.user.id, 'u1');
+    assert.ok(result.accessToken);
+    assert.ok(result.refreshToken);
   });
 });
 

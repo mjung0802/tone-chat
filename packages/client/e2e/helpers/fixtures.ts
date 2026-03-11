@@ -15,6 +15,7 @@ export const MOCK_USER = {
   id: 'user-001',
   username: 'testuser',
   email: 'test@example.com',
+  email_verified: true,
   display_name: 'Test User',
   pronouns: null,
   avatar_url: null,

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as authApi from '../api/auth.api';
 import { useAuthStore } from '../stores/authStore';
 import { useSocketStore } from '../stores/socketStore';
-import type { RegisterRequest, LoginRequest } from '../types/api.types';
+import type { RegisterRequest, LoginRequest, VerifyEmailRequest } from '../types/api.types';
 
 export function useLogin() {
   const setTokens = useAuthStore((s) => s.setTokens);
@@ -12,8 +12,10 @@ export function useLogin() {
   return useMutation({
     mutationFn: (data: LoginRequest) => authApi.login(data),
     onSuccess: (response) => {
-      setTokens(response.accessToken, response.refreshToken);
-      connect(response.accessToken);
+      setTokens(response.accessToken, response.refreshToken, response.user.email_verified);
+      if (response.user.email_verified) {
+        connect(response.accessToken);
+      }
       queryClient.clear();
     },
   });
@@ -27,8 +29,10 @@ export function useRegister() {
   return useMutation({
     mutationFn: (data: RegisterRequest) => authApi.register(data),
     onSuccess: (response) => {
-      setTokens(response.accessToken, response.refreshToken);
-      connect(response.accessToken);
+      setTokens(response.accessToken, response.refreshToken, response.user.email_verified);
+      if (response.user.email_verified) {
+        connect(response.accessToken);
+      }
       queryClient.clear();
     },
   });
@@ -44,4 +48,24 @@ export function useLogout() {
     clearAuth();
     queryClient.clear();
   };
+}
+
+export function useVerifyEmail() {
+  const setEmailVerified = useAuthStore((s) => s.setEmailVerified);
+  const connect = useSocketStore((s) => s.connect);
+  const accessToken = useAuthStore((s) => s.accessToken);
+
+  return useMutation({
+    mutationFn: (data: VerifyEmailRequest) => authApi.verifyEmail(data),
+    onSuccess: () => {
+      setEmailVerified(true);
+      if (accessToken) connect(accessToken);
+    },
+  });
+}
+
+export function useResendVerification() {
+  return useMutation({
+    mutationFn: () => authApi.resendVerification(),
+  });
 }

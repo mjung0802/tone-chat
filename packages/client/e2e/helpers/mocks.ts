@@ -193,3 +193,61 @@ export async function mockMembersRoutes(page: Page): Promise<void> {
     });
   });
 }
+
+export async function mockVerifyEmailRoute(page: Page): Promise<void> {
+  await page.route(`${API}/auth/verify-email`, async (route) => {
+    const body = route.request().postDataJSON() as { code?: string };
+    if (body.code === '123456') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Email verified' }),
+      });
+    } else if (body.code === 'expired') {
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: 'CODE_EXPIRED', message: 'Verification code has expired', status: 400 } }),
+      });
+    } else {
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: 'INVALID_CODE', message: 'Invalid verification code', status: 400 } }),
+      });
+    }
+  });
+}
+
+export async function mockResendVerificationRoute(page: Page): Promise<void> {
+  await page.route(`${API}/auth/resend-verification`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ message: 'Verification email sent' }),
+    });
+  });
+}
+
+export async function mockUnverifiedLoginRoute(page: Page): Promise<void> {
+  await page.route(`${API}/auth/login`, async (route) => {
+    const body = route.request().postDataJSON() as { email?: string; password?: string };
+    if (body.email === 'unverified@example.com' && body.password === 'password123') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          user: { ...MOCK_USER, email: 'unverified@example.com', email_verified: false },
+          accessToken: MOCK_ACCESS_TOKEN,
+          refreshToken: MOCK_REFRESH_TOKEN,
+        }),
+      });
+    } else {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password', status: 401 } }),
+      });
+    }
+  });
+}
