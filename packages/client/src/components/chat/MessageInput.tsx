@@ -118,12 +118,10 @@ export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) 
           value={text}
           onChangeText={handleChange}
           placeholder="Type a message..."
-          multiline
           maxLength={4000}
           disabled={disabled ?? false}
           accessibilityLabel="Message input"
           accessibilityHint="Type your message and press send"
-          onSubmitEditing={handleSend}
           submitBehavior="newline"
           onKeyPress={(e) => {
             if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter') {
