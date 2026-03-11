@@ -3,6 +3,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { TextInput, IconButton, useTheme } from 'react-native-paper';
 import { AttachmentPicker } from './AttachmentPicker';
 import { AttachmentPreview, type PendingAttachment } from './AttachmentPreview';
+import { EmojiPicker } from './EmojiPicker';
 import { useUpload } from '../../hooks/useAttachments';
 import type { DocumentPickerAsset } from 'expo-document-picker';
 
@@ -17,6 +18,7 @@ interface MessageInputProps {
 export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) {
   const [text, setText] = useState('');
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+  const [emojiPickerVisible, setEmojiPickerVisible] = useState(false);
   const theme = useTheme();
   const upload = useUpload();
 
@@ -40,6 +42,14 @@ export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) 
   const handleChange = useCallback(
     (value: string) => {
       setText(value);
+      onTyping?.();
+    },
+    [onTyping],
+  );
+
+  const handleEmojiSelect = useCallback(
+    (emoji: string) => {
+      setText((prev) => prev + emoji);
       onTyping?.();
     },
     [onTyping],
@@ -125,6 +135,14 @@ export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) 
           }}
         />
         <IconButton
+          icon="emoticon-outline"
+          onPress={() => setEmojiPickerVisible(true)}
+          disabled={disabled ?? false}
+          accessibilityLabel="Open emoji picker"
+          size={24}
+          style={styles.emojiButton}
+        />
+        <IconButton
           icon="send"
           mode="contained"
           onPress={handleSend}
@@ -135,6 +153,11 @@ export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) 
           style={styles.sendButton}
         />
       </View>
+      <EmojiPicker
+        visible={emojiPickerVisible}
+        onSelect={handleEmojiSelect}
+        onDismiss={() => setEmojiPickerVisible(false)}
+      />
     </View>
   );
 }
@@ -154,6 +177,9 @@ const styles = StyleSheet.create({
     flex: 1,
     maxHeight: 120,
     marginRight: 4,
+  },
+  emojiButton: {
+    marginBottom: 4,
   },
   sendButton: {
     marginBottom: 4,

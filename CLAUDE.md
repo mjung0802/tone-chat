@@ -89,7 +89,7 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
   └─────────────────────────────────────────────────────────────┘
 ```
 
-- **client** (`packages/client`): React Native (Expo 55 + Expo Router v4) app targeting web, iOS, and Android. Connects to the BFF via HTTP and Socket.IO.
+- **client** (`packages/client`): React Native (Expo 55 + Expo Router v5) app targeting web, iOS, and Android. Connects to the BFF via HTTP and Socket.IO.
 - **server** (`packages/server`): BFF — JWT auth, routes all client requests to backend services, manages all Socket.IO connections (room-based channels). The only service exposed to clients.
 - **messagingService** (`packages/messagingService`): MongoDB (Mongoose). Manages servers, channels, messages, and server-scoped members. Collections: `servers`, `channels`, `messages`, `serverMembers`.
 - **usersService** (`packages/usersService`): PostgreSQL (postgres.js). Global user accounts, auth (bcrypt + JWT), token refresh/rotation. Tables: `users`, `refresh_tokens`.

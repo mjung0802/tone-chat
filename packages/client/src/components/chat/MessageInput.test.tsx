@@ -315,6 +315,36 @@ describe('MessageInput', () => {
     });
   });
 
+  it('renders emoji button with accessibility label', () => {
+    const { getByLabelText } = renderWithProviders(
+      <MessageInput onSend={jest.fn()} />,
+    );
+
+    expect(getByLabelText('Open emoji picker')).toBeTruthy();
+  });
+
+  it('opens emoji picker when emoji button is pressed', () => {
+    const { getByLabelText } = renderWithProviders(
+      <MessageInput onSend={jest.fn()} />,
+    );
+
+    fireEvent.press(getByLabelText('Open emoji picker'));
+
+    expect(getByLabelText('Emoji picker')).toBeTruthy();
+  });
+
+  it('appends emoji to input text when selected', () => {
+    const { getByLabelText } = renderWithProviders(
+      <MessageInput onSend={jest.fn()} />,
+    );
+
+    fireEvent.changeText(getByLabelText('Message input'), 'Hello');
+    fireEvent.press(getByLabelText('Open emoji picker'));
+    fireEvent.press(getByLabelText('😀'));
+
+    expect(getByLabelText('Message input').props.value).toBe('Hello😀');
+  });
+
   it('clears pending attachments after send', async () => {
     const attachment = makeAttachment({ id: 'att-clear' });
     const mutateAsync = jest.fn().mockResolvedValue({ attachment });

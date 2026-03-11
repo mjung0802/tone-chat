@@ -65,7 +65,7 @@ src/
     useAttachments.ts
     useSocket.ts           # Room lifecycle + cache injection + typing
   components/
-    chat/                  # MessageBubble, MessageInput, MessageList, TypingIndicator, AttachmentPicker
+    chat/                  # MessageBubble, MessageInput, MessageList, TypingIndicator, AttachmentPicker, AttachmentPreview, AttachmentBubble, AttachmentViewer, EmojiPicker, emojiData
     servers/               # ServerIcon, ServerListItem, CreateServerForm
     channels/              # ChannelListItem, ChannelSidebar
     members/               # MemberListItem, MemberList

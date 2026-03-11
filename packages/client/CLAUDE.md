@@ -16,7 +16,7 @@ pnpm test:e2e:ui          # Playwright UI mode
 
 | Layer | Choice |
 |-------|--------|
-| Framework | Expo 55 + Expo Router v4 (file-based routing) |
+| Framework | Expo 55 + Expo Router v5 (file-based routing) |
 | UI | React Native Paper v5 (Material Design 3) |
 | Server state | TanStack Query v5 |
 | Client state | Zustand v5 |
@@ -63,7 +63,7 @@ src/
     useAttachments.ts         # Upload mutation + attachment query (staleTime: Infinity)
     useSocket.ts              # Socket.IO room lifecycle, cache injection, typing
   components/
-    chat/                     # MessageBubble, MessageInput, MessageList, TypingIndicator, AttachmentPicker, AttachmentPreview, AttachmentBubble, AttachmentViewer
+    chat/                     # MessageBubble, MessageInput, MessageList, TypingIndicator, AttachmentPicker, AttachmentPreview, AttachmentBubble, AttachmentViewer, EmojiPicker, emojiData
     servers/                  # ServerIcon, ServerListItem, CreateServerForm
     channels/                 # ChannelListItem, ChannelSidebar
     members/                  # MemberListItem, MemberList
@@ -143,7 +143,7 @@ Upload and display of file attachments on messages. Files are sent to `attachmen
 - **`AttachmentPreview`** — chips bar above `MessageInput` showing pending uploads with filename (truncated to 20 chars), spinner while uploading, error indicator, and remove button. Exports `PendingAttachment` type.
 - **`AttachmentBubble`** — inline in `MessageBubble`, fetches attachment metadata via `useAttachment(id)`. Renders image (pressable → `AttachmentViewer`) or file card (pressable → `Linking.openURL`). Shows "Attachment unavailable" for errors/non-ready status.
 - **`AttachmentViewer`** — fullscreen modal with pinch-to-zoom for image attachments. Opened from `MessageBubble` → `onImagePress` → `ChannelScreen` state.
-- **`MessageInput`** orchestrates the flow: pick → upload (via `useUpload().mutateAsync`) → collect IDs → pass to `onSend(content, attachmentIds)`. Max 6 attachments per message.
+- **`MessageInput`** orchestrates the flow: pick → upload (via `useUpload().mutateAsync`) → collect IDs → pass to `onSend(content, attachmentIds)`. Max 6 attachments per message. Also hosts the emoji picker button.
 
 ## Accessibility (WCAG 2.1 AA)
 
