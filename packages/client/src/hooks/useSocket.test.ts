@@ -1,11 +1,11 @@
-import { renderHook, act } from '@testing-library/react-native';
 import { QueryClient } from '@tanstack/react-query';
+import { act, renderHook } from '@testing-library/react-native';
 import { useSocketStore } from '../stores/socketStore';
-import { useChannelSocket, useTypingEmit } from './useSocket';
-import { createHookWrapper, createTestQueryClient } from '../test-utils/renderWithProviders';
 import { makeMessage } from '../test-utils/fixtures';
+import { createHookWrapper, createTestQueryClient } from '../test-utils/renderWithProviders';
 import type { MessagesResponse } from '../types/api.types';
 import type { TypingEvent } from '../types/socket.types';
+import { useChannelSocket, useTypingEmit } from './useSocket';
 
 // ---------- mock socket ----------
 
@@ -174,6 +174,87 @@ describe('useChannelSocket', () => {
     expect(mockSocket.emit).not.toHaveBeenCalled();
     expect(mockSocket.on).not.toHaveBeenCalled();
   });
+
+  it('new_message handler with empty pages creates initial page', () => {
+    queryClient.setQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+      { pages: [], pageParams: [undefined] },
+    );
+
+    renderHook(() => useChannelSocket('server-1', 'channel-1'), {
+      wrapper: createHookWrapper(queryClient),
+    });
+
+    const handler = findHandler(mockSocket, 'new_message');
+    const newMsg = makeMessage({ _id: 'msg-1', content: 'First' });
+    act(() => handler!(newMsg));
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+    );
+    // Should not create new page if pages array is empty
+    expect(data!.pages).toHaveLength(0);
+  });
+
+  it('reaction_updated with multiple pages updates correct message', () => {
+    const page1 = { messages: [makeMessage({ _id: 'msg-1' })] };
+    const page2 = { messages: [makeMessage({ _id: 'msg-2' })] };
+    queryClient.setQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+      { pages: [page1, page2], pageParams: [undefined, 'cursor1'] },
+    );
+
+    renderHook(() => useChannelSocket('server-1', 'channel-1'), {
+      wrapper: createHookWrapper(queryClient),
+    });
+
+    const handler = findHandler(mockSocket, 'reaction_updated');
+    const updatedMsg = makeMessage({
+      _id: 'msg-2',
+      reactions: [{ emoji: '❤️', userIds: ['u1'] }],
+    });
+    act(() => handler!({ message: updatedMsg }));
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+    );
+    expect(data!.pages[1]!.messages[0]!.reactions).toEqual([{ emoji: '❤️', userIds: ['u1'] }]);
+  });
+
+  it('reaction_updated when message not found in cache does nothing', () => {
+    queryClient.setQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+      { pages: [{ messages: [makeMessage({ _id: 'msg-1' })] }], pageParams: [undefined] },
+    );
+
+    renderHook(() => useChannelSocket('server-1', 'channel-1'), {
+      wrapper: createHookWrapper(queryClient),
+    });
+
+    const handler = findHandler(mockSocket, 'reaction_updated');
+    const updatedMsg = makeMessage({
+      _id: 'msg-999',
+      reactions: [{ emoji: '👎', userIds: ['u2'] }],
+    });
+    act(() => handler!({ message: updatedMsg }));
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+    );
+    expect(data!.pages[0]!.messages).toHaveLength(1);
+    expect(data!.pages[0]!.messages[0]!._id).toBe('msg-1');
+  });
+
+  it('cleans up all event listeners on unmount', () => {
+    const { unmount } = renderHook(() => useChannelSocket('server-1', 'channel-1'), {
+      wrapper: createHookWrapper(queryClient),
+    });
+
+    unmount();
+
+    expect(mockSocket.off).toHaveBeenCalledWith('new_message', expect.any(Function));
+    expect(mockSocket.off).toHaveBeenCalledWith('reaction_updated', expect.any(Function));
+  });
 });
 
 // ---------- useTypingEmit ----------
@@ -235,5 +316,59 @@ describe('useTypingEmit', () => {
       ([event]: [string]) => event === 'typing',
     );
     expect(typingCalls).toHaveLength(2);
+  });
+
+  it('no-ops when socket is null', () => {
+    useSocketStore.setState({ socket: null, isConnected: false });
+
+    const { result } = renderHook(() => useTypingEmit('server-1', 'channel-1'), {
+      wrapper: createHookWrapper(),
+    });
+
+    act(() => result.current());
+
+    expect(mockSocket.emit).not.toHaveBeenCalled();
+  });
+
+  it('no-ops when serverId is undefined', () => {
+    const { result } = renderHook(() => useTypingEmit(undefined, 'channel-1'), {
+      wrapper: createHookWrapper(),
+    });
+
+    act(() => result.current());
+
+    expect(mockSocket.emit).not.toHaveBeenCalled();
+  });
+
+  it('no-ops when channelId is undefined', () => {
+    const { result } = renderHook(() => useTypingEmit('server-1', undefined), {
+      wrapper: createHookWrapper(),
+    });
+
+    act(() => result.current());
+
+    expect(mockSocket.emit).not.toHaveBeenCalled();
+  });
+
+  it('multiple calls within throttle period only emit once', () => {
+    const { result } = renderHook(() => useTypingEmit('server-1', 'channel-1'), {
+      wrapper: createHookWrapper(),
+    });
+
+    act(() => {
+      result.current();
+      result.current();
+    });
+
+    jest.advanceTimersByTime(500);
+
+    act(() => {
+      result.current();
+    });
+
+    const typingCalls = mockSocket.emit.mock.calls.filter(
+      ([event]: [string]) => event === 'typing',
+    );
+    expect(typingCalls).toHaveLength(1);
   });
 });

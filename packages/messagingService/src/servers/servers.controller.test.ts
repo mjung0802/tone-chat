@@ -1,5 +1,16 @@
-import { mock, describe, it, beforeEach } from 'node:test';
+import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
+
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type TestResponse = Response & { statusCode: number; _json: unknown };
+
+function assertErrorCode(error: unknown, code: string): true {
+  assert.equal(typeof error, 'object');
+  assert.notEqual(error, null);
+  assert.equal((error as { code?: unknown }).code, code);
+  return true;
+}
 
 const mockServerCreate = mock.fn<AnyFn>();
 const mockServerFindById = mock.fn<AnyFn>();
@@ -32,11 +43,11 @@ mock.module('../members/serverMember.model.js', {
 
 const { createServer, getServer, listServers, updateServer, deleteServer } = await import('./servers.controller.js');
 
-function makeReq(overrides: Partial<{ body: any; params: any; headers: any; query: any }> = {}) {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as any;
+function makeReq(overrides: RequestOverrides = {}): Request {
+  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
 }
-function makeRes() {
-  const res: any = { statusCode: 200, _json: undefined };
+function makeRes(): TestResponse {
+  const res = { statusCode: 200, _json: undefined } as TestResponse;
   res.status = (c: number) => { res.statusCode = c; return res; };
   res.json = (d: unknown) => { res._json = d; return res; };
   res.end = () => res;
@@ -54,7 +65,7 @@ describe('createServer', () => {
     const res = makeRes();
     await createServer(makeReq({ headers: { 'x-user-id': 'u1' }, body: {} }), res);
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'MISSING_FIELDS');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_FIELDS');
   });
 
   it('creates server, #general channel, and admin member; returns 201', async () => {
@@ -67,11 +78,11 @@ describe('createServer', () => {
     await createServer(makeReq({ headers: { 'x-user-id': 'u1' }, body: { name: 'Test' } }), res);
 
     assert.equal(res.statusCode, 201);
-    assert.deepEqual(res._json.server, server);
+    assert.deepEqual((res._json as { server: unknown }).server, server);
     assert.equal(mockChannelCreate.mock.callCount(), 1);
-    assert.equal(mockChannelCreate.mock.calls[0]!.arguments[0].name, 'general');
+    assert.equal((mockChannelCreate.mock.calls[0]!.arguments[0] as { name: string }).name, 'general');
     assert.equal(mockMemberCreate.mock.callCount(), 1);
-    assert.deepEqual(mockMemberCreate.mock.calls[0]!.arguments[0].roles, ['admin']);
+    assert.deepEqual((mockMemberCreate.mock.calls[0]!.arguments[0] as { roles: string[] }).roles, ['admin']);
   });
 });
 
@@ -82,7 +93,7 @@ describe('getServer', () => {
     mockServerFindById.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => getServer(makeReq({ params: { serverId: 's1' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'SERVER_NOT_FOUND'); return true; },
+      (error) => assertErrorCode(error, 'SERVER_NOT_FOUND'),
     );
   });
 
@@ -92,7 +103,7 @@ describe('getServer', () => {
     const res = makeRes();
     await getServer(makeReq({ params: { serverId: 's1' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(res._json.server, server);
+    assert.deepEqual((res._json as { server: unknown }).server, server);
   });
 });
 
@@ -112,7 +123,7 @@ describe('listServers', () => {
     const res = makeRes();
     await listServers(makeReq({ headers: { 'x-user-id': 'u1' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(res._json.servers, servers);
+    assert.deepEqual((res._json as { servers: unknown[] }).servers, servers);
   });
 });
 
@@ -123,7 +134,7 @@ describe('updateServer', () => {
     mockServerFindById.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => updateServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'SERVER_NOT_FOUND'); return true; },
+      (error) => assertErrorCode(error, 'SERVER_NOT_FOUND'),
     );
   });
 
@@ -131,7 +142,7 @@ describe('updateServer', () => {
     mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'other' }));
     await assert.rejects(
       () => updateServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'FORBIDDEN'); return true; },
+      (error) => assertErrorCode(error, 'FORBIDDEN'),
     );
   });
 
@@ -160,7 +171,7 @@ describe('deleteServer', () => {
     mockServerFindById.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => deleteServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'SERVER_NOT_FOUND'); return true; },
+      (error) => assertErrorCode(error, 'SERVER_NOT_FOUND'),
     );
   });
 
@@ -168,7 +179,7 @@ describe('deleteServer', () => {
     mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'other' }));
     await assert.rejects(
       () => deleteServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'FORBIDDEN'); return true; },
+      (error) => assertErrorCode(error, 'FORBIDDEN'),
     );
   });
 

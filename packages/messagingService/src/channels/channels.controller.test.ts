@@ -1,5 +1,16 @@
-import { mock, describe, it, beforeEach } from 'node:test';
+import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
+
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type TestResponse = Response & { statusCode: number; _json: unknown };
+
+function assertErrorCode(error: unknown, code: string): true {
+  assert.equal(typeof error, 'object');
+  assert.notEqual(error, null);
+  assert.equal((error as { code?: unknown }).code, code);
+  return true;
+}
 
 const mockChannelCreate = mock.fn<AnyFn>();
 const mockChannelFind = mock.fn<AnyFn>();
@@ -19,14 +30,14 @@ mock.module('./channel.model.js', {
 
 const { createChannel, listChannels, getChannel, updateChannel, deleteChannel } = await import('./channels.controller.js');
 
-function makeReq(overrides: Partial<{ body: any; params: any; headers: any; query: any }> = {}) {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as any;
+function makeReq(overrides: RequestOverrides = {}): Request {
+  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
 }
-function makeRes() {
-  const res: any = { statusCode: 200, _json: undefined };
-  res.status = (c: number) => { res.statusCode = c; return res; };
-  res.json = (d: unknown) => { res._json = d; return res; };
-  res.end = () => res;
+function makeRes(): TestResponse {
+  const res = { statusCode: 200, _json: undefined } as TestResponse;
+  res.status = ((c: number) => { res.statusCode = c; return res; });
+  res.json = ((d: unknown) => { res._json = d; return res; });
+  res.end = (() => res);
   return res;
 }
 
@@ -40,7 +51,7 @@ describe('createChannel', () => {
     const res = makeRes();
     await createChannel(makeReq({ params: { serverId: 's1' }, body: {} }), res);
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'MISSING_FIELDS');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_FIELDS');
   });
 
   it('auto-positions and defaults type to text; returns 201', async () => {
@@ -55,18 +66,18 @@ describe('createChannel', () => {
     await createChannel(makeReq({ params: { serverId: 's1' }, body: { name: 'voice' } }), res);
     assert.equal(res.statusCode, 201);
     // Verify type defaults to 'text'
-    assert.equal(mockChannelCreate.mock.calls[0]!.arguments[0].type, 'text');
+    assert.equal((mockChannelCreate.mock.calls[0]!.arguments[0] as { type: string }).type, 'text');
   });
 
   it('auto-positions after existing channels', async () => {
     mockChannelFindOne.mock.mockImplementation(() => ({
       sort: () => ({ select: () => ({ position: 3 }) }),
     }));
-    mockChannelCreate.mock.mockImplementation(async (data: any) => data);
+    mockChannelCreate.mock.mockImplementation(async (data: unknown) => data);
 
     const res = makeRes();
     await createChannel(makeReq({ params: { serverId: 's1' }, body: { name: 'new' } }), res);
-    assert.equal(mockChannelCreate.mock.calls[0]!.arguments[0].position, 4);
+    assert.equal((mockChannelCreate.mock.calls[0]!.arguments[0] as Record<string, unknown>).position, 4);
   });
 });
 
@@ -78,7 +89,7 @@ describe('listChannels', () => {
     const res = makeRes();
     await listChannels(makeReq({ params: { serverId: 's1' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(res._json.channels, channels);
+    assert.deepEqual((res._json as { channels: unknown[] }).channels, channels);
   });
 });
 
@@ -89,7 +100,7 @@ describe('getChannel', () => {
     mockChannelFindOne.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => getChannel(makeReq({ params: { serverId: 's1', channelId: 'c1' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'CHANNEL_NOT_FOUND'); return true; },
+      (error) => assertErrorCode(error, 'CHANNEL_NOT_FOUND'),
     );
   });
 
@@ -99,7 +110,7 @@ describe('getChannel', () => {
     const res = makeRes();
     await getChannel(makeReq({ params: { serverId: 's1', channelId: 'c1' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(res._json.channel, channel);
+    assert.deepEqual((res._json as { channel: unknown }).channel, channel);
   });
 });
 
@@ -110,7 +121,7 @@ describe('updateChannel', () => {
     mockChannelFindOne.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => updateChannel(makeReq({ params: { serverId: 's1', channelId: 'c1' }, body: {} }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'CHANNEL_NOT_FOUND'); return true; },
+      (error) => assertErrorCode(error, 'CHANNEL_NOT_FOUND'),
     );
   });
 
@@ -138,7 +149,7 @@ describe('deleteChannel', () => {
     mockChannelFindOneAndDelete.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => deleteChannel(makeReq({ params: { serverId: 's1', channelId: 'c1' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'CHANNEL_NOT_FOUND'); return true; },
+      (error) => assertErrorCode(error, 'CHANNEL_NOT_FOUND'),
     );
   });
 

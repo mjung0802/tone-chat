@@ -9,6 +9,7 @@ import type { User } from '../shared/types.js';
 import { sendVerificationOtp } from './verification.service.js';
 
 const SALT_ROUNDS = 12;
+type TransactionSql = <T = unknown>(strings: TemplateStringsArray, ...params: unknown[]) => Promise<T>;
 
 export async function registerUser(username: string, email: string, password: string): Promise<{ user: User; accessToken: string; refreshToken: string }> {
   if (password.length < 8) {
@@ -24,12 +25,13 @@ export async function registerUser(username: string, email: string, password: st
 
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-  // postgres.js TransactionSql loses call signatures due to Omit — (tx as any) is required
   const [user] = await sql.begin(async (tx) => {
-    const [newUser] = await (tx as any)<User[]>`
+    // @ts-expect-error - tx from postgres.js has compatible signature despite type mismatch
+    const typedTx = tx as TransactionSql;
+    const [newUser] = await typedTx<User[]>`
       INSERT INTO users (username, email) VALUES (${username}, ${email}) RETURNING *
     `;
-    await (tx as any)`
+    await typedTx`
       INSERT INTO credentials (user_id, password_hash) VALUES (${newUser!.id}, ${passwordHash})
     `;
     return [newUser!];

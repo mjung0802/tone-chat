@@ -1,15 +1,20 @@
-import { before, after, beforeEach, describe, it } from 'node:test';
-import assert from 'node:assert/strict';
-import type { AddressInfo } from 'node:net';
-import type { Server as HttpServer } from 'node:http';
 import mongoose from 'mongoose';
+import assert from 'node:assert/strict';
+import type { Server as HttpServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { after, before, beforeEach, describe, it } from 'node:test';
 import { app } from '../app.js';
-import { connectDatabase } from '../config/database.js';
-import { Server } from '../servers/server.model.js';
 import { Channel } from '../channels/channel.model.js';
-import { Message } from './message.model.js';
-import { ServerMember } from '../members/serverMember.model.js';
+import { connectDatabase } from '../config/database.js';
 import { Invite } from '../invites/invite.model.js';
+import { ServerMember } from '../members/serverMember.model.js';
+import { Server } from '../servers/server.model.js';
+import { Message } from './message.model.js';
+
+type ReactionResponse = { message: { reactions: unknown[] } };
+type MessageListResponse = { messages: Array<{ reactions: unknown[] }> };
+type MessageWithContentResponse = { messages: Array<{ content: string; reactions: unknown[] }> };
+type ErrorResponse = { error: { code: string } };
 
 let httpServer: HttpServer;
 let baseUrl: string;
@@ -79,16 +84,16 @@ describe('Reactions', () => {
       body: JSON.stringify({ emoji: '\u{1F44D}' }),
     });
     assert.equal(putRes.status, 200);
-    const putBody = await putRes.json() as { message: { reactions: any[] } };
+    const putBody = await putRes.json() as ReactionResponse;
     assert.equal(putBody.message.reactions.length, 1);
-    assert.equal(putBody.message.reactions[0].emoji, '\u{1F44D}');
-    assert.deepEqual(putBody.message.reactions[0].userIds, ['user-1']);
+    assert.equal((putBody.message.reactions[0] as Record<string, unknown>).emoji, '\u{1F44D}');
+    assert.deepEqual((putBody.message.reactions[0] as Record<string, unknown>).userIds, ['user-1']);
 
     // Verify in GET
     const getRes = await fetch(`${baseUrl}/servers/${serverId}/channels/${channelId}/messages`, {
       headers: headersFor('user-1'),
     });
-    const getBody = await getRes.json() as { messages: Array<{ reactions: any[] }> };
+    const getBody = await getRes.json() as MessageListResponse;
     assert.equal(getBody.messages[0]!.reactions.length, 1);
   });
 
@@ -110,7 +115,7 @@ describe('Reactions', () => {
       body: JSON.stringify({ emoji: '\u{1F44D}' }),
     });
     assert.equal(res.status, 200);
-    const body = await res.json() as { message: { reactions: any[] } };
+    const body = await res.json() as ReactionResponse;
     assert.equal(body.message.reactions.length, 0);
   });
 
@@ -136,9 +141,9 @@ describe('Reactions', () => {
     });
 
     assert.equal(res.status, 200);
-    const body = await res.json() as { message: { reactions: any[] } };
+    const body = await res.json() as ReactionResponse;
     assert.equal(body.message.reactions.length, 1);
-    assert.equal(body.message.reactions[0].userIds.length, 2);
+    assert.equal(((body.message.reactions[0] as Record<string, unknown>).userIds as unknown[]).length, 2);
   });
 
   it('multiple different emojis on one message', async () => {
@@ -156,7 +161,7 @@ describe('Reactions', () => {
     const getRes = await fetch(`${baseUrl}/servers/${serverId}/channels/${channelId}/messages`, {
       headers: headersFor('user-1'),
     });
-    const body = await getRes.json() as { messages: Array<{ reactions: any[] }> };
+    const body = await getRes.json() as MessageListResponse;
     assert.equal(body.messages[0]!.reactions.length, 3);
   });
 
@@ -179,7 +184,7 @@ describe('Reactions', () => {
       body: JSON.stringify({ emoji: '\u{1F195}' }),
     });
     assert.equal(res.status, 400);
-    const body = await res.json() as { error: { code: string } };
+    const body = await res.json() as ErrorResponse;
     assert.equal(body.error.code, 'MAX_REACTIONS');
   });
 
@@ -225,9 +230,9 @@ describe('Reactions', () => {
     const getRes = await fetch(`${baseUrl}/servers/${serverId}/channels/${channelId}/messages`, {
       headers: headersFor('user-1'),
     });
-    const body = await getRes.json() as { messages: Array<{ content: string; reactions: any[] }> };
+    const body = await getRes.json() as MessageWithContentResponse;
     assert.equal(body.messages[0]!.content, 'Edited');
     assert.equal(body.messages[0]!.reactions.length, 1);
-    assert.equal(body.messages[0]!.reactions[0].emoji, '\u{1F44D}');
+    assert.equal((body.messages[0]!.reactions[0] as Record<string, unknown>).emoji, '\u{1F44D}');
   });
 });

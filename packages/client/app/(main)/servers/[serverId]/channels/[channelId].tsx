@@ -1,20 +1,20 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { AttachmentViewer } from '@/components/chat/AttachmentViewer';
+import { EmojiPicker } from '@/components/chat/EmojiPicker';
+import { MessageInput } from '@/components/chat/MessageInput';
+import { MessageList } from '@/components/chat/MessageList';
+import { TypingIndicator } from '@/components/chat/TypingIndicator';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { useChannel } from '@/hooks/useChannels';
+import { useMembers } from '@/hooks/useMembers';
+import { useMessages, useSendMessage } from '@/hooks/useMessages';
+import { useChannelSocket, useTypingEmit } from '@/hooks/useSocket';
+import { useAuthStore } from '@/stores/authStore';
+import { useSocketStore } from '@/stores/socketStore';
+import type { Attachment } from '@/types/models';
+import type { TypingEvent } from '@/types/socket.types';
 import { useLocalSearchParams } from 'expo-router';
-import { useMessages, useSendMessage } from '../../../../../src/hooks/useMessages';
-import { useMembers } from '../../../../../src/hooks/useMembers';
-import { useChannel } from '../../../../../src/hooks/useChannels';
-import { useChannelSocket, useTypingEmit } from '../../../../../src/hooks/useSocket';
-import { useAuthStore } from '../../../../../src/stores/authStore';
-import { MessageList } from '../../../../../src/components/chat/MessageList';
-import { MessageInput } from '../../../../../src/components/chat/MessageInput';
-import { TypingIndicator } from '../../../../../src/components/chat/TypingIndicator';
-import { AttachmentViewer } from '../../../../../src/components/chat/AttachmentViewer';
-import { EmojiPicker } from '../../../../../src/components/chat/EmojiPicker';
-import { LoadingSpinner } from '../../../../../src/components/common/LoadingSpinner';
-import { useSocketStore } from '../../../../../src/stores/socketStore';
-import type { TypingEvent } from '../../../../../src/types/socket.types';
-import type { Attachment } from '../../../../../src/types/models';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 const TYPING_TIMEOUT = 3000;
 
@@ -27,7 +27,7 @@ export default function ChannelScreen() {
   const cid = channelId ?? '';
 
   const userId = useAuthStore((s) => s.userId);
-  const { data: channel } = useChannel(sid, cid);
+  useChannel(sid, cid);
   const {
     data: messagesData,
     isLoading,

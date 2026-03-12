@@ -1,5 +1,5 @@
-import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
 
 const mockCreateMessage = mock.fn<AnyFn>();
 const mockToggleReaction = mock.fn<AnyFn>();
@@ -10,9 +10,19 @@ mock.module('./messages.client.js', {
 const { registerMessageHandlers } = await import('./messages.socket.js');
 
 describe('registerMessageHandlers', () => {
-  let handlers: Record<string, Function>;
-  let socket: any;
-  let io: any;
+  type SocketHandler = (payload?: unknown) => void | Promise<void>;
+  type TestSocket = {
+    on: (event: string, handler: SocketHandler) => void;
+    to: ReturnType<typeof mock.fn>;
+    _toEmit?: ReturnType<typeof mock.fn>;
+  };
+  type TestIo = {
+    to: ReturnType<typeof mock.fn>;
+  };
+
+  let handlers: Record<string, SocketHandler>;
+  let socket: TestSocket;
+  let io: TestIo;
 
   beforeEach(() => {
     mockCreateMessage.mock.resetCalls();
@@ -20,13 +30,14 @@ describe('registerMessageHandlers', () => {
     handlers = {};
     const mockToEmit = mock.fn();
     socket = {
-      on: (event: string, handler: Function) => { handlers[event] = handler; },
+      on: (event: string, handler: SocketHandler) => { handlers[event] = handler; },
       to: mock.fn(() => ({ emit: mockToEmit })),
     };
     socket._toEmit = mockToEmit;
     io = {
       to: mock.fn(() => ({ emit: mock.fn() })),
     };
+    // @ts-expect-error - Using simplified test mocks for io and socket
     registerMessageHandlers(io, socket, 'user-1');
   });
 

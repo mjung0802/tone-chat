@@ -16,6 +16,11 @@ export async function getUserById(id: string): Promise<User> {
 }
 
 const ALLOWED_UPDATE_FIELDS = new Set(['display_name', 'pronouns', 'avatar_url', 'bio', 'status'] as const);
+type AllowedUpdateField = (typeof ALLOWED_UPDATE_FIELDS extends Set<infer T> ? T : never);
+
+function isAllowedUpdateField(field: string): field is AllowedUpdateField {
+  return ALLOWED_UPDATE_FIELDS.has(field as AllowedUpdateField);
+}
 
 export async function updateUser(
   id: string,
@@ -24,7 +29,7 @@ export async function updateUser(
   const safeUpdates: Record<string, string | null> = {};
 
   for (const [key, value] of Object.entries(updates)) {
-    if (value !== undefined && ALLOWED_UPDATE_FIELDS.has(key as any)) {
+    if (value !== undefined && isAllowedUpdateField(key)) {
       safeUpdates[key] = value;
     }
   }

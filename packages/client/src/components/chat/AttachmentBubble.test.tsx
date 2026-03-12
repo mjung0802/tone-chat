@@ -1,9 +1,18 @@
-import React from 'react';
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest
+} from '@jest/globals';
 import { fireEvent } from '@testing-library/react-native';
-import { AttachmentBubble } from './AttachmentBubble';
-import { renderWithProviders } from '../../test-utils/renderWithProviders';
+import React from 'react';
+import { Linking } from 'react-native';
+import { ActivityIndicator } from 'react-native-paper';
 import * as useAttachmentsModule from '../../hooks/useAttachments';
 import { makeAttachment } from '../../test-utils/fixtures';
+import { renderWithProviders } from '../../test-utils/renderWithProviders';
+import { AttachmentBubble } from './AttachmentBubble';
 
 jest.mock('../../hooks/useAttachments');
 
@@ -32,7 +41,6 @@ describe('AttachmentBubble', () => {
       <AttachmentBubble attachmentId="att-1" />,
     );
 
-    const { ActivityIndicator } = require('react-native-paper');
     expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
   });
 
@@ -99,7 +107,6 @@ describe('AttachmentBubble', () => {
   });
 
   it('opens URL when file card is pressed', () => {
-    const { Linking } = require('react-native');
     jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
 
     const attachment = makeAttachment({

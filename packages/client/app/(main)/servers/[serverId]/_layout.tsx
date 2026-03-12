@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, useWindowDimensions } from 'react-native';
+import { ChannelSidebar } from '@/components/channels/ChannelSidebar';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { useChannels, useCreateChannel } from '@/hooks/useChannels';
+import { useServer } from '@/hooks/useServers';
+import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore';
+import type { Channel } from '@/types/models';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { IconButton, useTheme, Portal, Dialog, TextInput as PaperTextInput, Button } from 'react-native-paper';
-import { useServer } from '../../../../src/hooks/useServers';
-import { useChannels, useCreateChannel } from '../../../../src/hooks/useChannels';
-import { ChannelSidebar } from '../../../../src/components/channels/ChannelSidebar';
-import { LoadingSpinner } from '../../../../src/components/common/LoadingSpinner';
-import { useUiStore } from '../../../../src/stores/uiStore';
-import { useAuthStore } from '../../../../src/stores/authStore';
-import type { Channel } from '../../../../src/types/models';
+import React, { useState } from 'react';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Button, Dialog, IconButton, TextInput as PaperTextInput, Portal, useTheme } from 'react-native-paper';
 
 export default function ServerLayout() {
   const { serverId } = useLocalSearchParams<{ serverId: string }>();

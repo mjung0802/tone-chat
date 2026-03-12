@@ -1,5 +1,9 @@
-import { mock, describe, it, beforeEach } from 'node:test';
+import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
+
+type MemberMiddlewareReq = Request & { member?: unknown };
+type TestResponse = Response & { statusCode: number; _json: unknown };
 
 const mockFindOne = mock.fn<AnyFn>();
 
@@ -11,12 +15,12 @@ mock.module('../../members/serverMember.model.js', {
 
 const { requireMember } = await import('./requireMember.js');
 
-function makeReq(overrides: Partial<{ params: any; headers: any }> = {}) {
-  return { params: {}, headers: {}, ...overrides } as any;
+function makeReq(overrides: Partial<Pick<Request, 'params' | 'headers'>> = {}): MemberMiddlewareReq {
+  return { params: {}, headers: {}, ...overrides } as MemberMiddlewareReq;
 }
 
-function makeRes() {
-  const res: any = { statusCode: 200, _json: undefined };
+function makeRes(): TestResponse {
+  const res = { statusCode: 200, _json: undefined } as TestResponse;
   res.status = (c: number) => { res.statusCode = c; return res; };
   res.json = (d: unknown) => { res._json = d; return res; };
   return res;
@@ -30,7 +34,7 @@ describe('requireMember', () => {
     const next = mock.fn();
     await requireMember(makeReq({ params: { serverId: 's1' } }), res, next);
     assert.equal(res.statusCode, 401);
-    assert.equal(res._json.error.code, 'UNAUTHORIZED');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'UNAUTHORIZED');
     assert.equal(next.mock.callCount(), 0);
   });
 
@@ -44,7 +48,7 @@ describe('requireMember', () => {
       next,
     );
     assert.equal(res.statusCode, 403);
-    assert.equal(res._json.error.code, 'NOT_A_MEMBER');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'NOT_A_MEMBER');
     assert.equal(next.mock.callCount(), 0);
   });
 

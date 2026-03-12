@@ -1,24 +1,24 @@
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { CreateInviteForm } from '@/components/invites/CreateInviteForm';
+import { InviteCard } from '@/components/invites/InviteCard';
+import { MemberList } from '@/components/members/MemberList';
+import { useChannels, useCreateChannel } from '@/hooks/useChannels';
+import { useCreateInvite, useInvites, useRevokeInvite } from '@/hooks/useInvites';
+import { useMembers } from '@/hooks/useMembers';
+import { useDeleteServer, useServer, useUpdateServer } from '@/hooks/useServers';
+import { useAuthStore } from '@/stores/authStore';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import {
-  TextInput,
   Button,
-  Text,
   Divider,
   List,
+  Text,
+  TextInput,
   useTheme,
 } from 'react-native-paper';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useServer, useUpdateServer, useDeleteServer } from '../../../../src/hooks/useServers';
-import { useChannels, useCreateChannel, useDeleteChannel } from '../../../../src/hooks/useChannels';
-import { useMembers, useRemoveMember } from '../../../../src/hooks/useMembers';
-import { useInvites, useCreateInvite, useRevokeInvite } from '../../../../src/hooks/useInvites';
-import { useAuthStore } from '../../../../src/stores/authStore';
-import { ConfirmDialog } from '../../../../src/components/common/ConfirmDialog';
-import { LoadingSpinner } from '../../../../src/components/common/LoadingSpinner';
-import { MemberList } from '../../../../src/components/members/MemberList';
-import { InviteCard } from '../../../../src/components/invites/InviteCard';
-import { CreateInviteForm } from '../../../../src/components/invites/CreateInviteForm';
 
 export default function ServerSettingsScreen() {
   const { serverId } = useLocalSearchParams<{ serverId: string }>();
@@ -40,8 +40,6 @@ export default function ServerSettingsScreen() {
   const updateServer = useUpdateServer(sid);
   const deleteServer = useDeleteServer(sid);
   const createChannel = useCreateChannel(sid);
-  const deleteChannel = useDeleteChannel(sid, '');
-  const removeMember = useRemoveMember(sid, '');
   const createInvite = useCreateInvite(sid);
   const revokeInvite = useRevokeInvite(sid);
 

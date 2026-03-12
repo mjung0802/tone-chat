@@ -1,7 +1,7 @@
+import { EmptyState } from '@/components/common/EmptyState';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { useChannels } from '@/hooks/useChannels';
 import { Redirect, useLocalSearchParams } from 'expo-router';
-import { useChannels } from '../../../../src/hooks/useChannels';
-import { LoadingSpinner } from '../../../../src/components/common/LoadingSpinner';
-import { EmptyState } from '../../../../src/components/common/EmptyState';
 
 export default function ServerIndexScreen() {
   const { serverId } = useLocalSearchParams<{ serverId: string }>();

@@ -1,5 +1,6 @@
-import { mock, describe, it, beforeEach } from 'node:test';
+import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
 
 const mockRegisterUser = mock.fn<AnyFn>();
 const mockLoginUser = mock.fn<AnyFn>();
@@ -31,13 +32,29 @@ mock.module('../users/users.service.js', {
 
 const { register, login, refresh, verifyEmail, resendVerification } = await import('./auth.controller.js');
 
-function makeReq(overrides: Partial<{ body: any; params: any; headers: any; query: any }> = {}) {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as any;
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type TestResponse = Response & { statusCode: number; _json: unknown };
+
+function assertErrorCode(error: unknown, code: string): true {
+  assert.equal(typeof error, 'object');
+  assert.notEqual(error, null);
+  assert.equal((error as { code?: unknown }).code, code);
+  return true;
 }
-function makeRes() {
-  const res: any = { statusCode: 200, _json: undefined };
-  res.status = (c: number) => { res.statusCode = c; return res; };
-  res.json = (d: unknown) => { res._json = d; return res; };
+
+function makeReq(overrides: RequestOverrides = {}): Request {
+  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
+}
+function makeRes(): TestResponse {
+  const res = { statusCode: 200, _json: undefined } as TestResponse;
+  res.status = (c: number) => {
+    res.statusCode = c;
+    return res;
+  };
+  res.json = (d: unknown) => {
+    res._json = d;
+    return res;
+  };
   return res;
 }
 
@@ -48,7 +65,7 @@ describe('register', () => {
     const res = makeRes();
     await register(makeReq({ body: { email: 'a@b.com', password: '12345678' } }), res);
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'MISSING_FIELDS');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_FIELDS');
   });
 
   it('returns 400 when email missing', async () => {
@@ -69,7 +86,7 @@ describe('register', () => {
     const res = makeRes();
     await register(makeReq({ body: { username: 'alice', email: 'a@b.com', password: '12345678' } }), res);
     assert.equal(res.statusCode, 201);
-    assert.equal(res._json.user.id, 'u1');
+    assert.equal((res._json as { user: { id: string } }).user.id, 'u1');
   });
 });
 
@@ -94,7 +111,7 @@ describe('login', () => {
     const res = makeRes();
     await login(makeReq({ body: { email: 'a@b.com', password: '12345678' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.equal(res._json.accessToken, 'at');
+    assert.equal((res._json as { accessToken: string }).accessToken, 'at');
   });
 });
 
@@ -112,7 +129,7 @@ describe('refresh', () => {
     const res = makeRes();
     await refresh(makeReq({ body: { refreshToken: 'old-rt' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.equal(res._json.accessToken, 'new-at');
+    assert.equal((res._json as { accessToken: string }).accessToken, 'new-at');
   });
 });
 
@@ -125,7 +142,7 @@ describe('verifyEmail', () => {
     const res = makeRes();
     await verifyEmail(makeReq({ headers: { 'x-user-id': 'u1' }, body: {} }), res);
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'MISSING_FIELDS');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_FIELDS');
   });
 
   it('calls verifyOtp with userId from x-user-id header and code from body', async () => {
@@ -142,7 +159,7 @@ describe('verifyEmail', () => {
     const res = makeRes();
     await verifyEmail(makeReq({ headers: { 'x-user-id': 'u1' }, body: { code: '123456' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.equal(res._json.message, 'Email verified');
+    assert.equal((res._json as { message: string }).message, 'Email verified');
   });
 
   it('propagates AppError from verifyOtp', async () => {
@@ -153,10 +170,7 @@ describe('verifyEmail', () => {
     const res = makeRes();
     await assert.rejects(
       () => verifyEmail(makeReq({ headers: { 'x-user-id': 'u1' }, body: { code: '000000' } }), res),
-      (err: any) => {
-        assert.equal(err.code, 'INVALID_CODE');
-        return true;
-      },
+      (error) => assertErrorCode(error, 'INVALID_CODE'),
     );
   });
 });
@@ -185,7 +199,7 @@ describe('resendVerification', () => {
     const res = makeRes();
     await resendVerification(makeReq({ headers: { 'x-user-id': 'u1' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.equal(res._json.message, 'Verification email sent');
+    assert.equal((res._json as { message: string }).message, 'Verification email sent');
   });
 
   it('propagates AppError from getUserById', async () => {
@@ -196,10 +210,7 @@ describe('resendVerification', () => {
     const res = makeRes();
     await assert.rejects(
       () => resendVerification(makeReq({ headers: { 'x-user-id': 'nonexistent' } }), res),
-      (err: any) => {
-        assert.equal(err.code, 'USER_NOT_FOUND');
-        return true;
-      },
+      (error) => assertErrorCode(error, 'USER_NOT_FOUND'),
     );
   });
 });

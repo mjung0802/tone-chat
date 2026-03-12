@@ -110,16 +110,16 @@ export function updateMessageInCache(
   queryClient.setQueryData<{
     pages: MessagesResponse[];
     pageParams: (string | undefined)[];
-  }>(
-    ['servers', message.serverId, 'channels', message.channelId, 'messages'],
-    (old) => {
-      if (!old) return old;
-      return {
-        ...old,
-        pages: old.pages.map((page) => ({
-          messages: page.messages.map((m) => (m._id === message._id ? message : m)),
-        })),
-      };
-    },
-  );
+      }>(
+      ['servers', message.serverId, 'channels', message.channelId, 'messages'],
+      (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            messages: page.messages.map((m) => (m._id === message._id ? message : m)),
+          })),
+        };
+      },
+      );
 }

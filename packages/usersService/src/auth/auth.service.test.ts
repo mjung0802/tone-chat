@@ -1,9 +1,30 @@
-import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
 
 // Mock sql as a callable tagged-template + .begin()
-const mockSql: any = mock.fn<AnyFn>((..._args: unknown[]) => []);
-mockSql.begin = mock.fn<AnyFn>();
+type TxFn = (..._args: unknown[]) => unknown[];
+type TransactionCallback = (tx: TxFn) => unknown;
+type SqlMockFn = (...args: unknown[]) => unknown[];
+type BeginMockFn = (fn: TransactionCallback) => unknown;
+
+function assertErrorCode(error: unknown, code: string): true {
+  assert.equal(typeof error, 'object');
+  assert.notEqual(error, null);
+  assert.ok('code' in (error as Record<string, unknown>));
+  assert.equal((error as { code: string }).code, code);
+  return true;
+}
+
+const mockSql = mock.fn<SqlMockFn>((..._args) => {
+  void _args;
+  return [];
+}) as ReturnType<typeof mock.fn<SqlMockFn>> & {
+  begin: ReturnType<typeof mock.fn<BeginMockFn>>;
+};
+mockSql.begin = mock.fn<BeginMockFn>((..._args) => {
+  void _args;
+  return undefined;
+});
 
 mock.module('../config/database.js', { namedExports: { sql: mockSql } });
 
@@ -46,18 +67,12 @@ describe('registerUser', () => {
   });
 
   it('throws WEAK_PASSWORD when password < 8 chars', async () => {
-    await assert.rejects(() => registerUser('alice', 'a@test.com', 'short'), (err: any) => {
-      assert.equal(err.code, 'WEAK_PASSWORD');
-      return true;
-    });
+    await assert.rejects(() => registerUser('alice', 'a@test.com', 'short'), (error) => assertErrorCode(error, 'WEAK_PASSWORD'));
   });
 
   it('throws USER_EXISTS when duplicate found', async () => {
     mockSql.mock.mockImplementation(() => [{ id: 'existing' }]);
-    await assert.rejects(() => registerUser('alice', 'a@test.com', 'password123'), (err: any) => {
-      assert.equal(err.code, 'USER_EXISTS');
-      return true;
-    });
+    await assert.rejects(() => registerUser('alice', 'a@test.com', 'password123'), (error) => assertErrorCode(error, 'USER_EXISTS'));
   });
 
   it('calls bcrypt.hash with salt rounds 12', async () => {
@@ -66,8 +81,11 @@ describe('registerUser', () => {
     mockSign.mock.mockImplementation(() => 'access-token');
     // sql.begin returns the transaction result
     const user = makeUser();
-    mockSql.begin.mock.mockImplementation(async (fn: Function) => {
-      const tx = mock.fn(() => [user]);
+    mockSql.begin.mock.mockImplementation(async (fn: TransactionCallback) => {
+      const tx = mock.fn<TxFn>((..._args) => {
+        void _args;
+        return [user];
+      });
       return fn(tx);
     });
 
@@ -80,8 +98,11 @@ describe('registerUser', () => {
     mockHash.mock.mockImplementation(async () => 'hashed');
     mockSign.mock.mockImplementation(() => 'token');
     const user = makeUser();
-    mockSql.begin.mock.mockImplementation(async (fn: Function) => {
-      const tx = mock.fn(() => [user]);
+    mockSql.begin.mock.mockImplementation(async (fn: TransactionCallback) => {
+      const tx = mock.fn<TxFn>((..._args) => {
+        void _args;
+        return [user];
+      });
       return fn(tx);
     });
 
@@ -94,8 +115,11 @@ describe('registerUser', () => {
     mockHash.mock.mockImplementation(async () => 'hashed');
     mockSign.mock.mockImplementation(() => 'access-tok');
     const user = makeUser();
-    mockSql.begin.mock.mockImplementation(async (fn: Function) => {
-      const tx = mock.fn(() => [user]);
+    mockSql.begin.mock.mockImplementation(async (fn: TransactionCallback) => {
+      const tx = mock.fn<TxFn>((..._args) => {
+        void _args;
+        return [user];
+      });
       return fn(tx);
     });
     // createRefreshToken sql insert
@@ -112,8 +136,11 @@ describe('registerUser', () => {
     mockHash.mock.mockImplementation(async () => 'hashed');
     mockSign.mock.mockImplementation(() => 'access-tok');
     const user = makeUser();
-    mockSql.begin.mock.mockImplementation(async (fn: Function) => {
-      const tx = mock.fn(() => [user]);
+    mockSql.begin.mock.mockImplementation(async (fn: TransactionCallback) => {
+      const tx = mock.fn<TxFn>((..._args) => {
+        void _args;
+        return [user];
+      });
       return fn(tx);
     });
 
@@ -131,8 +158,11 @@ describe('registerUser', () => {
     mockHash.mock.mockImplementation(async () => 'hashed');
     mockSign.mock.mockImplementation(() => 'access-tok');
     const user = makeUser();
-    mockSql.begin.mock.mockImplementation(async (fn: Function) => {
-      const tx = mock.fn(() => [user]);
+    mockSql.begin.mock.mockImplementation(async (fn: TransactionCallback) => {
+      const tx = mock.fn<TxFn>((..._args) => {
+        void _args;
+        return [user];
+      });
       return fn(tx);
     });
     mockSendVerificationOtp.mock.mockImplementation(async () => {
@@ -155,10 +185,7 @@ describe('loginUser', () => {
 
   it('throws INVALID_CREDENTIALS when user not found', async () => {
     mockSql.mock.mockImplementation(() => []);
-    await assert.rejects(() => loginUser('a@test.com', 'password123'), (err: any) => {
-      assert.equal(err.code, 'INVALID_CREDENTIALS');
-      return true;
-    });
+    await assert.rejects(() => loginUser('a@test.com', 'password123'), (error) => assertErrorCode(error, 'INVALID_CREDENTIALS'));
   });
 
   it('throws INVALID_CREDENTIALS when wrong password', async () => {
@@ -171,10 +198,7 @@ describe('loginUser', () => {
     });
     mockCompare.mock.mockImplementation(async () => false);
 
-    await assert.rejects(() => loginUser('a@test.com', 'wrong'), (err: any) => {
-      assert.equal(err.code, 'INVALID_CREDENTIALS');
-      return true;
-    });
+    await assert.rejects(() => loginUser('a@test.com', 'wrong'), (error) => assertErrorCode(error, 'INVALID_CREDENTIALS'));
   });
 
   it('returns tokens on success', async () => {
@@ -204,10 +228,7 @@ describe('refreshAccessToken', () => {
 
   it('throws INVALID_TOKEN when token hash not found', async () => {
     mockSql.mock.mockImplementation(() => []);
-    await assert.rejects(() => refreshAccessToken('bad-token'), (err: any) => {
-      assert.equal(err.code, 'INVALID_TOKEN');
-      return true;
-    });
+    await assert.rejects(() => refreshAccessToken('bad-token'), (error) => assertErrorCode(error, 'INVALID_TOKEN'));
   });
 
   it('throws TOKEN_EXPIRED when expired (atomic DELETE RETURNING)', async () => {
@@ -216,10 +237,7 @@ describe('refreshAccessToken', () => {
       return [{ id: 'rt1', user_id: 'u1', expires_at: new Date('2000-01-01') }];
     });
 
-    await assert.rejects(() => refreshAccessToken('expired-token'), (err: any) => {
-      assert.equal(err.code, 'TOKEN_EXPIRED');
-      return true;
-    });
+    await assert.rejects(() => refreshAccessToken('expired-token'), (error) => assertErrorCode(error, 'TOKEN_EXPIRED'));
   });
 
   it('rotates: atomic delete + returns new tokens', async () => {

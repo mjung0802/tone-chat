@@ -1,5 +1,5 @@
 import React from 'react';
-import { List, Icon } from 'react-native-paper';
+import { List } from 'react-native-paper';
 import type { Channel } from '../../types/models';
 
 interface ChannelListItemProps {
