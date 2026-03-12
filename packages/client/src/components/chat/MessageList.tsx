@@ -1,9 +1,13 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
 import { FlatList, StyleSheet, type ListRenderItemInfo } from 'react-native';
 import { MessageBubble } from './MessageBubble';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { EmptyState } from '../common/EmptyState';
 import type { Message, Attachment } from '../../types/models';
+
+export interface MessageListHandle {
+  scrollToMessage: (messageId: string) => boolean;
+}
 
 interface MessageListProps {
   messages: Message[];
@@ -15,19 +19,38 @@ interface MessageListProps {
   onImagePress?: ((attachment: Attachment) => void) | undefined;
   onToggleReaction?: ((messageId: string, emoji: string) => void) | undefined;
   onAddReaction?: ((messageId: string) => void) | undefined;
+  onReply?: ((message: Message) => void) | undefined;
+  onReplyPress?: ((messageId: string) => void) | undefined;
+  highlightedMessageId?: string | null | undefined;
 }
 
-export function MessageList({
-  messages,
-  currentUserId,
-  authorNames,
-  onLoadMore,
-  isLoadingMore,
-  onMessageLongPress,
-  onImagePress,
-  onToggleReaction,
-  onAddReaction,
-}: MessageListProps) {
+export const MessageList = forwardRef<MessageListHandle, MessageListProps>(function MessageList(props, ref) {
+  const {
+    messages,
+    currentUserId,
+    authorNames,
+    onLoadMore,
+    isLoadingMore,
+    onMessageLongPress,
+    onImagePress,
+    onToggleReaction,
+    onAddReaction,
+    onReply,
+    onReplyPress,
+    highlightedMessageId,
+  } = props;
+
+  const flatListRef = useRef<FlatList>(null);
+
+  useImperativeHandle(ref, () => ({
+    scrollToMessage(messageId: string): boolean {
+      const index = messages.findIndex((m) => m._id === messageId);
+      if (index === -1) return false;
+      flatListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
+      return true;
+    },
+  }), [messages]);
+
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<Message>) => (
       <MessageBubble
@@ -40,9 +63,12 @@ export function MessageList({
         onImagePress={onImagePress}
         onToggleReaction={onToggleReaction}
         onAddReaction={onAddReaction}
+        onReply={onReply}
+        onReplyPress={onReplyPress}
+        highlighted={highlightedMessageId === item._id}
       />
     ),
-    [currentUserId, authorNames, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction],
+    [currentUserId, authorNames, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId],
   );
 
   const keyExtractor = useCallback((item: Message) => item._id, []);
@@ -59,6 +85,10 @@ export function MessageList({
 
   return (
     <FlatList
+      ref={flatListRef}
+      onScrollToIndexFailed={(info) => {
+        flatListRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true });
+      }}
       data={messages}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
@@ -71,7 +101,7 @@ export function MessageList({
       accessibilityLabel="Messages"
     />
   );
-}
+});
 
 const styles = StyleSheet.create({
   content: {

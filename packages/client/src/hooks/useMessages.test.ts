@@ -195,10 +195,10 @@ describe('useMessages', () => {
 describe('useSendMessage', () => {
   it('onSuccess appends message to cache', async () => {
     const queryClient = createTestQueryClient();
-    const existingMsg = makeMessage({ _id: 'existing' });
+    const existingMsg = makeMessage({ _id: 'existing', serverId: 's1', channelId: 'c1' });
     seedCache(queryClient, 's1', 'c1', [{ messages: [existingMsg] }]);
 
-    const newMsg = makeMessage({ _id: 'new-msg', content: 'Sent!' });
+    const newMsg = makeMessage({ _id: 'new-msg', content: 'Sent!', serverId: 's1', channelId: 'c1' });
     jest.mocked(messagesApi.sendMessage).mockResolvedValueOnce({ message: newMsg });
 
     const { result } = renderHook(() => useSendMessage('s1', 'c1'), {

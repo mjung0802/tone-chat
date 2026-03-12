@@ -43,6 +43,8 @@ export interface Message {
   attachmentIds: string[];
   editedAt?: string;
   reactions?: { emoji: string; userIds: string[] }[] | undefined;
+  replyTo?: { messageId: string; authorId: string; authorName: string; content: string } | undefined;
+  mentions?: string[] | undefined;
   createdAt: string;
 }
 

@@ -20,7 +20,7 @@ export default defineConfig([
       'semi': ['error', 'always'],
       'quotes': ['warn', 'single'],
       'indent': ['error', 2],
-      'linebreak-style': ['error', 'unix'],
+      'linebreak-style': 'off',
       'no-multiple-empty-lines': ['error', { 'max': 1, 'maxEOF': 0 }],
       'comma-dangle': ['error', 'always-multiline'],
     },

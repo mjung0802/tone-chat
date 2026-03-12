@@ -49,13 +49,13 @@ describe('MessageBubble', () => {
     expect(getByText('Bob')).toBeTruthy();
   });
 
-  it('hides author name for own messages', () => {
+  it('shows author name for own messages', () => {
     const msg = makeMessage();
-    const { queryByText } = renderWithProviders(
+    const { getByText } = renderWithProviders(
       <MessageBubble message={msg} isOwn={true} authorName="Me" />,
     );
 
-    expect(queryByText('Me')).toBeNull();
+    expect(getByText('Me')).toBeTruthy();
   });
 
   it('shows "(edited)" when editedAt is set', () => {

@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 import { getMember } from '../members/members.client.js';
 import { registerMessageHandlers } from '../messages/messages.socket.js';
+import { setIO } from '../messages/messages.routes.js';
 
 export function setupSocketIO(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
@@ -13,6 +14,8 @@ export function setupSocketIO(httpServer: HttpServer): Server {
     },
     connectionStateRecovery: {},
   });
+
+  setIO(io);
 
   // Auth middleware
   io.use((socket, next) => {
@@ -34,6 +37,9 @@ export function setupSocketIO(httpServer: HttpServer): Server {
   io.on('connection', (socket) => {
     const userId = socket.data['userId'] as string;
     console.log(`Socket connected: ${userId}`);
+
+    // Join user-level room for targeted events (mentions)
+    void socket.join(`user:${userId}`);
 
     // Room management — verify membership before joining
     socket.on('join_channel', async (data: { serverId: string; channelId: string }) => {

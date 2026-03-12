@@ -15,6 +15,8 @@ export interface SendMessagePayload {
   channelId: string;
   content: string;
   attachmentIds?: string[];
+  replyToId?: string;
+  mentions?: string[];
 }
 
 export interface TypingPayload {
@@ -34,6 +36,13 @@ export interface ToggleReactionPayload {
   emoji: string;
 }
 
+export interface MentionEvent {
+  messageId: string;
+  channelId: string;
+  serverId: string;
+  authorId: string;
+}
+
 export interface ClientToServerEvents {
   join_channel: (payload: JoinChannelPayload) => void;
   leave_channel: (payload: LeaveChannelPayload) => void;
@@ -43,7 +52,8 @@ export interface ClientToServerEvents {
 }
 
 export interface ServerToClientEvents {
-  new_message: (message: Message) => void;
+  new_message: (data: { message: Message }) => void;
   typing: (event: TypingEvent) => void;
   reaction_updated: (data: { message: Message }) => void;
+  mention: (event: MentionEvent) => void;
 }

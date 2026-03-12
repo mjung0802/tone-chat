@@ -114,7 +114,7 @@ describe('MessageInput', () => {
     fireEvent.changeText(getByLabelText('Message input'), '  Hello world  ');
     fireEvent.press(getByLabelText('Send message'));
 
-    expect(onSend).toHaveBeenCalledWith('Hello world', []);
+    expect(onSend).toHaveBeenCalledWith('Hello world', [], {});
   });
 
   it('pressing send clears input', () => {
@@ -207,7 +207,7 @@ describe('MessageInput', () => {
     fireEvent.changeText(getByLabelText('Message input'), 'Hello');
     fireEvent.press(getByLabelText('Send message'));
 
-    expect(onSend).toHaveBeenCalledWith('Hello', ['att-uploaded-1']);
+    expect(onSend).toHaveBeenCalledWith('Hello', ['att-uploaded-1'], {});
   });
 
   it('sends with attachments but no text', async () => {
@@ -233,7 +233,7 @@ describe('MessageInput', () => {
 
     fireEvent.press(getByLabelText('Send message'));
 
-    expect(onSend).toHaveBeenCalledWith('', ['att-no-text']);
+    expect(onSend).toHaveBeenCalledWith('', ['att-no-text'], {});
   });
 
   it('disables send while uploads are in progress', async () => {

@@ -1,11 +1,30 @@
 import { Router } from 'express';
 import type { AuthRequest } from '../shared/middleware/auth.js';
 import * as client from './messages.client.js';
+import { emitMentionEvents } from './mentions.helper.js';
 
 export const messagesRouter = Router({ mergeParams: true });
 
+// Store io reference for mention events
+let ioRef: import('socket.io').Server | null = null;
+export function setIO(io: import('socket.io').Server): void {
+  ioRef = io;
+}
+
 messagesRouter.post('/', async (req: AuthRequest, res) => {
   const result = await client.createMessage(req.userId!, req.params['serverId'] as string, req.params['channelId'] as string, req.body as Record<string, unknown>);
+
+  if (result.status === 201 && ioRef) {
+    const room = `server:${req.params['serverId'] as string}:channel:${req.params['channelId'] as string}`;
+    ioRef.to(room).emit('new_message', result.data);
+
+    const msg = (result.data as { message: { _id: string; mentions?: string[] } }).message;
+    const mentions = msg.mentions ?? [];
+    if (mentions.length > 0) {
+      await emitMentionEvents(ioRef, req.userId!, req.params['serverId'] as string, req.params['channelId'] as string, msg._id, mentions);
+    }
+  }
+
   res.status(result.status).json(result.data);
 });
 

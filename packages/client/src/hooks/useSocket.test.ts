@@ -88,7 +88,7 @@ describe('useChannelSocket', () => {
     expect(handler).toBeDefined();
 
     const newMsg = makeMessage({ _id: 'msg-2', content: 'From socket' });
-    act(() => handler!(newMsg));
+    act(() => handler!({ message: newMsg }));
 
     const data = queryClient.getQueryData<CacheData>(
       ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
@@ -187,7 +187,7 @@ describe('useChannelSocket', () => {
 
     const handler = findHandler(mockSocket, 'new_message');
     const newMsg = makeMessage({ _id: 'msg-1', content: 'First' });
-    act(() => handler!(newMsg));
+    act(() => handler!({ message: newMsg }));
 
     const data = queryClient.getQueryData<CacheData>(
       ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
