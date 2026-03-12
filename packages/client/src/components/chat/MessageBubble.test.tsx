@@ -2,12 +2,25 @@ import React from 'react';
 import { fireEvent } from '@testing-library/react-native';
 import { MessageBubble } from './MessageBubble';
 import { renderWithProviders } from '../../test-utils/renderWithProviders';
-import { makeMessage } from '../../test-utils/fixtures';
+import { makeMessage, makeReaction } from '../../test-utils/fixtures';
 
 jest.mock('./AttachmentBubble', () => ({
   AttachmentBubble: ({ attachmentId }: { attachmentId: string }) => {
     const { Text } = require('react-native');
     return <Text testID={`attachment-${attachmentId}`}>AttachmentBubble</Text>;
+  },
+}));
+
+jest.mock('./ReactionChips', () => ({
+  ReactionChips: (props: { reactions: unknown[]; onToggle: (e: string) => void; onAddReaction: () => void }) => {
+    const { View, Text, Pressable } = require('react-native');
+    return (
+      <View testID="reaction-chips">
+        <Text testID="reaction-count">{(props.reactions as unknown[]).length}</Text>
+        <Pressable testID="mock-toggle" onPress={() => props.onToggle('👍')} />
+        <Pressable testID="mock-add" onPress={props.onAddReaction} />
+      </View>
+    );
   },
 }));
 
@@ -119,5 +132,59 @@ describe('MessageBubble', () => {
     fireEvent(bubbleView, 'onTouchEnd');
 
     expect(onLongPress).toHaveBeenCalledWith(msg);
+  });
+
+  it('renders ReactionChips when message has reactions', () => {
+    const msg = makeMessage({
+      reactions: [makeReaction({ emoji: '👍', userIds: ['u1'] })],
+    });
+    const { getByTestId } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Alice" currentUserId="u1" />,
+    );
+    expect(getByTestId('reaction-chips')).toBeTruthy();
+  });
+
+  it('does not render ReactionChips when message has no reactions', () => {
+    const msg = makeMessage();
+    const { queryByTestId } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+    );
+    expect(queryByTestId('reaction-chips')).toBeNull();
+  });
+
+  it('forwards onToggleReaction with messageId', () => {
+    const msg = makeMessage({
+      _id: 'msg-99',
+      reactions: [makeReaction()],
+    });
+    const onToggleReaction = jest.fn();
+    const { getByTestId } = renderWithProviders(
+      <MessageBubble
+        message={msg}
+        isOwn={false}
+        authorName="Alice"
+        onToggleReaction={onToggleReaction}
+      />,
+    );
+    fireEvent.press(getByTestId('mock-toggle'));
+    expect(onToggleReaction).toHaveBeenCalledWith('msg-99', '👍');
+  });
+
+  it('forwards onAddReaction with messageId', () => {
+    const msg = makeMessage({
+      _id: 'msg-99',
+      reactions: [makeReaction()],
+    });
+    const onAddReaction = jest.fn();
+    const { getByTestId } = renderWithProviders(
+      <MessageBubble
+        message={msg}
+        isOwn={false}
+        authorName="Alice"
+        onAddReaction={onAddReaction}
+      />,
+    );
+    fireEvent.press(getByTestId('mock-add'));
+    expect(onAddReaction).toHaveBeenCalledWith('msg-99');
   });
 });

@@ -6,7 +6,7 @@ import {
   mockMessagesRoutes,
   mockMembersRoutes,
 } from './helpers/mocks';
-import { MOCK_MESSAGES } from './helpers/fixtures';
+import { MOCK_MESSAGES, MOCK_USER } from './helpers/fixtures';
 
 const CHANNEL_URL = '/servers/server-001/channels/channel-001';
 
@@ -68,6 +68,41 @@ test('sends a text message and it appears in the list', async ({ page }) => {
   await page.getByLabel('Send message').click();
 
   await expect(page.getByText(sentContent)).toBeVisible();
+});
+
+test('displays existing reaction chips on messages', async ({ page }) => {
+  await mockMessagesRoutes(page);
+
+  await page.goto(CHANNEL_URL);
+
+  // First message has reactions, verify chips are visible
+  await expect(page.getByTestId('reaction-chip-👍')).toBeVisible();
+  await expect(page.getByTestId('reaction-chip-🔥')).toBeVisible();
+});
+
+test('hover shows add-reaction button', async ({ page }) => {
+  await mockMessagesRoutes(page);
+
+  await page.goto(CHANNEL_URL);
+
+  // Hover over the first message
+  const messageContainer = page.getByLabel(`${MOCK_USER.display_name} said: ${MOCK_MESSAGES[0]!.content}`, { exact: false });
+  await messageContainer.hover();
+
+  await expect(messageContainer.getByTestId('hover-reaction-button')).toBeVisible();
+});
+
+test('click add-reaction opens emoji picker', async ({ page }) => {
+  await mockMessagesRoutes(page);
+
+  await page.goto(CHANNEL_URL);
+
+  const messageContainer = page.getByLabel(`${MOCK_USER.display_name} said: ${MOCK_MESSAGES[0]!.content}`, { exact: false });
+  await messageContainer.hover();
+
+  await messageContainer.getByTestId('hover-reaction-button').click();
+
+  await expect(page.getByTestId('emoji-picker-modal')).toBeVisible();
 });
 
 test('send button is disabled while message is empty', async ({ page }) => {

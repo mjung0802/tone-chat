@@ -15,3 +15,7 @@ export function listMessages(userId: string, serverId: string, channelId: string
 export function updateMessage(userId: string, serverId: string, channelId: string, messageId: string, body: Record<string, unknown>) {
   return serviceRequest(base(), `/servers/${serverId}/channels/${channelId}/messages/${messageId}`, { method: 'PATCH', userId, body });
 }
+
+export function toggleReaction(userId: string, serverId: string, channelId: string, messageId: string, body: Record<string, unknown>) {
+  return serviceRequest(base(), `/servers/${serverId}/channels/${channelId}/messages/${messageId}/reactions`, { method: 'PUT', userId, body });
+}

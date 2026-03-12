@@ -9,7 +9,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test --experimental-test-module-mocks \"src/**/!(*.integration).test.ts\"",
-    "test:integration": "tsx --env-file=.env.test --test \"src/**/*.integration.test.ts\""
+    "test:integration": "tsx --env-file=.env.test --test --test-concurrency=1 \"src/**/*.integration.test.ts\""
   },
   "dependencies": {
     "express": "^5.2.1",

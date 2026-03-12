@@ -184,6 +184,37 @@ export async function mockUsersRoutes(page: Page): Promise<void> {
   });
 }
 
+export async function mockReactionRoutes(page: Page): Promise<void> {
+  await page.route(
+    /http:\/\/localhost:4000\/api\/v1\/servers\/[^/]+\/channels\/[^/]+\/messages\/[^/]+\/reactions$/,
+    async (route) => {
+      if (route.request().method() === 'PUT') {
+        const body = route.request().postDataJSON() as { emoji?: string };
+        const url = route.request().url();
+        const messageId = url.split('/messages/')[1]!.split('/reactions')[0];
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            message: {
+              _id: messageId,
+              channelId: 'channel-001',
+              serverId: 'server-001',
+              authorId: 'user-001',
+              content: 'Hello from test',
+              attachmentIds: [],
+              reactions: [{ emoji: body.emoji ?? '👍', userIds: ['user-001'] }],
+              createdAt: '2024-01-01T00:00:00.000Z',
+            },
+          }),
+        });
+      } else {
+        await route.continue();
+      }
+    },
+  );
+}
+
 export async function mockMembersRoutes(page: Page): Promise<void> {
   await page.route(`${API}/servers/*/members`, async (route) => {
     await route.fulfill({

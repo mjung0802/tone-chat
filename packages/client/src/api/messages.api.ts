@@ -1,9 +1,10 @@
-import { get, post, patch } from './client';
+import { get, post, patch, put } from './client';
 import type {
   MessageResponse,
   MessagesResponse,
   SendMessageRequest,
   UpdateMessageRequest,
+  ToggleReactionRequest,
   MessagesQuery,
 } from '../types/api.types';
 
@@ -32,6 +33,18 @@ export function updateMessage(
 ) {
   return patch<MessageResponse>(
     `/servers/${serverId}/channels/${channelId}/messages/${messageId}`,
+    data,
+  );
+}
+
+export function toggleReaction(
+  serverId: string,
+  channelId: string,
+  messageId: string,
+  data: ToggleReactionRequest,
+) {
+  return put<MessageResponse>(
+    `/servers/${serverId}/channels/${channelId}/messages/${messageId}/reactions`,
     data,
   );
 }

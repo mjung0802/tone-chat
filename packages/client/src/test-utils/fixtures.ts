@@ -33,6 +33,14 @@ export function makeMessage(overrides: Partial<Message> = {}): Message {
   };
 }
 
+export function makeReaction(overrides: Partial<{ emoji: string; userIds: string[] }> = {}) {
+  return {
+    emoji: '👍',
+    userIds: ['user-123'],
+    ...overrides,
+  };
+}
+
 export function makeAttachment(overrides: Partial<Attachment> = {}): Attachment {
   return {
     id: 'att-1',

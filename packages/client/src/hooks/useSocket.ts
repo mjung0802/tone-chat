@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { AccessibilityInfo } from 'react-native';
 import { useSocketStore } from '../stores/socketStore';
 import { useAuthStore } from '../stores/authStore';
-import { injectMessage } from './useMessages';
+import { injectMessage, updateMessageInCache } from './useMessages';
+import type { Message } from '../types/models';
 import type { TypingEvent } from '../types/socket.types';
 
 export function useSocketConnection() {
@@ -57,13 +58,19 @@ export function useChannelSocket(
       }
     };
 
+    const handleReactionUpdated = (data: { message: Message }) => {
+      updateMessageInCache(queryClient, data.message);
+    };
+
     socket.on('new_message', handleNewMessage);
     socket.on('typing', handleTyping);
+    socket.on('reaction_updated', handleReactionUpdated);
 
     return () => {
       socket.emit('leave_channel', { serverId, channelId });
       socket.off('new_message', handleNewMessage);
       socket.off('typing', handleTyping);
+      socket.off('reaction_updated', handleReactionUpdated);
     };
   }, [socket, serverId, channelId, queryClient, onTyping]);
 }

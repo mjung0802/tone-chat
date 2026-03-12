@@ -8,6 +8,7 @@ export interface IMessage extends Document {
   attachmentIds: string[];
   editedAt?: Date;
   createdAt: Date;
+  reactions: { emoji: string; userIds: string[] }[];
 }
 
 const messageSchema = new Schema<IMessage>(
@@ -18,6 +19,10 @@ const messageSchema = new Schema<IMessage>(
     content: { type: String, required: false, default: '' },
     attachmentIds: { type: [String], default: [] },
     editedAt: { type: Date },
+    reactions: {
+      type: [{ emoji: { type: String, required: true }, userIds: [{ type: String }], _id: false }],
+      default: [],
+    },
   },
   { timestamps: true },
 );

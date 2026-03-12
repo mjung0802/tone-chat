@@ -10,7 +10,9 @@ import { MessageList } from '../../../../../src/components/chat/MessageList';
 import { MessageInput } from '../../../../../src/components/chat/MessageInput';
 import { TypingIndicator } from '../../../../../src/components/chat/TypingIndicator';
 import { AttachmentViewer } from '../../../../../src/components/chat/AttachmentViewer';
+import { EmojiPicker } from '../../../../../src/components/chat/EmojiPicker';
 import { LoadingSpinner } from '../../../../../src/components/common/LoadingSpinner';
+import { useSocketStore } from '../../../../../src/stores/socketStore';
 import type { TypingEvent } from '../../../../../src/types/socket.types';
 import type { Attachment } from '../../../../../src/types/models';
 
@@ -45,6 +47,10 @@ export default function ChannelScreen() {
   const [viewerAttachment, setViewerAttachment] = useState<Attachment | null>(null);
   const [viewerVisible, setViewerVisible] = useState(false);
 
+  // Reaction state
+  const [reactionTargetMessageId, setReactionTargetMessageId] = useState<string | null>(null);
+  const socket = useSocketStore((s) => s.socket);
+
   const handleImagePress = useCallback((attachment: Attachment) => {
     setViewerAttachment(attachment);
     setViewerVisible(true);
@@ -54,6 +60,28 @@ export default function ChannelScreen() {
     setViewerVisible(false);
     setViewerAttachment(null);
   }, []);
+
+  const handleToggleReaction = useCallback(
+    (messageId: string, emoji: string) => {
+      if (!socket) return;
+      socket.emit('toggle_reaction', { serverId: sid, channelId: cid, messageId, emoji });
+    },
+    [socket, sid, cid],
+  );
+
+  const handleAddReaction = useCallback((messageId: string) => {
+    setReactionTargetMessageId(messageId);
+  }, []);
+
+  const handleReactionEmojiSelect = useCallback(
+    (emoji: string) => {
+      if (reactionTargetMessageId) {
+        handleToggleReaction(reactionTargetMessageId, emoji);
+      }
+      setReactionTargetMessageId(null);
+    },
+    [reactionTargetMessageId, handleToggleReaction],
+  );
 
   const handleTyping = useCallback(
     (event: TypingEvent) => {
@@ -132,6 +160,8 @@ export default function ChannelScreen() {
         onLoadMore={handleLoadMore}
         isLoadingMore={isFetchingNextPage}
         onImagePress={handleImagePress}
+        onToggleReaction={handleToggleReaction}
+        onAddReaction={handleAddReaction}
       />
       <TypingIndicator userNames={typingUserNames} />
       <MessageInput
@@ -143,6 +173,11 @@ export default function ChannelScreen() {
         visible={viewerVisible}
         attachment={viewerAttachment}
         onClose={handleViewerClose}
+      />
+      <EmojiPicker
+        visible={reactionTargetMessageId !== null}
+        onSelect={handleReactionEmojiSelect}
+        onDismiss={() => setReactionTargetMessageId(null)}
       />
     </View>
   );

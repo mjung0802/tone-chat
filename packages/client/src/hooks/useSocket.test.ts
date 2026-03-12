@@ -123,6 +123,47 @@ describe('useChannelSocket', () => {
     expect(onTyping).not.toHaveBeenCalled();
   });
 
+  it('reaction_updated handler updates message in cache', () => {
+    const existing = makeMessage({ _id: 'msg-1' });
+    queryClient.setQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+      { pages: [{ messages: [existing] }], pageParams: [undefined] },
+    );
+
+    renderHook(() => useChannelSocket('server-1', 'channel-1'), {
+      wrapper: createHookWrapper(queryClient),
+    });
+
+    const handler = findHandler(mockSocket, 'reaction_updated');
+    expect(handler).toBeDefined();
+
+    const updatedMsg = makeMessage({
+      _id: 'msg-1',
+      reactions: [{ emoji: '👍', userIds: ['u1'] }],
+    });
+    act(() => handler!({ message: updatedMsg }));
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+    );
+    expect(data!.pages[0]!.messages[0]!.reactions).toEqual([
+      { emoji: '👍', userIds: ['u1'] },
+    ]);
+  });
+
+  it('cleans up reaction_updated handler on unmount', () => {
+    const { unmount } = renderHook(() => useChannelSocket('server-1', 'channel-1'), {
+      wrapper: createHookWrapper(queryClient),
+    });
+
+    unmount();
+
+    const offCalls = mockSocket.off.mock.calls.filter(
+      ([event]: [string]) => event === 'reaction_updated',
+    );
+    expect(offCalls).toHaveLength(1);
+  });
+
   it('no-ops when socket/serverId/channelId is null', () => {
     useSocketStore.setState({ socket: null, isConnected: false });
 

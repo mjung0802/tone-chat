@@ -45,6 +45,11 @@ export const MOCK_CHANNEL = {
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
 
+export const MOCK_REACTIONS = [
+  { emoji: '👍', userIds: ['user-001', 'user-002'] },
+  { emoji: '🔥', userIds: ['user-002'] },
+];
+
 export const MOCK_MESSAGES = [
   {
     _id: 'msg-001',
@@ -53,6 +58,7 @@ export const MOCK_MESSAGES = [
     authorId: 'user-001',
     content: 'Hello from test',
     attachmentIds: [],
+    reactions: MOCK_REACTIONS,
     createdAt: '2024-01-01T00:00:00.000Z',
   },
   {
@@ -62,6 +68,7 @@ export const MOCK_MESSAGES = [
     authorId: 'user-001',
     content: 'Second test message',
     attachmentIds: [],
+    reactions: [],
     createdAt: '2024-01-01T00:01:00.000Z',
   },
 ];

@@ -101,3 +101,25 @@ export function injectMessage(
       },
       );
 }
+
+// Helper to update an existing message in the query cache (e.g., reactions changed)
+export function updateMessageInCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  message: Message,
+) {
+  queryClient.setQueryData<{
+    pages: MessagesResponse[];
+    pageParams: (string | undefined)[];
+  }>(
+    ['servers', message.serverId, 'channels', message.channelId, 'messages'],
+    (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        pages: old.pages.map((page) => ({
+          messages: page.messages.map((m) => (m._id === message._id ? message : m)),
+        })),
+      };
+    },
+  );
+}

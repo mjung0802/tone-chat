@@ -20,6 +20,15 @@ function isValidChannelRef(data: unknown): data is { serverId: string; channelId
   return typeof d['serverId'] === 'string' && typeof d['channelId'] === 'string';
 }
 
+function isValidToggleReaction(data: unknown): data is { serverId: string; channelId: string; messageId: string; emoji: string } {
+  if (typeof data !== 'object' || data === null) return false;
+  const d = data as Record<string, unknown>;
+  if (typeof d['serverId'] !== 'string' || typeof d['channelId'] !== 'string') return false;
+  if (typeof d['messageId'] !== 'string' || !d['messageId']) return false;
+  if (typeof d['emoji'] !== 'string' || !d['emoji'] || d['emoji'].length > 32) return false;
+  return true;
+}
+
 export function registerMessageHandlers(io: Server, socket: Socket, userId: string): void {
   socket.on('send_message', async (data: unknown) => {
     if (!isValidSendMessage(data)) return;
@@ -39,5 +48,18 @@ export function registerMessageHandlers(io: Server, socket: Socket, userId: stri
     if (!isValidChannelRef(data)) return;
     const room = `server:${data.serverId}:channel:${data.channelId}`;
     socket.to(room).emit('typing', { userId, channelId: data.channelId });
+  });
+
+  socket.on('toggle_reaction', async (data: unknown) => {
+    if (!isValidToggleReaction(data)) return;
+
+    const result = await messagesClient.toggleReaction(userId, data.serverId, data.channelId, data.messageId, {
+      emoji: data.emoji,
+    });
+
+    if (result.status === 200) {
+      const room = `server:${data.serverId}:channel:${data.channelId}`;
+      io.to(room).emit('reaction_updated', result.data);
+    }
   });
 }

@@ -19,3 +19,8 @@ messagesRouter.patch('/:messageId', async (req: AuthRequest, res) => {
   const result = await client.updateMessage(req.userId!, req.params['serverId'] as string, req.params['channelId'] as string, req.params['messageId'] as string, req.body as Record<string, unknown>);
   res.status(result.status).json(result.data);
 });
+
+messagesRouter.put('/:messageId/reactions', async (req: AuthRequest, res) => {
+  const result = await client.toggleReaction(req.userId!, req.params['serverId'] as string, req.params['channelId'] as string, req.params['messageId'] as string, req.body as Record<string, unknown>);
+  res.status(result.status).json(result.data);
+});

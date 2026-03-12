@@ -72,6 +72,10 @@ export interface UpdateMessageRequest {
   content: string;
 }
 
+export interface ToggleReactionRequest {
+  emoji: string;
+}
+
 export interface UpdateMemberRequest {
   nickname?: string | undefined;
   roles?: string[] | undefined;

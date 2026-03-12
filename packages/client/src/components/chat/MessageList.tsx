@@ -13,6 +13,8 @@ interface MessageListProps {
   isLoadingMore?: boolean | undefined;
   onMessageLongPress?: ((message: Message) => void) | undefined;
   onImagePress?: ((attachment: Attachment) => void) | undefined;
+  onToggleReaction?: ((messageId: string, emoji: string) => void) | undefined;
+  onAddReaction?: ((messageId: string) => void) | undefined;
 }
 
 export function MessageList({
@@ -23,6 +25,8 @@ export function MessageList({
   isLoadingMore,
   onMessageLongPress,
   onImagePress,
+  onToggleReaction,
+  onAddReaction,
 }: MessageListProps) {
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<Message>) => (
@@ -30,11 +34,15 @@ export function MessageList({
         message={item}
         isOwn={item.authorId === currentUserId}
         authorName={authorNames?.[item.authorId]}
+        currentUserId={currentUserId}
+        authorNames={authorNames}
         onLongPress={onMessageLongPress}
         onImagePress={onImagePress}
+        onToggleReaction={onToggleReaction}
+        onAddReaction={onAddReaction}
       />
     ),
-    [currentUserId, authorNames, onMessageLongPress, onImagePress],
+    [currentUserId, authorNames, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction],
   );
 
   const keyExtractor = useCallback((item: Message) => item._id, []);

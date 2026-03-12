@@ -45,9 +45,8 @@ export function EmojiPicker({ visible, onSelect, onDismiss }: EmojiPickerProps) 
           styles.modal,
           { backgroundColor: theme.colors.surface },
         ]}
-        testID="emoji-picker-modal"
       >
-        <View accessibilityLabel="Emoji picker" style={styles.content}>
+        <View testID="emoji-picker-modal" accessibilityLabel="Emoji picker" style={styles.content}>
         <View
           style={[
             styles.categoryRow,

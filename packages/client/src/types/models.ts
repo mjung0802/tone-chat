@@ -42,6 +42,7 @@ export interface Message {
   content: string;
   attachmentIds: string[];
   editedAt?: string;
+  reactions?: { emoji: string; userIds: string[] }[] | undefined;
   createdAt: string;
 }
 

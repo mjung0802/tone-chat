@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
-import { injectMessage, useMessages, useSendMessage } from './useMessages';
+import { injectMessage, updateMessageInCache, useMessages, useSendMessage } from './useMessages';
 import * as messagesApi from '../api/messages.api';
 import { makeMessage } from '../test-utils/fixtures';
 import { createHookWrapper, createTestQueryClient } from '../test-utils/renderWithProviders';
@@ -80,6 +80,85 @@ describe('injectMessage', () => {
       ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
     );
     expect(data!.pages).toHaveLength(0);
+  });
+});
+
+// ---------- updateMessageInCache ----------
+
+describe('updateMessageInCache', () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    queryClient = createTestQueryClient();
+  });
+
+  it('replaces message by _id', () => {
+    const original = makeMessage({ _id: 'msg-1', content: 'old' });
+    seedCache(queryClient, 'server-1', 'channel-1', [{ messages: [original] }]);
+
+    const updated = makeMessage({ _id: 'msg-1', content: 'old', reactions: [{ emoji: '👍', userIds: ['u1'] }] });
+    updateMessageInCache(queryClient, updated);
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+    );
+    expect(data!.pages[0]!.messages[0]!.reactions).toEqual([{ emoji: '👍', userIds: ['u1'] }]);
+  });
+
+  it('works across pages', () => {
+    const msg1 = makeMessage({ _id: 'msg-1' });
+    const msg2 = makeMessage({ _id: 'msg-2' });
+    seedCache(queryClient, 'server-1', 'channel-1', [
+      { messages: [msg1] },
+      { messages: [msg2] },
+    ]);
+
+    const updated = makeMessage({ _id: 'msg-2', reactions: [{ emoji: '🔥', userIds: ['u1'] }] });
+    updateMessageInCache(queryClient, updated);
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+    );
+    expect(data!.pages[1]!.messages[0]!.reactions).toEqual([{ emoji: '🔥', userIds: ['u1'] }]);
+  });
+
+  it('no-ops when _id does not match', () => {
+    const original = makeMessage({ _id: 'msg-1', content: 'unchanged' });
+    seedCache(queryClient, 'server-1', 'channel-1', [{ messages: [original] }]);
+
+    const updated = makeMessage({ _id: 'msg-999', reactions: [{ emoji: '👍', userIds: ['u1'] }] });
+    updateMessageInCache(queryClient, updated);
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+    );
+    expect(data!.pages[0]!.messages[0]!.content).toBe('unchanged');
+    expect(data!.pages[0]!.messages[0]!.reactions).toBeUndefined();
+  });
+
+  it('preserves other messages', () => {
+    const msg1 = makeMessage({ _id: 'msg-1', content: 'first' });
+    const msg2 = makeMessage({ _id: 'msg-2', content: 'second' });
+    seedCache(queryClient, 'server-1', 'channel-1', [{ messages: [msg1, msg2] }]);
+
+    const updated = makeMessage({ _id: 'msg-2', content: 'second', reactions: [{ emoji: '👍', userIds: ['u1'] }] });
+    updateMessageInCache(queryClient, updated);
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+    );
+    expect(data!.pages[0]!.messages).toHaveLength(2);
+    expect(data!.pages[0]!.messages[0]!._id).toBe('msg-1');
+    expect(data!.pages[0]!.messages[0]!.reactions).toBeUndefined();
+  });
+
+  it('no-ops when cache is empty', () => {
+    const msg = makeMessage();
+    updateMessageInCache(queryClient, msg);
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+    );
+    expect(data).toBeUndefined();
   });
 });
 

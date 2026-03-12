@@ -27,14 +27,23 @@ export interface TypingEvent {
   channelId: string;
 }
 
+export interface ToggleReactionPayload {
+  serverId: string;
+  channelId: string;
+  messageId: string;
+  emoji: string;
+}
+
 export interface ClientToServerEvents {
   join_channel: (payload: JoinChannelPayload) => void;
   leave_channel: (payload: LeaveChannelPayload) => void;
   send_message: (payload: SendMessagePayload) => void;
   typing: (payload: TypingPayload) => void;
+  toggle_reaction: (payload: ToggleReactionPayload) => void;
 }
 
 export interface ServerToClientEvents {
   new_message: (message: Message) => void;
   typing: (event: TypingEvent) => void;
+  reaction_updated: (data: { message: Message }) => void;
 }
