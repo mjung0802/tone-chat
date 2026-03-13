@@ -1,5 +1,6 @@
-import { mock, describe, it, beforeEach } from 'node:test';
+import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
 
 const mockGetUserById = mock.fn<AnyFn>();
 const mockGetUsersByIds = mock.fn<AnyFn>();
@@ -11,13 +12,22 @@ mock.module('./users.service.js', {
 
 const { getMe, patchMe, getUser, getUsersBatch } = await import('./users.controller.js');
 
-function makeReq(overrides: Partial<{ body: any; params: any; headers: any; query: any }> = {}) {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as any;
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type TestResponse = Response & { statusCode: number; _json: unknown };
+
+function makeReq(overrides: RequestOverrides = {}): Request {
+  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
 }
-function makeRes() {
-  const res: any = { statusCode: 200, _json: undefined };
-  res.status = (c: number) => { res.statusCode = c; return res; };
-  res.json = (d: unknown) => { res._json = d; return res; };
+function makeRes(): TestResponse {
+  const res = { statusCode: 200, _json: undefined } as TestResponse;
+  res.status = (c: number) => {
+    res.statusCode = c;
+    return res;
+  };
+  res.json = (d: unknown) => {
+    res._json = d;
+    return res;
+  };
   return res;
 }
 
@@ -28,7 +38,7 @@ describe('getMe', () => {
     const res = makeRes();
     await getMe(makeReq(), res);
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'MISSING_USER_ID');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_USER_ID');
   });
 
   it('returns 200 with user', async () => {
@@ -37,7 +47,7 @@ describe('getMe', () => {
     const res = makeRes();
     await getMe(makeReq({ headers: { 'x-user-id': 'u1' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(res._json.user, user);
+    assert.deepEqual((res._json as { user: unknown }).user, user);
   });
 });
 
@@ -56,7 +66,7 @@ describe('patchMe', () => {
     const res = makeRes();
     await patchMe(makeReq({ headers: { 'x-user-id': 'u1' }, body: { display_name: 'Alice' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(res._json.user, user);
+    assert.deepEqual((res._json as { user: unknown }).user, user);
   });
 });
 
@@ -69,7 +79,7 @@ describe('getUser', () => {
     const res = makeRes();
     await getUser(makeReq({ params: { id: 'u2' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(res._json.user, user);
+    assert.deepEqual((res._json as { user: unknown }).user, user);
   });
 });
 
@@ -80,7 +90,7 @@ describe('getUsersBatch', () => {
     const res = makeRes();
     await getUsersBatch(makeReq({ body: { ids: 'not-array' } }), res);
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'INVALID_IDS');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_IDS');
   });
 
   it('returns 400 when ids is empty', async () => {
@@ -93,7 +103,7 @@ describe('getUsersBatch', () => {
     const res = makeRes();
     await getUsersBatch(makeReq({ body: { ids: [123, null] } }), res);
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'INVALID_IDS');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_IDS');
   });
 
   it('returns 400 when batch size exceeds 100', async () => {
@@ -101,7 +111,7 @@ describe('getUsersBatch', () => {
     const ids = Array.from({ length: 101 }, (_, i) => `u${i}`);
     await getUsersBatch(makeReq({ body: { ids } }), res);
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'BATCH_TOO_LARGE');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'BATCH_TOO_LARGE');
   });
 
   it('returns 200 with users (email stripped)', async () => {
@@ -113,8 +123,8 @@ describe('getUsersBatch', () => {
     const res = makeRes();
     await getUsersBatch(makeReq({ body: { ids: ['u1', 'u2'] } }), res);
     assert.equal(res.statusCode, 200);
-    assert.equal(res._json.users.length, 2);
-    assert.equal(res._json.users[0].email, undefined);
-    assert.equal(res._json.users[1].email, undefined);
+    assert.equal((res._json as { users: unknown[] }).users.length, 2);
+    assert.equal((res._json as { users: Array<{ email?: unknown }> }).users[0]?.email, undefined);
+    assert.equal((res._json as { users: Array<{ email?: unknown }> }).users[1]?.email, undefined);
   });
 });

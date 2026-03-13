@@ -1,14 +1,14 @@
-import React from 'react';
-import { Drawer } from 'expo-router/drawer';
-import { useServers } from '../../src/hooks/useServers';
-import { useLogout } from '../../src/hooks/useAuth';
-import { DrawerContentScrollView, DrawerItem } from '@react-navigation/drawer';
-import { View, StyleSheet } from 'react-native';
-import { Divider, Text, IconButton, Icon, useTheme } from 'react-native-paper';
+import { ServerIcon } from '@/components/servers/ServerIcon';
+import { useLogout } from '@/hooks/useAuth';
+import { useServers } from '@/hooks/useServers';
+import { DrawerContentScrollView, DrawerItem, type DrawerContentComponentProps } from '@react-navigation/drawer';
 import { useRouter } from 'expo-router';
-import { ServerIcon } from '../../src/components/servers/ServerIcon';
+import { Drawer } from 'expo-router/drawer';
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Divider, Icon, IconButton, Text, useTheme } from 'react-native-paper';
 
-function CustomDrawerContent(props: any) {
+function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { data: servers } = useServers();
   const logout = useLogout();
   const router = useRouter();

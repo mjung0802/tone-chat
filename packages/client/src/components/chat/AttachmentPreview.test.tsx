@@ -1,8 +1,10 @@
-import React from 'react';
 import { fireEvent } from '@testing-library/react-native';
-import { AttachmentPreview, type PendingAttachment } from './AttachmentPreview';
-import { renderWithProviders } from '../../test-utils/renderWithProviders';
 import type { DocumentPickerAsset } from 'expo-document-picker';
+import React from 'react';
+import { Image } from 'react-native';
+import { ActivityIndicator } from 'react-native-paper';
+import { renderWithProviders } from '../../test-utils/renderWithProviders';
+import { AttachmentPreview, type PendingAttachment } from './AttachmentPreview';
 
 function makePendingAttachment(overrides: Partial<PendingAttachment> = {}): PendingAttachment {
   return {
@@ -48,7 +50,6 @@ describe('AttachmentPreview', () => {
     );
 
     // ActivityIndicator should be present
-    const { ActivityIndicator } = require('react-native-paper');
     expect(UNSAFE_getByType(ActivityIndicator)).toBeTruthy();
   });
 
@@ -103,7 +104,6 @@ describe('AttachmentPreview', () => {
       <AttachmentPreview attachments={attachments} onRemove={jest.fn()} />,
     );
 
-    const { Image } = require('react-native');
     const image = UNSAFE_getByType(Image);
     expect(image.props.source).toEqual({ uri: 'file://photo.jpg' });
   });

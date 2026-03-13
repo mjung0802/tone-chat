@@ -1,5 +1,6 @@
-import { mock, describe, it, beforeEach } from 'node:test';
+import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
 
 const mockInviteCreate = mock.fn<AnyFn>();
 const mockInviteFind = mock.fn<AnyFn>();
@@ -32,11 +33,21 @@ mock.module('../members/serverMember.model.js', {
 
 const { createInvite, listInvites, revokeInvite, joinViaInvite } = await import('./invites.controller.js');
 
-function makeReq(overrides: Partial<{ body: any; params: any; headers: any; query: any }> = {}) {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as any;
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type TestResponse = Response & { statusCode: number; _json: unknown; end: () => TestResponse };
+
+function assertErrorCode(error: unknown, code: string): true {
+  assert.equal(typeof error, 'object');
+  assert.notEqual(error, null);
+  assert.equal((error as { code?: unknown }).code, code);
+  return true;
 }
-function makeRes() {
-  const res: any = { statusCode: 200, _json: undefined };
+
+function makeReq(overrides: RequestOverrides = {}): Request {
+  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
+}
+function makeRes(): TestResponse {
+  const res = { statusCode: 200, _json: undefined } as TestResponse;
   res.status = (c: number) => { res.statusCode = c; return res; };
   res.json = (d: unknown) => { res._json = d; return res; };
   res.end = () => res;
@@ -53,7 +64,7 @@ describe('createInvite', () => {
     mockMemberFindOne.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => createInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' }, body: {} }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'NOT_MEMBER'); return true; },
+      (error) => assertErrorCode(error, 'NOT_MEMBER'),
     );
   });
 
@@ -71,7 +82,7 @@ describe('createInvite', () => {
     }), res);
 
     assert.equal(res.statusCode, 201);
-    const createArg = mockInviteCreate.mock.calls[0]!.arguments[0];
+    const createArg = mockInviteCreate.mock.calls[0]!.arguments[0] as { expiresAt: Date };
     assert.ok(createArg.expiresAt instanceof Date);
     // expiresAt should be ~3600s from now
     const diff = createArg.expiresAt.getTime() - before;
@@ -87,8 +98,8 @@ describe('listInvites', () => {
     const res = makeRes();
     await listInvites(makeReq({ params: { serverId: 's1' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(res._json.invites, invites);
-    assert.equal(mockInviteFind.mock.calls[0]!.arguments[0].revoked, false);
+    assert.deepEqual((res._json as { invites: unknown[] }).invites, invites);
+    assert.equal((mockInviteFind.mock.calls[0]!.arguments[0] as { revoked: boolean }).revoked, false);
   });
 });
 
@@ -103,7 +114,7 @@ describe('revokeInvite', () => {
     mockServerFindById.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => revokeInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1', code: 'abc' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'SERVER_NOT_FOUND'); return true; },
+      (error) => assertErrorCode(error, 'SERVER_NOT_FOUND'),
     );
   });
 
@@ -112,7 +123,7 @@ describe('revokeInvite', () => {
     mockMemberFindOne.mock.mockImplementation(async () => ({ roles: [] }));
     await assert.rejects(
       () => revokeInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1', code: 'abc' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'FORBIDDEN'); return true; },
+      (error) => assertErrorCode(error, 'FORBIDDEN'),
     );
   });
 
@@ -125,7 +136,7 @@ describe('revokeInvite', () => {
     const res = makeRes();
     await revokeInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1', code: 'abc' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(res._json.invite, invite);
+    assert.deepEqual((res._json as { invite: unknown }).invite, invite);
   });
 });
 
@@ -141,7 +152,7 @@ describe('joinViaInvite', () => {
     mockInviteFindOne.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => joinViaInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { code: 'bad' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'INVITE_NOT_FOUND'); return true; },
+      (error) => assertErrorCode(error, 'INVITE_NOT_FOUND'),
     );
   });
 
@@ -149,7 +160,7 @@ describe('joinViaInvite', () => {
     mockInviteFindOne.mock.mockImplementation(async () => ({ revoked: true }));
     await assert.rejects(
       () => joinViaInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { code: 'abc' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'INVITE_REVOKED'); return true; },
+      (error) => assertErrorCode(error, 'INVITE_REVOKED'),
     );
   });
 
@@ -160,7 +171,7 @@ describe('joinViaInvite', () => {
     }));
     await assert.rejects(
       () => joinViaInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { code: 'abc' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'INVITE_EXPIRED'); return true; },
+      (error) => assertErrorCode(error, 'INVITE_EXPIRED'),
     );
   });
 
@@ -173,7 +184,7 @@ describe('joinViaInvite', () => {
     }));
     await assert.rejects(
       () => joinViaInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { code: 'abc' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'INVITE_EXHAUSTED'); return true; },
+      (error) => assertErrorCode(error, 'INVITE_EXHAUSTED'),
     );
   });
 
@@ -188,7 +199,7 @@ describe('joinViaInvite', () => {
     mockMemberFindOne.mock.mockImplementation(async () => ({ userId: 'u1' }));
     await assert.rejects(
       () => joinViaInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { code: 'abc' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'ALREADY_MEMBER'); return true; },
+      (error) => assertErrorCode(error, 'ALREADY_MEMBER'),
     );
   });
 
@@ -212,6 +223,6 @@ describe('joinViaInvite', () => {
     assert.equal(res.statusCode, 201);
     assert.equal(invite.uses, 3);
     assert.equal(invite.save.mock.callCount(), 1);
-    assert.deepEqual(res._json.member, member);
+    assert.deepEqual((res._json as { member: unknown }).member, member);
   });
 });

@@ -1,5 +1,5 @@
-import { mock, describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { afterEach, beforeEach, describe, it, mock } from 'node:test';
 
 mock.module('../config/index.js', {
   namedExports: { config: { internalApiKey: 'test-key' } },
@@ -13,7 +13,8 @@ describe('serviceRequest', () => {
 
   beforeEach(() => {
     mockFetch = mock.fn<AnyFn>();
-    globalThis.fetch = mockFetch as any;
+    // @ts-expect-error - Intentionally replacing global fetch with mock for testing
+    globalThis.fetch = mockFetch;
   });
 
   afterEach(() => {

@@ -1,8 +1,22 @@
-import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import realCrypto from 'node:crypto';
+import { beforeEach, describe, it, mock } from 'node:test';
 
-const mockSql = mock.fn<AnyFn>((..._args: unknown[]) => []);
+type SqlMockFn = (...args: unknown[]) => unknown[];
+
+function assertErrorWithCodeAndStatus(error: unknown, code: string, status: number): true {
+  assert.equal(typeof error, 'object');
+  assert.notEqual(error, null);
+  const typed = error as { code?: unknown; status?: unknown };
+  assert.equal(typed.code, code);
+  assert.equal(typed.status, status);
+  return true;
+}
+
+const mockSql = mock.fn<SqlMockFn>((..._args) => {
+  void _args;
+  return [];
+});
 mock.module('../config/database.js', { namedExports: { sql: mockSql } });
 
 const mockSendVerificationEmail = mock.fn<AnyFn>();
@@ -99,21 +113,13 @@ describe('verifyOtp', () => {
   it('throws INVALID_CODE when DELETE returns no row', async () => {
     mockSql.mock.mockImplementation(() => []);
 
-    await assert.rejects(() => verifyOtp('user-1', '123456'), (err: any) => {
-      assert.equal(err.code, 'INVALID_CODE');
-      assert.equal(err.status, 400);
-      return true;
-    });
+    await assert.rejects(() => verifyOtp('user-1', '123456'), (error) => assertErrorWithCodeAndStatus(error, 'INVALID_CODE', 400));
   });
 
   it('throws CODE_EXPIRED when expires_at is in the past', async () => {
     mockSql.mock.mockImplementation(() => [{ expires_at: new Date('2000-01-01') }]);
 
-    await assert.rejects(() => verifyOtp('user-1', '123456'), (err: any) => {
-      assert.equal(err.code, 'CODE_EXPIRED');
-      assert.equal(err.status, 400);
-      return true;
-    });
+    await assert.rejects(() => verifyOtp('user-1', '123456'), (error) => assertErrorWithCodeAndStatus(error, 'CODE_EXPIRED', 400));
   });
 
   it('calls UPDATE users SET email_verified on success', async () => {

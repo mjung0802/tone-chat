@@ -1,8 +1,9 @@
 import type { Request, Response } from 'express';
-import { getUserById, getUsersByIds, updateUser } from './users.service.js';
 import type { User } from '../shared/types.js';
+import { getUserById, getUsersByIds, updateUser } from './users.service.js';
 
 function stripPrivateFields(user: User): Omit<User, 'email'> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { email: _email, ...publicUser } = user;
   return publicUser;
 }

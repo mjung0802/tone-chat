@@ -1,4 +1,4 @@
-import { configureAuth, get, post, del, uploadRaw, ApiClientError } from './client';
+import { ApiClientError, configureAuth, del, get, patch, post, put, uploadRaw } from './client';
 
 // ---------- helpers ----------
 
@@ -77,6 +77,90 @@ describe('API client', () => {
     const [, init] = mockFetch.mock.calls[0]!;
     expect((init?.headers as Record<string, string>)['Content-Type']).toBe('application/json');
     expect(init?.body).toBe(JSON.stringify({ name: 'thing' }));
+  });
+
+  it('patch() sends PATCH method with JSON body', async () => {
+    configureAuth({
+      getAccessToken: () => null,
+      getRefreshToken: () => null,
+      setTokens: jest.fn(),
+      clearAuth: jest.fn(),
+    });
+    mockFetch.mockResolvedValueOnce(mockResponse(200, { id: 1, name: 'updated' }));
+
+    const result = await patch('/items/1', { name: 'updated' });
+
+    const [url, init] = mockFetch.mock.calls[0]!;
+    expect(url).toContain('/items/1');
+    expect(init?.method).toBe('PATCH');
+    expect((init?.headers as Record<string, string>)['Content-Type']).toBe('application/json');
+    expect(init?.body).toBe(JSON.stringify({ name: 'updated' }));
+    expect(result).toEqual({ id: 1, name: 'updated' });
+  });
+
+  it('put() sends PUT method with JSON body', async () => {
+    configureAuth({
+      getAccessToken: () => null,
+      getRefreshToken: () => null,
+      setTokens: jest.fn(),
+      clearAuth: jest.fn(),
+    });
+    mockFetch.mockResolvedValueOnce(mockResponse(200, { id: 1, status: 'active' }));
+
+    const result = await put('/items/1', { status: 'active' });
+
+    const [url, init] = mockFetch.mock.calls[0]!;
+    expect(url).toContain('/items/1');
+    expect(init?.method).toBe('PUT');
+    expect((init?.headers as Record<string, string>)['Content-Type']).toBe('application/json');
+    expect(init?.body).toBe(JSON.stringify({ status: 'active' }));
+    expect(result).toEqual({ id: 1, status: 'active' });
+  });
+
+  it('get() does not include body', async () => {
+    configureAuth({
+      getAccessToken: () => null,
+      getRefreshToken: () => null,
+      setTokens: jest.fn(),
+      clearAuth: jest.fn(),
+    });
+    mockFetch.mockResolvedValueOnce(mockResponse(200, { items: [] }));
+
+    await get('/items');
+
+    const [, init] = mockFetch.mock.calls[0]!;
+    expect(init?.method).toBe('GET');
+    expect(init?.body).toBeUndefined();
+  });
+
+  it('del() sends DELETE method', async () => {
+    configureAuth({
+      getAccessToken: () => null,
+      getRefreshToken: () => null,
+      setTokens: jest.fn(),
+      clearAuth: jest.fn(),
+    });
+    mockFetch.mockResolvedValueOnce(mockResponse(204));
+
+    await del('/items/1');
+
+    const [, init] = mockFetch.mock.calls[0]!;
+    expect(init?.method).toBe('DELETE');
+  });
+
+  it('post() with null body sends null', async () => {
+    configureAuth({
+      getAccessToken: () => null,
+      getRefreshToken: () => null,
+      setTokens: jest.fn(),
+      clearAuth: jest.fn(),
+    });
+    mockFetch.mockResolvedValueOnce(mockResponse(200, { success: true }));
+
+    await post('/action');
+
+    const [, init] = mockFetch.mock.calls[0]!;
+    expect(init?.body).toBeNull();
   });
 
   it('uploadRaw() uses provided contentType, not JSON', async () => {

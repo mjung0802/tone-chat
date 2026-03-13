@@ -1,5 +1,16 @@
-import { mock, describe, it, beforeEach } from 'node:test';
+import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
+
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type TestResponse = Response & { statusCode: number; _json: unknown };
+
+function assertErrorCode(error: unknown, code: string): true {
+  assert.equal(typeof error, 'object');
+  assert.notEqual(error, null);
+  assert.equal((error as { code?: unknown }).code, code);
+  return true;
+}
 
 const mockMemberCreate = mock.fn<AnyFn>();
 const mockMemberFind = mock.fn<AnyFn>();
@@ -24,11 +35,11 @@ mock.module('../servers/server.model.js', {
 
 const { joinServer, listMembers, getMember, updateMember, removeMember } = await import('./members.controller.js');
 
-function makeReq(overrides: Partial<{ body: any; params: any; headers: any; query: any }> = {}) {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as any;
+function makeReq(overrides: RequestOverrides = {}): Request {
+  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
 }
-function makeRes() {
-  const res: any = { statusCode: 200, _json: undefined };
+function makeRes(): TestResponse {
+  const res = { statusCode: 200, _json: undefined } as TestResponse;
   res.status = (c: number) => { res.statusCode = c; return res; };
   res.json = (d: unknown) => { res._json = d; return res; };
   res.end = () => res;
@@ -46,7 +57,7 @@ describe('joinServer', () => {
     mockServerFindById.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => joinServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'SERVER_NOT_FOUND'); return true; },
+      (error) => assertErrorCode(error, 'SERVER_NOT_FOUND'),
     );
   });
 
@@ -54,7 +65,7 @@ describe('joinServer', () => {
     mockServerFindById.mock.mockImplementation(async () => ({ visibility: 'private' }));
     await assert.rejects(
       () => joinServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'SERVER_PRIVATE'); return true; },
+      (error) => assertErrorCode(error, 'SERVER_PRIVATE'),
     );
   });
 
@@ -63,7 +74,7 @@ describe('joinServer', () => {
     mockMemberFindOne.mock.mockImplementation(async () => ({ userId: 'u1' }));
     await assert.rejects(
       () => joinServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'ALREADY_MEMBER'); return true; },
+      (error) => assertErrorCode(error, 'ALREADY_MEMBER'),
     );
   });
 
@@ -76,7 +87,7 @@ describe('joinServer', () => {
     const res = makeRes();
     await joinServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), res);
     assert.equal(res.statusCode, 201);
-    assert.deepEqual(res._json.member, member);
+    assert.deepEqual((res._json as { member: unknown }).member, member);
   });
 });
 
@@ -88,7 +99,7 @@ describe('listMembers', () => {
     const res = makeRes();
     await listMembers(makeReq({ params: { serverId: 's1' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(res._json.members, members);
+    assert.deepEqual((res._json as { members: unknown[] }).members, members);
   });
 });
 
@@ -99,7 +110,7 @@ describe('getMember', () => {
     mockMemberFindOne.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => getMember(makeReq({ params: { serverId: 's1', userId: 'u1' } }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'MEMBER_NOT_FOUND'); return true; },
+      (error) => assertErrorCode(error, 'MEMBER_NOT_FOUND'),
     );
   });
 
@@ -109,7 +120,7 @@ describe('getMember', () => {
     const res = makeRes();
     await getMember(makeReq({ params: { serverId: 's1', userId: 'u1' } }), res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(res._json.member, member);
+    assert.deepEqual((res._json as { member: unknown }).member, member);
   });
 });
 
@@ -124,7 +135,7 @@ describe('updateMember', () => {
         params: { serverId: 's1', userId: 'u2' },
         body: { nickname: 'nick' },
       }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'FORBIDDEN'); return true; },
+      (error) => assertErrorCode(error, 'FORBIDDEN'),
     );
   });
 
@@ -188,7 +199,7 @@ describe('removeMember', () => {
         headers: { 'x-user-id': 'u1' },
         params: { serverId: 's1', userId: 'u2' },
       }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'FORBIDDEN'); return true; },
+      (error) => assertErrorCode(error, 'FORBIDDEN'),
     );
   });
 });

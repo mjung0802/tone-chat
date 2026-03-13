@@ -1,5 +1,7 @@
-import { mock, describe, it, beforeEach } from 'node:test';
+import type { NextFunction, Response } from 'express';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
+import type { AuthRequest } from './auth.js';
 
 const mockVerify = mock.fn<AnyFn>();
 mock.module('jsonwebtoken', {
@@ -13,13 +15,21 @@ mock.module('../../config/index.js', {
 
 const { requireAuth } = await import('./auth.js');
 
-function makeReq(overrides: Partial<{ headers: Record<string, string> }> = {}) {
-  return { headers: {}, ...overrides } as any;
+type TestResponse = Response & { statusCode: number; _json: unknown };
+
+function makeReq(overrides: Partial<Pick<AuthRequest, 'headers'>> = {}): AuthRequest {
+  return { headers: {}, ...overrides } as AuthRequest;
 }
-function makeRes() {
-  const res: any = { statusCode: 200, _json: undefined };
-  res.status = (c: number) => { res.statusCode = c; return res; };
-  res.json = (d: unknown) => { res._json = d; return res; };
+function makeRes(): TestResponse {
+  const res = { statusCode: 200, _json: undefined } as TestResponse;
+  res.status = ((c: number) => {
+    res.statusCode = c;
+    return res;
+  });
+  res.json = ((d: unknown) => {
+    res._json = d;
+    return res;
+  });
   return res;
 }
 
@@ -33,7 +43,7 @@ describe('requireAuth', () => {
     const res = makeRes();
     requireAuth(req, res, () => {});
     assert.equal(res.statusCode, 401);
-    assert.equal(res._json.error.code, 'MISSING_TOKEN');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_TOKEN');
   });
 
   it('returns 401 MISSING_TOKEN when header does not start with Bearer', () => {
@@ -41,7 +51,7 @@ describe('requireAuth', () => {
     const res = makeRes();
     requireAuth(req, res, () => {});
     assert.equal(res.statusCode, 401);
-    assert.equal(res._json.error.code, 'MISSING_TOKEN');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_TOKEN');
   });
 
   it('returns 401 INVALID_TOKEN when jwt.verify throws', () => {
@@ -50,7 +60,7 @@ describe('requireAuth', () => {
     const res = makeRes();
     requireAuth(req, res, () => {});
     assert.equal(res.statusCode, 401);
-    assert.equal(res._json.error.code, 'INVALID_TOKEN');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_TOKEN');
   });
 
   it('sets req.userId and calls next() on valid token', () => {
@@ -58,7 +68,8 @@ describe('requireAuth', () => {
     const req = makeReq({ headers: { authorization: 'Bearer valid-token' } });
     const res = makeRes();
     let nextCalled = false;
-    requireAuth(req, res, () => { nextCalled = true; });
+    const next: NextFunction = () => { nextCalled = true; };
+    requireAuth(req, res, next);
     assert.equal(req.userId, 'user-123');
     assert.equal(nextCalled, true);
   });

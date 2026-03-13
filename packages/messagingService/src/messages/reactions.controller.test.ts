@@ -1,5 +1,16 @@
-import { mock, describe, it, beforeEach } from 'node:test';
+import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
+
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type TestResponse = Response & { statusCode: number; _json: unknown };
+
+function assertErrorCode(error: unknown, code: string): true {
+  assert.equal(typeof error, 'object');
+  assert.notEqual(error, null);
+  assert.equal((error as { code?: unknown }).code, code);
+  return true;
+}
 
 const mockMessageFindOne = mock.fn<AnyFn>();
 
@@ -13,11 +24,11 @@ mock.module('./message.model.js', {
 
 const { toggleReaction } = await import('./reactions.controller.js');
 
-function makeReq(overrides: Partial<{ body: any; params: any; headers: any; query: any }> = {}) {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as any;
+function makeReq(overrides: RequestOverrides = {}): Request {
+  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
 }
-function makeRes() {
-  const res: any = { statusCode: 200, _json: undefined };
+function makeRes(): TestResponse {
+  const res = { statusCode: 200, _json: undefined } as TestResponse;
   res.status = (c: number) => { res.statusCode = c; return res; };
   res.json = (d: unknown) => { res._json = d; return res; };
   res.end = () => res;
@@ -35,7 +46,7 @@ describe('toggleReaction', () => {
       body: {},
     }), res);
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'MISSING_FIELDS');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_FIELDS');
   });
 
   it('returns 400 when emoji is empty string', async () => {
@@ -46,7 +57,7 @@ describe('toggleReaction', () => {
       body: { emoji: '   ' },
     }), res);
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'INVALID_EMOJI');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_EMOJI');
   });
 
   it('returns 400 when emoji is too long', async () => {
@@ -57,7 +68,7 @@ describe('toggleReaction', () => {
       body: { emoji: 'a'.repeat(33) },
     }), res);
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'INVALID_EMOJI');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_EMOJI');
   });
 
   it('throws MESSAGE_NOT_FOUND when message does not exist', async () => {
@@ -68,7 +79,7 @@ describe('toggleReaction', () => {
         params: { channelId: 'c1', messageId: 'm1' },
         body: { emoji: '\u{1F44D}' },
       }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'MESSAGE_NOT_FOUND'); return true; },
+      (error) => assertErrorCode(error, 'MESSAGE_NOT_FOUND'),
     );
   });
 
@@ -166,7 +177,7 @@ describe('toggleReaction', () => {
     }), res);
 
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'MAX_REACTIONS');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MAX_REACTIONS');
   });
 
   it('allows adding to existing emoji even at 10 unique limit', async () => {

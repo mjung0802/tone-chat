@@ -1,7 +1,14 @@
-import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
 
-const mockSql: any = mock.fn<AnyFn>((..._args: unknown[]) => []);
+const mockSql = mock.fn<AnyFn>(() => []);
+
+function assertErrorCode(error: unknown, code: string): true {
+  assert.equal(typeof error, 'object');
+  assert.notEqual(error, null);
+  assert.equal((error as { code?: unknown }).code, code);
+  return true;
+}
 
 mock.module('../config/database.js', { namedExports: { sql: mockSql } });
 
@@ -22,10 +29,7 @@ describe('createAttachment', () => {
 
   it('throws FILE_TOO_LARGE over 25MB', async () => {
     const file = { buffer: Buffer.alloc(0), mimetype: 'image/png', originalname: 'big.png', size: 26 * 1024 * 1024 };
-    await assert.rejects(() => createAttachment('u1', file), (err: any) => {
-      assert.equal(err.code, 'FILE_TOO_LARGE');
-      return true;
-    });
+    await assert.rejects(() => createAttachment('u1', file), (error) => assertErrorCode(error, 'FILE_TOO_LARGE'));
   });
 
   it('inserts with processing status then updates to ready on success', async () => {
@@ -59,8 +63,8 @@ describe('createAttachment', () => {
     mockUploadToS3.mock.mockImplementation(async () => { throw new Error('S3 down'); });
 
     const file = { buffer: Buffer.from('data'), mimetype: 'image/png', originalname: 'pic.png', size: 1000 };
-    await assert.rejects(() => createAttachment('u1', file), (err: any) => {
-      assert.equal(err.message, 'S3 down');
+    await assert.rejects(() => createAttachment('u1', file), (error) => {
+      assert.equal((error as { message?: unknown }).message, 'S3 down');
       return true;
     });
     // Should have called sql twice: INSERT + UPDATE to failed
@@ -73,10 +77,7 @@ describe('getAttachment', () => {
 
   it('throws ATTACHMENT_NOT_FOUND on empty result', async () => {
     mockSql.mock.mockImplementation(() => []);
-    await assert.rejects(() => getAttachment('a1'), (err: any) => {
-      assert.equal(err.code, 'ATTACHMENT_NOT_FOUND');
-      return true;
-    });
+    await assert.rejects(() => getAttachment('a1'), (error) => assertErrorCode(error, 'ATTACHMENT_NOT_FOUND'));
   });
 
   it('returns attachment with fresh presigned URL when ready', async () => {

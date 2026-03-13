@@ -1,8 +1,27 @@
-import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
 
-const mockSql: any = mock.fn<AnyFn>((..._args: unknown[]) => []);
-mockSql.unsafe = mock.fn<AnyFn>();
+type SqlMockFn = (...args: unknown[]) => unknown[];
+type UnsafeMockFn = (...args: unknown[]) => unknown;
+
+function assertErrorCode(error: unknown, code: string): true {
+  assert.equal(typeof error, 'object');
+  assert.notEqual(error, null);
+  assert.ok('code' in (error as Record<string, unknown>));
+  assert.equal((error as { code: string }).code, code);
+  return true;
+}
+
+const mockSql = mock.fn<SqlMockFn>((..._args) => {
+  void _args;
+  return [];
+}) as ReturnType<typeof mock.fn<SqlMockFn>> & {
+  unsafe: ReturnType<typeof mock.fn<UnsafeMockFn>>;
+};
+mockSql.unsafe = mock.fn<UnsafeMockFn>((..._args) => {
+  void _args;
+  return undefined;
+});
 
 mock.module('../config/database.js', { namedExports: { sql: mockSql } });
 
@@ -15,10 +34,7 @@ describe('getUserById', () => {
 
   it('throws USER_NOT_FOUND on empty result', async () => {
     mockSql.mock.mockImplementation(() => []);
-    await assert.rejects(() => getUserById('u1'), (err: any) => {
-      assert.equal(err.code, 'USER_NOT_FOUND');
-      return true;
-    });
+    await assert.rejects(() => getUserById('u1'), (error) => assertErrorCode(error, 'USER_NOT_FOUND'));
   });
 
   it('returns user on success', async () => {
@@ -60,10 +76,7 @@ describe('updateUser', () => {
   it('throws NO_UPDATES when all values are undefined', async () => {
     await assert.rejects(
       () => updateUser('u1', { display_name: undefined, pronouns: undefined, avatar_url: undefined, bio: undefined, status: undefined }),
-      (err: any) => {
-        assert.equal(err.code, 'NO_UPDATES');
-        return true;
-      },
+      (error) => assertErrorCode(error, 'NO_UPDATES'),
     );
   });
 
@@ -77,9 +90,6 @@ describe('updateUser', () => {
 
   it('throws USER_NOT_FOUND when update returns empty', async () => {
     mockSql.mock.mockImplementation(() => []);
-    await assert.rejects(() => updateUser('u1', { display_name: 'Alice' }), (err: any) => {
-      assert.equal(err.code, 'USER_NOT_FOUND');
-      return true;
-    });
+    await assert.rejects(() => updateUser('u1', { display_name: 'Alice' }), (error) => assertErrorCode(error, 'USER_NOT_FOUND'));
   });
 });

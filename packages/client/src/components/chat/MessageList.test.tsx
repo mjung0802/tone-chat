@@ -1,26 +1,32 @@
-import React from 'react';
 import { fireEvent } from '@testing-library/react-native';
-import { MessageList } from './MessageList';
-import { renderWithProviders } from '../../test-utils/renderWithProviders';
+import React from 'react';
 import { makeMessage } from '../../test-utils/fixtures';
+import { renderWithProviders } from '../../test-utils/renderWithProviders';
+import { MessageList } from './MessageList';
 
-jest.mock('./MessageBubble', () => ({
-  MessageBubble: ({ message, onImagePress }: { message: { _id: string; content: string }; onImagePress?: unknown }) => {
-    const { Text } = require('react-native');
-    return (
-      <Text testID={`bubble-${message._id}`} onPress={() => (onImagePress as (() => void) | undefined)?.()}>
-        {message.content}
-      </Text>
-    );
-  },
-}));
+jest.mock('./MessageBubble', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Text } = require('react-native');
+  return {
+    MessageBubble: ({ message, onImagePress }: { message: { _id: string; content: string }; onImagePress?: unknown }) => {
+      return (
+        <Text testID={`bubble-${message._id}`} onPress={() => (onImagePress as (() => void) | undefined)?.()}>
+          {message.content}
+        </Text>
+      );
+    },
+  };
+});
 
-jest.mock('../common/LoadingSpinner', () => ({
-  LoadingSpinner: () => {
-    const { ActivityIndicator } = require('react-native-paper');
-    return <ActivityIndicator testID="loading-spinner" />;
-  },
-}));
+jest.mock('../common/LoadingSpinner', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { ActivityIndicator } = require('react-native-paper');
+  return {
+    LoadingSpinner: () => {
+      return <ActivityIndicator testID="loading-spinner" />;
+    },
+  };
+});
 
 describe('MessageList', () => {
   it('renders a MessageBubble for each message', () => {

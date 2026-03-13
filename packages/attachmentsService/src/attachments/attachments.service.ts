@@ -1,13 +1,14 @@
 import path from 'node:path';
 import { sql } from '../config/database.js';
-import { uploadToS3, getPresignedUrl } from './storage.service.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
+import { getPresignedUrl, uploadToS3 } from './storage.service.js';
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
 function sanitizeFilename(name: string): string {
   // Extract basename to strip path traversal, then remove control characters
   const base = path.basename(name);
+  // eslint-disable-next-line no-control-regex
   return base.replace(/[\x00-\x1f\x7f]/g, '');
 }
 

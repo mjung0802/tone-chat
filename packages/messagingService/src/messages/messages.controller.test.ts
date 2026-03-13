@@ -1,5 +1,16 @@
-import { mock, describe, it, beforeEach } from 'node:test';
+import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
+
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type TestResponse = Response & { statusCode: number; _json: unknown };
+
+function assertErrorCode(error: unknown, code: string): true {
+  assert.equal(typeof error, 'object');
+  assert.notEqual(error, null);
+  assert.equal((error as { code?: unknown }).code, code);
+  return true;
+}
 
 const mockMessageCreate = mock.fn<AnyFn>();
 const mockMessageFind = mock.fn<AnyFn>();
@@ -17,11 +28,11 @@ mock.module('./message.model.js', {
 
 const { createMessage, listMessages, updateMessage } = await import('./messages.controller.js');
 
-function makeReq(overrides: Partial<{ body: any; params: any; headers: any; query: any }> = {}) {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as any;
+function makeReq(overrides: RequestOverrides = {}): Request {
+  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
 }
-function makeRes() {
-  const res: any = { statusCode: 200, _json: undefined };
+function makeRes(): TestResponse {
+  const res = { statusCode: 200, _json: undefined } as TestResponse;
   res.status = (c: number) => { res.statusCode = c; return res; };
   res.json = (d: unknown) => { res._json = d; return res; };
   res.end = () => res;
@@ -39,7 +50,7 @@ describe('createMessage', () => {
       body: {},
     }), res);
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'MISSING_FIELDS');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_FIELDS');
   });
 
   it('returns 201 with attachments only (no content)', async () => {
@@ -53,7 +64,7 @@ describe('createMessage', () => {
       body: { attachmentIds: ['att-1'] },
     }), res);
     assert.equal(res.statusCode, 201);
-    assert.deepEqual(res._json.message, message);
+    assert.deepEqual((res._json as { message: unknown }).message, message);
   });
 
   it('returns 400 with empty attachments and no content', async () => {
@@ -64,7 +75,7 @@ describe('createMessage', () => {
       body: { attachmentIds: [] },
     }), res);
     assert.equal(res.statusCode, 400);
-    assert.equal(res._json.error.code, 'MISSING_FIELDS');
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_FIELDS');
   });
 
   it('returns 201 with message', async () => {
@@ -78,7 +89,7 @@ describe('createMessage', () => {
       body: { content: 'hello' },
     }), res);
     assert.equal(res.statusCode, 201);
-    assert.deepEqual(res._json.message, message);
+    assert.deepEqual((res._json as { message: unknown }).message, message);
   });
 });
 
@@ -95,11 +106,11 @@ describe('listMessages', () => {
     await listMessages(makeReq({ params: { channelId: 'c1' }, query: {} }), res);
     assert.equal(res.statusCode, 200);
     // messages.reverse() is called
-    assert.deepEqual(res._json.messages, [{ _id: 'm1' }, { _id: 'm2' }]);
+    assert.deepEqual((res._json as { messages: unknown[] }).messages, [{ _id: 'm1' }, { _id: 'm2' }]);
   });
 
   it('caps limit at 100', async () => {
-    const messages: any[] = [];
+    const messages: unknown[] = [];
     let capturedLimit: number | undefined;
     mockMessageFind.mock.mockImplementation(() => ({
       sort: () => ({
@@ -113,15 +124,15 @@ describe('listMessages', () => {
   });
 
   it('applies cursor pagination with before', async () => {
-    let capturedFilter: any;
-    mockMessageFind.mock.mockImplementation((filter: any) => {
+    let capturedFilter: unknown;
+    mockMessageFind.mock.mockImplementation((filter: unknown) => {
       capturedFilter = filter;
       return { sort: () => ({ limit: () => [] }) };
     });
 
     const res = makeRes();
     await listMessages(makeReq({ params: { channelId: 'c1' }, query: { before: 'cursor-id' } }), res);
-    assert.deepEqual(capturedFilter._id, { $lt: 'cursor-id' });
+    assert.deepEqual((capturedFilter as Record<string, unknown>)._id, { $lt: 'cursor-id' });
   });
 });
 
@@ -136,7 +147,7 @@ describe('updateMessage', () => {
         params: { channelId: 'c1', messageId: 'm1' },
         body: { content: 'edited' },
       }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'MESSAGE_NOT_FOUND'); return true; },
+      (error) => assertErrorCode(error, 'MESSAGE_NOT_FOUND'),
     );
   });
 
@@ -148,7 +159,7 @@ describe('updateMessage', () => {
         params: { channelId: 'c1', messageId: 'm1' },
         body: { content: 'edited' },
       }), makeRes()),
-      (err: any) => { assert.equal(err.code, 'FORBIDDEN'); return true; },
+      (error) => assertErrorCode(error, 'FORBIDDEN'),
     );
   });
 

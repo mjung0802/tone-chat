@@ -7,13 +7,13 @@ function getTransporter(): nodemailer.Transporter {
   if (!transporter) {
     transporter = config.smtpHost
       ? nodemailer.createTransport({
-          host: config.smtpHost,
-          port: config.smtpPort,
-          auth: {
-            user: config.smtpUser,
-            pass: config.smtpPass,
-          },
-        })
+        host: config.smtpHost,
+        port: config.smtpPort,
+        auth: {
+          user: config.smtpUser,
+          pass: config.smtpPass,
+        },
+      })
       : nodemailer.createTransport({ jsonTransport: true });
   }
   return transporter;

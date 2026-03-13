@@ -1,5 +1,6 @@
-import { mock, describe, it, beforeEach } from 'node:test';
+import type { PutObjectCommand } from '@aws-sdk/client-s3';
 import assert from 'node:assert/strict';
+import { beforeEach, describe, it, mock } from 'node:test';
 
 const mockSend = mock.fn<AnyFn>();
 mock.module('../config/storage.js', {
@@ -33,7 +34,7 @@ describe('uploadToS3', () => {
     // Key should be UUID format with .png extension
     assert.match(key, /^[0-9a-f-]+\.png$/);
     // Verify the command input
-    const command = mockSend.mock.calls[0]!.arguments[0];
+    const command = mockSend.mock.calls[0]!.arguments[0] as PutObjectCommand;
     assert.equal(command.input.Bucket, 'test-bucket');
     assert.equal(command.input.ContentType, 'image/png');
   });

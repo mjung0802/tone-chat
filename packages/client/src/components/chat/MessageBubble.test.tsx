@@ -1,28 +1,34 @@
-import React from 'react';
 import { fireEvent } from '@testing-library/react-native';
-import { MessageBubble } from './MessageBubble';
-import { renderWithProviders } from '../../test-utils/renderWithProviders';
+import React from 'react';
 import { makeMessage, makeReaction } from '../../test-utils/fixtures';
+import { renderWithProviders } from '../../test-utils/renderWithProviders';
+import { MessageBubble } from './MessageBubble';
 
-jest.mock('./AttachmentBubble', () => ({
-  AttachmentBubble: ({ attachmentId }: { attachmentId: string }) => {
-    const { Text } = require('react-native');
-    return <Text testID={`attachment-${attachmentId}`}>AttachmentBubble</Text>;
-  },
-}));
+jest.mock('./AttachmentBubble', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Text } = require('react-native');
+  return {
+    AttachmentBubble: ({ attachmentId }: { attachmentId: string }) => {
+      return <Text testID={`attachment-${attachmentId}`}>AttachmentBubble</Text>;
+    },
+  };
+});
 
-jest.mock('./ReactionChips', () => ({
-  ReactionChips: (props: { reactions: unknown[]; onToggle: (e: string) => void; onAddReaction: () => void }) => {
-    const { View, Text, Pressable } = require('react-native');
-    return (
-      <View testID="reaction-chips">
-        <Text testID="reaction-count">{(props.reactions as unknown[]).length}</Text>
-        <Pressable testID="mock-toggle" onPress={() => props.onToggle('👍')} />
-        <Pressable testID="mock-add" onPress={props.onAddReaction} />
-      </View>
-    );
-  },
-}));
+jest.mock('./ReactionChips', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Pressable, Text, View } = require('react-native');
+  return {
+    ReactionChips: (props: { reactions: unknown[]; onToggle: (e: string) => void; onAddReaction: () => void }) => {
+      return (
+        <View testID="reaction-chips">
+          <Text testID="reaction-count">{(props.reactions as unknown[]).length}</Text>
+          <Pressable testID="mock-toggle" onPress={() => props.onToggle('👍')} />
+          <Pressable testID="mock-add" onPress={props.onAddReaction} />
+        </View>
+      );
+    },
+  };
+});
 
 describe('MessageBubble', () => {
   it('renders message content', () => {

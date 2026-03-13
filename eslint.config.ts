@@ -9,9 +9,9 @@ export default defineConfig([
     plugins: { js }, 
     extends: ['js/recommended'], 
     languageOptions: { globals: globals.browser },
-    linterOptions: {
-
-    },
+  },
+  {
+    files: ['**/*.{js,mjs,cjs,ts,mts,cts}'],
     rules: {
       'no-unused-vars': 'warn',
       'no-undef': 'error',
@@ -26,4 +26,11 @@ export default defineConfig([
     },
   },
   tseslint.configs.recommended,
+  {
+    files: ['**/babel.config.{js,cjs}', '**/jest.config.{js,cjs,ts}', '**/metro.config.{js,cjs}', '**/*.config.js'],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
 ]);
