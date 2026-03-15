@@ -226,6 +226,7 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
 
 const styles = StyleSheet.create({
   wrapper: {
+    position: 'relative' as const,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(0,0,0,0.1)',
   },

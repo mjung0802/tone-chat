@@ -80,11 +80,21 @@ export { getMentionQuery };
 
 const styles = StyleSheet.create({
   container: {
+    position: 'absolute' as const,
+    bottom: '100%',
+    left: 8,
+    right: 8,
+    zIndex: 10,
+    marginBottom: 4,
     maxHeight: 200,
     borderWidth: 1,
     borderRadius: 8,
-    marginHorizontal: 8,
     overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
   item: {
     paddingHorizontal: 12,
