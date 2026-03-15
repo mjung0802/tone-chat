@@ -5,13 +5,21 @@ import {
   mockChannelsRoutes,
   mockMessagesRoutes,
   mockMembersRoutes,
+  mockUsersRoutes,
 } from './helpers/mocks';
-import { MOCK_MESSAGES, MOCK_USER } from './helpers/fixtures';
+import {
+  MOCK_MESSAGES,
+  MOCK_USER,
+  MOCK_MEMBERS_FULL,
+  MOCK_MESSAGE_WITH_REPLY,
+  MOCK_MESSAGE_WITH_MENTION,
+} from './helpers/fixtures';
 
 const CHANNEL_URL = '/servers/server-001/channels/channel-001';
 
 test.beforeEach(async ({ page }) => {
   await mockSocketIO(page);
+  await mockUsersRoutes(page);
   await mockServersRoutes(page);
   await mockChannelsRoutes(page);
   await mockMembersRoutes(page);
@@ -117,4 +125,233 @@ test('send button is disabled while message is empty', async ({ page }) => {
   // After typing, send button becomes enabled
   await page.getByLabel('Message input').fill('hello');
   await expect(sendButton).toBeEnabled();
+});
+
+// --- Reply Tests ---
+
+test('displays reply indicator on a message with replyTo', async ({ page }) => {
+  await mockMessagesRoutes(page, [...MOCK_MESSAGES, MOCK_MESSAGE_WITH_REPLY]);
+  await mockMembersRoutes(page, MOCK_MEMBERS_FULL);
+
+  await page.goto(CHANNEL_URL);
+
+  // Reply indicator should show the replied-to author
+  await expect(page.getByLabel(/Reply to Jane Doe/)).toBeVisible();
+  // Reply content preview should be visible
+  await expect(page.getByText('Hello from test').first()).toBeVisible();
+});
+
+test('hover shows reply button and clicking it opens reply preview', async ({ page }) => {
+  await mockMessagesRoutes(page);
+  await mockMembersRoutes(page, MOCK_MEMBERS_FULL);
+
+  await page.goto(CHANNEL_URL);
+
+  // Hover over a message to reveal the reply button
+  const messageContainer = page.getByLabel(
+    `${MOCK_USER.display_name} said: ${MOCK_MESSAGES[0]!.content}`,
+    { exact: false },
+  );
+  await messageContainer.hover();
+
+  const replyButton = messageContainer.getByTestId('hover-reply-button');
+  await expect(replyButton).toBeVisible();
+
+  // Click reply → reply preview bar appears
+  await replyButton.click();
+
+  await expect(page.getByText(`Replying to @${MOCK_USER.display_name}`)).toBeVisible();
+  await expect(page.getByLabel('Cancel reply')).toBeVisible();
+});
+
+test('cancel reply removes the reply preview bar', async ({ page }) => {
+  await mockMessagesRoutes(page);
+  await mockMembersRoutes(page, MOCK_MEMBERS_FULL);
+
+  await page.goto(CHANNEL_URL);
+
+  // Trigger reply mode
+  const messageContainer = page.getByLabel(
+    `${MOCK_USER.display_name} said: ${MOCK_MESSAGES[0]!.content}`,
+    { exact: false },
+  );
+  await messageContainer.hover();
+  await messageContainer.getByTestId('hover-reply-button').click();
+
+  // Verify reply preview is visible
+  await expect(page.getByText(`Replying to @${MOCK_USER.display_name}`)).toBeVisible();
+
+  // Cancel reply
+  await page.getByLabel('Cancel reply').click();
+
+  // Reply preview should disappear
+  await expect(page.getByText(`Replying to @${MOCK_USER.display_name}`)).not.toBeVisible();
+});
+
+test('send reply includes replyToId in request', async ({ page }) => {
+  let capturedBody: unknown = null;
+
+  await page.route(
+    /http:\/\/localhost:4000\/api\/v1\/servers\/[^/]+\/channels\/[^/]+\/messages(\?.*)?$/,
+    async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ messages: MOCK_MESSAGES }),
+        });
+      } else if (route.request().method() === 'POST') {
+        capturedBody = route.request().postDataJSON();
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            message: {
+              _id: 'msg-reply-sent',
+              channelId: 'channel-001',
+              serverId: 'server-001',
+              authorId: 'user-001',
+              content: 'My reply',
+              attachmentIds: [],
+              reactions: [],
+              replyTo: {
+                messageId: MOCK_MESSAGES[0]!._id,
+                authorId: 'user-001',
+                authorName: MOCK_USER.display_name,
+                content: MOCK_MESSAGES[0]!.content,
+              },
+              createdAt: new Date().toISOString(),
+            },
+          }),
+        });
+      } else {
+        await route.continue();
+      }
+    },
+  );
+  await mockMembersRoutes(page, MOCK_MEMBERS_FULL);
+
+  await page.goto(CHANNEL_URL);
+
+  // Trigger reply mode
+  const messageContainer = page.getByLabel(
+    `${MOCK_USER.display_name} said: ${MOCK_MESSAGES[0]!.content}`,
+    { exact: false },
+  );
+  await messageContainer.hover();
+  await messageContainer.getByTestId('hover-reply-button').click();
+
+  // Type and send reply
+  await page.getByLabel('Message input').fill('My reply');
+  await page.getByLabel('Send message').click();
+
+  // Verify the reply text appears
+  await expect(page.getByText('My reply')).toBeVisible();
+
+  // Verify the POST body included replyToId
+  expect(capturedBody).toBeTruthy();
+  expect((capturedBody as { replyToId?: string }).replyToId).toBe(MOCK_MESSAGES[0]!._id);
+});
+
+// --- Mention Tests ---
+
+test('typing @ shows mention autocomplete with other members', async ({ page }) => {
+  await mockMessagesRoutes(page);
+  await mockMembersRoutes(page, MOCK_MEMBERS_FULL);
+
+  await page.goto(CHANNEL_URL);
+
+  const input = page.getByLabel('Message input');
+  await input.fill('@');
+  // Trigger cursor position update
+  await input.press('End');
+
+  // Jane Doe should appear (other member), but not Test User (self)
+  await expect(page.getByLabel('Mention Jane Doe')).toBeVisible();
+  await expect(page.getByLabel('Mention Test User')).not.toBeVisible();
+});
+
+test('selecting a mention inserts @username into input', async ({ page }) => {
+  await mockMessagesRoutes(page);
+  await mockMembersRoutes(page, MOCK_MEMBERS_FULL);
+
+  await page.goto(CHANNEL_URL);
+
+  const input = page.getByLabel('Message input');
+  await input.fill('@jan');
+  await input.press('End');
+
+  // Click the mention suggestion
+  await page.getByLabel('Mention Jane Doe').click();
+
+  // Input should now contain @janedoe with trailing space
+  await expect(input).toHaveValue('@janedoe ');
+});
+
+test('sending a message with mention includes mentions in request', async ({ page }) => {
+  let capturedBody: unknown = null;
+
+  await page.route(
+    /http:\/\/localhost:4000\/api\/v1\/servers\/[^/]+\/channels\/[^/]+\/messages(\?.*)?$/,
+    async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ messages: MOCK_MESSAGES }),
+        });
+      } else if (route.request().method() === 'POST') {
+        capturedBody = route.request().postDataJSON();
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            message: {
+              _id: 'msg-mention-sent',
+              channelId: 'channel-001',
+              serverId: 'server-001',
+              authorId: 'user-001',
+              content: '@janedoe hello!',
+              attachmentIds: [],
+              reactions: [],
+              mentions: ['user-002'],
+              createdAt: new Date().toISOString(),
+            },
+          }),
+        });
+      } else {
+        await route.continue();
+      }
+    },
+  );
+  await mockMembersRoutes(page, MOCK_MEMBERS_FULL);
+
+  await page.goto(CHANNEL_URL);
+
+  const input = page.getByLabel('Message input');
+  await input.fill('@jan');
+  await input.press('End');
+
+  // Select mention
+  await page.getByLabel('Mention Jane Doe').click();
+
+  // Add more text after the mention
+  await input.pressSequentially('hello!');
+
+  // Send message
+  await page.getByLabel('Send message').click();
+
+  // Verify mentions array was sent
+  expect(capturedBody).toBeTruthy();
+  expect((capturedBody as { mentions?: string[] }).mentions).toEqual(['user-002']);
+});
+
+test('displays a message with mention highlight', async ({ page }) => {
+  await mockMessagesRoutes(page, [...MOCK_MESSAGES, MOCK_MESSAGE_WITH_MENTION]);
+  await mockMembersRoutes(page, MOCK_MEMBERS_FULL);
+
+  await page.goto(CHANNEL_URL);
+
+  // The mentioned message content should be visible
+  await expect(page.getByText(MOCK_MESSAGE_WITH_MENTION.content)).toBeVisible();
 });

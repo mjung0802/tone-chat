@@ -114,7 +114,7 @@ describe('MessageInput', () => {
     fireEvent.changeText(getByLabelText('Message input'), '  Hello world  ');
     fireEvent.press(getByLabelText('Send message'));
 
-    expect(onSend).toHaveBeenCalledWith('Hello world', []);
+    expect(onSend).toHaveBeenCalledWith('Hello world', [], {});
   });
 
   it('pressing send clears input', () => {
@@ -207,7 +207,7 @@ describe('MessageInput', () => {
     fireEvent.changeText(getByLabelText('Message input'), 'Hello');
     fireEvent.press(getByLabelText('Send message'));
 
-    expect(onSend).toHaveBeenCalledWith('Hello', ['att-uploaded-1']);
+    expect(onSend).toHaveBeenCalledWith('Hello', ['att-uploaded-1'], {});
   });
 
   it('sends with attachments but no text', async () => {
@@ -233,7 +233,7 @@ describe('MessageInput', () => {
 
     fireEvent.press(getByLabelText('Send message'));
 
-    expect(onSend).toHaveBeenCalledWith('', ['att-no-text']);
+    expect(onSend).toHaveBeenCalledWith('', ['att-no-text'], {});
   });
 
   it('disables send while uploads are in progress', async () => {
@@ -343,6 +343,71 @@ describe('MessageInput', () => {
     fireEvent.press(getByLabelText('😀'));
 
     expect(getByLabelText('Message input').props.value).toBe('Hello😀');
+  });
+
+  it('renders reply preview when replyTarget is set', () => {
+    const { getByText, getByLabelText } = renderWithProviders(
+      <MessageInput
+        onSend={jest.fn()}
+        replyTarget={{
+          messageId: 'msg-1',
+          authorId: 'user-2',
+          authorName: 'Bob',
+          content: 'Hello there',
+        }}
+      />,
+    );
+
+    expect(getByText('Replying to @Bob')).toBeTruthy();
+    expect(getByText('Hello there')).toBeTruthy();
+    expect(getByLabelText('Cancel reply')).toBeTruthy();
+  });
+
+  it('does not render reply preview when replyTarget is undefined', () => {
+    const { queryByText } = renderWithProviders(
+      <MessageInput onSend={jest.fn()} />,
+    );
+
+    expect(queryByText(/Replying to/)).toBeNull();
+  });
+
+  it('calls onCancelReply when cancel button is pressed', () => {
+    const onCancelReply = jest.fn();
+    const { getByLabelText } = renderWithProviders(
+      <MessageInput
+        onSend={jest.fn()}
+        replyTarget={{
+          messageId: 'msg-1',
+          authorId: 'user-2',
+          authorName: 'Bob',
+          content: 'Hello there',
+        }}
+        onCancelReply={onCancelReply}
+      />,
+    );
+
+    fireEvent.press(getByLabelText('Cancel reply'));
+    expect(onCancelReply).toHaveBeenCalled();
+  });
+
+  it('includes replyToId in onSend options when replyTarget is set', () => {
+    const onSend = jest.fn();
+    const { getByLabelText } = renderWithProviders(
+      <MessageInput
+        onSend={onSend}
+        replyTarget={{
+          messageId: 'msg-reply-1',
+          authorId: 'user-2',
+          authorName: 'Bob',
+          content: 'Hello',
+        }}
+      />,
+    );
+
+    fireEvent.changeText(getByLabelText('Message input'), 'My reply');
+    fireEvent.press(getByLabelText('Send message'));
+
+    expect(onSend).toHaveBeenCalledWith('My reply', [], { replyToId: 'msg-reply-1' });
   });
 
   it('clears pending attachments after send', async () => {

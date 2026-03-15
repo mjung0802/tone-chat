@@ -1,24 +1,37 @@
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
-import { TextInput, IconButton, useTheme } from 'react-native-paper';
+import { TextInput, Icon, IconButton, Text, useTheme } from 'react-native-paper';
 import { AttachmentPicker } from './AttachmentPicker';
 import { AttachmentPreview, type PendingAttachment } from './AttachmentPreview';
 import { EmojiPicker } from './EmojiPicker';
+import { MentionAutocomplete } from './MentionAutocomplete';
 import { useUpload } from '../../hooks/useAttachments';
 import type { DocumentPickerAsset } from 'expo-document-picker';
+import type { ServerMember } from '../../types/models';
 
 const MAX_ATTACHMENTS = 6;
 
 interface MessageInputProps {
-  onSend: (content: string, attachmentIds: string[]) => void;
+  onSend: (content: string, attachmentIds: string[], options?: { replyToId?: string; mentions?: string[] }) => void;
   onTyping?: (() => void) | undefined;
   disabled?: boolean | undefined;
+  replyTarget?: {
+    messageId: string;
+    authorId: string;
+    authorName: string;
+    content: string;
+  } | undefined;
+  onCancelReply?: (() => void) | undefined;
+  members?: ServerMember[] | undefined;
+  currentUserId?: string | undefined;
 }
 
-export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) {
+export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancelReply, members, currentUserId }: MessageInputProps) {
   const [text, setText] = useState('');
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [emojiPickerVisible, setEmojiPickerVisible] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState(0);
+  const [pendingMentions, setPendingMentions] = useState<Set<string>>(new Set());
   const theme = useTheme();
   const upload = useUpload();
 
@@ -34,10 +47,20 @@ export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) 
 
     if (!trimmed && ids.length === 0) return;
 
-    onSend(trimmed, ids);
+    const options: { replyToId?: string; mentions?: string[] } = {};
+    if (replyTarget) {
+      options.replyToId = replyTarget.messageId;
+    }
+
+    if (pendingMentions.size > 0) {
+      options.mentions = Array.from(pendingMentions);
+    }
+
+    onSend(trimmed, ids, options);
     setText('');
     setPendingAttachments([]);
-  }, [text, pendingAttachments, onSend]);
+    setPendingMentions(new Set());
+  }, [text, pendingAttachments, onSend, replyTarget, pendingMentions]);
 
   const handleChange = useCallback(
     (value: string) => {
@@ -53,6 +76,18 @@ export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) 
       onTyping?.();
     },
     [onTyping],
+  );
+
+  const handleMentionSelect = useCallback(
+    (member: ServerMember, start: number, end: number) => {
+      const username = member.username ?? member.userId;
+      const newText = text.slice(0, start) + `@${username} ` + text.slice(end);
+      setText(newText);
+      setCursorPosition(start + username.length + 2);
+      setPendingMentions((prev) => new Set(prev).add(member.userId));
+      onTyping?.();
+    },
+    [text, onTyping],
   );
 
   const handlePick = useCallback(
@@ -108,6 +143,34 @@ export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) 
   return (
     <View style={[styles.wrapper, { backgroundColor: theme.colors.surface }]}>
       <AttachmentPreview attachments={pendingAttachments} onRemove={handleRemove} />
+      {members ? (
+        <MentionAutocomplete
+          text={text}
+          cursorPosition={cursorPosition}
+          members={members}
+          onSelect={handleMentionSelect}
+          currentUserId={currentUserId}
+        />
+      ) : null}
+      {replyTarget ? (
+        <View style={[styles.replyPreview, { backgroundColor: theme.colors.surfaceVariant }]}>
+          <Icon source="reply" size={16} color={theme.colors.primary} />
+          <View style={styles.replyPreviewText}>
+            <Text variant="labelSmall" style={{ color: theme.colors.primary, fontWeight: '600' }}>
+              Replying to @{replyTarget.authorName}
+            </Text>
+            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+              {replyTarget.content.slice(0, 80)}
+            </Text>
+          </View>
+          <IconButton
+            icon="close"
+            size={16}
+            onPress={() => onCancelReply?.()}
+            accessibilityLabel="Cancel reply"
+          />
+        </View>
+      ) : null}
       <View style={styles.container}>
         <AttachmentPicker
           onPick={handlePick}
@@ -117,6 +180,7 @@ export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) 
           style={styles.input}
           value={text}
           onChangeText={handleChange}
+          onSelectionChange={(e) => setCursorPosition(e.nativeEvent.selection.end)}
           placeholder="Type a message..."
           maxLength={4000}
           disabled={disabled ?? false}
@@ -162,6 +226,7 @@ export function MessageInput({ onSend, onTyping, disabled }: MessageInputProps) 
 
 const styles = StyleSheet.create({
   wrapper: {
+    position: 'relative' as const,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: 'rgba(0,0,0,0.1)',
   },
@@ -181,5 +246,17 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     marginBottom: 4,
+  },
+  replyPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    gap: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  replyPreviewText: {
+    flex: 1,
   },
 });

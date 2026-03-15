@@ -1,7 +1,7 @@
 import { AttachmentViewer } from '@/components/chat/AttachmentViewer';
 import { EmojiPicker } from '@/components/chat/EmojiPicker';
 import { MessageInput } from '@/components/chat/MessageInput';
-import { MessageList } from '@/components/chat/MessageList';
+import { MessageList, type MessageListHandle } from '@/components/chat/MessageList';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useChannel } from '@/hooks/useChannels';
@@ -9,11 +9,12 @@ import { useMembers } from '@/hooks/useMembers';
 import { useMessages, useSendMessage } from '@/hooks/useMessages';
 import { useChannelSocket, useTypingEmit } from '@/hooks/useSocket';
 import { useAuthStore } from '@/stores/authStore';
+import { useNotificationStore } from '@/stores/notificationStore';
 import { useSocketStore } from '@/stores/socketStore';
-import type { Attachment } from '@/types/models';
+import type { Attachment, Message } from '@/types/models';
 import type { TypingEvent } from '@/types/socket.types';
 import { useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 const TYPING_TIMEOUT = 3000;
@@ -27,6 +28,13 @@ export default function ChannelScreen() {
   const cid = channelId ?? '';
 
   const userId = useAuthStore((s) => s.userId);
+  const setCurrentChannelId = useNotificationStore((s) => s.setCurrentChannelId);
+
+  useEffect(() => {
+    setCurrentChannelId(cid || null);
+    return () => setCurrentChannelId(null);
+  }, [cid, setCurrentChannelId]);
+
   useChannel(sid, cid);
   const {
     data: messagesData,
@@ -46,6 +54,11 @@ export default function ChannelScreen() {
   // Attachment viewer state
   const [viewerAttachment, setViewerAttachment] = useState<Attachment | null>(null);
   const [viewerVisible, setViewerVisible] = useState(false);
+
+  // Reply state
+  const [replyTarget, setReplyTarget] = useState<{ messageId: string; authorId: string; authorName: string; content: string } | null>(null);
+  const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
+  const messageListRef = useRef<MessageListHandle>(null);
 
   // Reaction state
   const [reactionTargetMessageId, setReactionTargetMessageId] = useState<string | null>(null);
@@ -119,21 +132,48 @@ export default function ChannelScreen() {
   }, []);
 
   // Build author name map from members
-  const authorNames: Record<string, string> = {};
-  members?.forEach((m) => {
-    authorNames[m.userId] = m.nickname ?? m.display_name ?? m.username ?? m.userId;
-  });
+  const authorNames = useMemo(() => {
+    const names: Record<string, string> = {};
+    members?.forEach((m) => {
+      names[m.userId] = m.nickname ?? m.display_name ?? m.username ?? m.userId;
+    });
+    return names;
+  }, [members]);
 
   const typingUserNames = Array.from(typingUsers.keys()).map(
     (id) => authorNames[id] ?? 'Someone',
   );
 
+  const handleReply = useCallback((message: Message) => {
+    setReplyTarget({
+      messageId: message._id,
+      authorId: message.authorId,
+      authorName: authorNames[message.authorId] ?? 'Unknown',
+      content: message.content,
+    });
+  }, [authorNames]);
+
+  const handleCancelReply = useCallback(() => {
+    setReplyTarget(null);
+  }, []);
+
+  const handleReplyPress = useCallback((messageId: string) => {
+    const found = messageListRef.current?.scrollToMessage(messageId);
+    if (found) {
+      setHighlightMessageId(messageId);
+      setTimeout(() => setHighlightMessageId(null), 1500);
+    }
+  }, []);
+
   const handleSend = useCallback(
-    (content: string, attachmentIds: string[]) => {
+    (content: string, attachmentIds: string[], options?: { replyToId?: string; mentions?: string[] }) => {
       sendMessage.mutate({
         content,
         attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
+        replyToId: options?.replyToId,
+        mentions: options?.mentions,
       });
+      setReplyTarget(null);
     },
     [sendMessage],
   );
@@ -154,6 +194,7 @@ export default function ChannelScreen() {
   return (
     <View style={styles.container}>
       <MessageList
+        ref={messageListRef}
         messages={messages}
         currentUserId={userId}
         authorNames={authorNames}
@@ -162,12 +203,19 @@ export default function ChannelScreen() {
         onImagePress={handleImagePress}
         onToggleReaction={handleToggleReaction}
         onAddReaction={handleAddReaction}
+        onReply={handleReply}
+        onReplyPress={handleReplyPress}
+        highlightedMessageId={highlightMessageId}
       />
       <TypingIndicator userNames={typingUserNames} />
       <MessageInput
         onSend={handleSend}
         onTyping={emitTyping}
         disabled={sendMessage.isPending}
+        members={members}
+        currentUserId={userId ?? undefined}
+        replyTarget={replyTarget ?? undefined}
+        onCancelReply={handleCancelReply}
       />
       <AttachmentViewer
         visible={viewerVisible}

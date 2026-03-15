@@ -35,25 +35,7 @@ export function useSendMessage(serverId: string, channelId: string) {
     mutationFn: (data: SendMessageRequest) =>
       messagesApi.sendMessage(serverId, channelId, data),
     onSuccess: (response) => {
-      // Optimistically add the new message to the cache
-      queryClient.setQueryData<{
-        pages: MessagesResponse[];
-        pageParams: (string | undefined)[];
-          }>(
-          ['servers', serverId, 'channels', channelId, 'messages'],
-          (old) => {
-            if (!old) return old;
-            const lastPage = old.pages[old.pages.length - 1];
-            if (!lastPage) return old;
-            return {
-              ...old,
-              pages: [
-                ...old.pages.slice(0, -1),
-                { messages: [...lastPage.messages, response.message] },
-              ],
-            };
-          },
-          );
+      injectMessage(queryClient, response.message);
     },
   });
 }

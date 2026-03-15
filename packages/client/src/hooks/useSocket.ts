@@ -47,8 +47,8 @@ export function useChannelSocket(
 
     socket.emit('join_channel', { serverId, channelId });
 
-    const handleNewMessage = (message: Parameters<typeof injectMessage>[1]) => {
-      injectMessage(queryClient, message);
+    const handleNewMessage = (data: { message: Message }) => {
+      injectMessage(queryClient, data.message);
       AccessibilityInfo.announceForAccessibility('New message received');
     };
 

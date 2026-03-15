@@ -7,6 +7,11 @@ mock.module('./messages.client.js', {
   namedExports: { createMessage: mockCreateMessage, toggleReaction: mockToggleReaction },
 });
 
+const mockEmitMentionsFromResult = mock.fn<AnyFn>();
+mock.module('./mentions.helper.js', {
+  namedExports: { emitMentionsFromResult: mockEmitMentionsFromResult },
+});
+
 const { registerMessageHandlers } = await import('./messages.socket.js');
 
 describe('registerMessageHandlers', () => {
@@ -27,6 +32,7 @@ describe('registerMessageHandlers', () => {
   beforeEach(() => {
     mockCreateMessage.mock.resetCalls();
     mockToggleReaction.mock.resetCalls();
+    mockEmitMentionsFromResult.mock.resetCalls();
     handlers = {};
     const mockToEmit = mock.fn();
     socket = {
@@ -67,6 +73,62 @@ describe('registerMessageHandlers', () => {
 
       await handlers['send_message']!({ serverId: 's1', channelId: 'c1', content: '' });
       assert.equal(ioEmit.mock.callCount(), 0);
+    });
+
+    it('passes replyToId and mentions to createMessage', async () => {
+      const msgData = { serverId: 's1', channelId: 'c1', content: 'hello', replyToId: 'orig1', mentions: ['u2'] };
+      const responseData = { message: { _id: 'm1', content: 'hello', mentions: ['u2'] } };
+      mockCreateMessage.mock.mockImplementation(async () => ({ status: 201, data: responseData }));
+      mockEmitMentionsFromResult.mock.mockImplementation(async () => {});
+
+      const ioEmit = mock.fn();
+      io.to = mock.fn(() => ({ emit: ioEmit }));
+
+      await handlers['send_message']!(msgData);
+
+      const createArgs = mockCreateMessage.mock.calls[0]!.arguments;
+      const body = createArgs[3] as Record<string, unknown>;
+      assert.equal(body.replyToId, 'orig1');
+      assert.deepEqual(body.mentions, ['u2']);
+    });
+
+    it('calls emitMentionsFromResult after successful create', async () => {
+      const responseData = { message: { _id: 'm1', content: 'hello', mentions: ['u2', 'u3'] } };
+      mockCreateMessage.mock.mockImplementation(async () => ({ status: 201, data: responseData }));
+      mockEmitMentionsFromResult.mock.mockImplementation(async () => {});
+
+      const ioEmit = mock.fn();
+      io.to = mock.fn(() => ({ emit: ioEmit }));
+
+      await handlers['send_message']!({ serverId: 's1', channelId: 'c1', content: 'hello', mentions: ['u2', 'u3'] });
+
+      assert.equal(mockEmitMentionsFromResult.mock.callCount(), 1);
+      const args = mockEmitMentionsFromResult.mock.calls[0]!.arguments;
+      assert.equal(args[1], 'user-1'); // senderId
+      assert.equal(args[2], 's1');     // serverId
+      assert.equal(args[3], 'c1');     // channelId
+      assert.deepEqual(args[4], responseData); // resultData
+    });
+
+    it('does not call emitMentionsFromResult on non-201', async () => {
+      mockCreateMessage.mock.mockImplementation(async () => ({ status: 400, data: { error: 'bad' } }));
+
+      const ioEmit = mock.fn();
+      io.to = mock.fn(() => ({ emit: ioEmit }));
+
+      await handlers['send_message']!({ serverId: 's1', channelId: 'c1', content: 'hello' });
+
+      assert.equal(mockEmitMentionsFromResult.mock.callCount(), 0);
+    });
+
+    it('validates replyToId is a non-empty string', async () => {
+      await handlers['send_message']!({ serverId: 's1', channelId: 'c1', content: 'hello', replyToId: '' });
+      assert.equal(mockCreateMessage.mock.callCount(), 0);
+    });
+
+    it('validates mentions is an array of strings with max 20', async () => {
+      await handlers['send_message']!({ serverId: 's1', channelId: 'c1', content: 'hello', mentions: 'not-array' });
+      assert.equal(mockCreateMessage.mock.callCount(), 0);
     });
   });
 

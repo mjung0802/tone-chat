@@ -1,12 +1,14 @@
 import { ServerIcon } from '@/components/servers/ServerIcon';
+import { NotificationBanner } from '@/components/common/NotificationBanner';
 import { useLogout } from '@/hooks/useAuth';
+import { useMentionNotifications } from '@/hooks/useMentionNotifications';
 import { useServers } from '@/hooks/useServers';
 import { DrawerContentScrollView, DrawerItem, type DrawerContentComponentProps } from '@react-navigation/drawer';
 import { useRouter } from 'expo-router';
 import { Drawer } from 'expo-router/drawer';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Divider, Icon, IconButton, Text, useTheme } from 'react-native-paper';
+import { Divider, Icon, IconButton, Portal, Text, useTheme } from 'react-native-paper';
 
 function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { data: servers } = useServers();
@@ -68,26 +70,34 @@ function CustomDrawerContent(props: DrawerContentComponentProps) {
 
 export default function MainLayout() {
   const theme = useTheme();
+
+  useMentionNotifications();
+
   return (
-    <Drawer
-      drawerContent={(props) => <CustomDrawerContent {...props} />}
-      screenOptions={{
-        headerShown: true,
-        headerStyle: { backgroundColor: theme.colors.surface, borderBottomColor: 'white' },
-        headerTintColor: theme.colors.onSurface,
-        drawerType: 'front',
-        drawerStyle: { backgroundColor: theme.colors.background },
-      }}
-    >
-      <Drawer.Screen name="servers/index" options={{ title: 'Servers' }} />
-      <Drawer.Screen name="servers/create" options={{ title: 'Create Server' }} />
-      <Drawer.Screen
-        name="servers/[serverId]"
-        options={{ headerShown: false }}
-      />
-      <Drawer.Screen name="profile/index" options={{ title: 'Profile' }} />
-      <Drawer.Screen name="invites/[code]" options={{ title: 'Join Server' }} />
-    </Drawer>
+    <>
+      <Drawer
+        drawerContent={(props) => <CustomDrawerContent {...props} />}
+        screenOptions={{
+          headerShown: true,
+          headerStyle: { backgroundColor: theme.colors.surface, borderBottomColor: 'white' },
+          headerTintColor: theme.colors.onSurface,
+          drawerType: 'front',
+          drawerStyle: { backgroundColor: theme.colors.background },
+        }}
+      >
+        <Drawer.Screen name="servers/index" options={{ title: 'Servers' }} />
+        <Drawer.Screen name="servers/create" options={{ title: 'Create Server' }} />
+        <Drawer.Screen
+          name="servers/[serverId]"
+          options={{ headerShown: false }}
+        />
+        <Drawer.Screen name="profile/index" options={{ title: 'Profile' }} />
+        <Drawer.Screen name="invites/[code]" options={{ title: 'Join Server' }} />
+      </Drawer>
+      <Portal>
+        <NotificationBanner />
+      </Portal>
+    </>
   );
 }
 

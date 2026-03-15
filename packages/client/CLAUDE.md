@@ -52,6 +52,7 @@ src/
     authStore.ts              # JWT tokens, SecureStore/localStorage persistence
     socketStore.ts            # Socket.IO connection lifecycle
     uiStore.ts                # Theme preference, sidebar state
+    notificationStore.ts      # Mention notification state, channel-aware suppression
   hooks/
     useAuth.ts                # Login/register mutations
     useUser.ts                # Profile queries/mutations
@@ -62,8 +63,9 @@ src/
     useInvites.ts             # Invite CRUD + join-via-code
     useAttachments.ts         # Upload mutation + attachment query (staleTime: Infinity)
     useSocket.ts              # Socket.IO room lifecycle, cache injection, typing
+    useMentionNotifications.ts # Listens for `mention` socket events, suppresses if viewing that channel
   components/
-    chat/                     # MessageBubble, MessageInput, MessageList, TypingIndicator, AttachmentPicker, AttachmentPreview, AttachmentBubble, AttachmentViewer, EmojiPicker, emojiData
+    chat/                     # MessageBubble, MessageInput, MessageList, TypingIndicator, AttachmentPicker, AttachmentPreview, AttachmentBubble, AttachmentViewer, EmojiPicker, emojiData, MentionAutocomplete
     servers/                  # ServerIcon, ServerListItem, CreateServerForm
     channels/                 # ChannelListItem, ChannelSidebar
     members/                  # MemberListItem, MemberList
@@ -133,7 +135,8 @@ loading={isLoading ?? false}    // not loading={isLoading}
 - `useSocketConnection()` — connects/disconnects based on auth state (called in root layout)
 - `useChannelSocket(serverId, channelId)` — joins/leaves room, listens for `new_message` (injects into TanStack Query cache) and `typing` events
 - `useTypingEmit(serverId, channelId)` — debounced typing emission (2s throttle)
-- Room format: `server:<serverId>:channel:<channelId>`
+- `useMentionNotifications()` — listens for `mention` events on user-level room (`user:<userId>`), called in root layout. Suppresses notifications for the channel the user is currently viewing.
+- Room format: channel rooms `server:<serverId>:channel:<channelId>`, user rooms `user:<userId>`
 
 ## Attachments
 

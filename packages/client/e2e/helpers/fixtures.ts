@@ -73,6 +73,16 @@ export const MOCK_MESSAGES = [
   },
 ];
 
+export const MOCK_MEMBER_TWO = {
+  _id: 'member-002',
+  serverId: 'server-001',
+  userId: 'user-002',
+  roles: [],
+  joinedAt: '2024-01-01T00:00:00.000Z',
+  username: 'janedoe',
+  display_name: 'Jane Doe',
+};
+
 export const MOCK_MEMBERS = [
   {
     _id: 'member-001',
@@ -84,3 +94,37 @@ export const MOCK_MEMBERS = [
     display_name: 'Test User',
   },
 ];
+
+export const MOCK_MEMBERS_FULL = [
+  MOCK_MEMBERS[0]!,
+  MOCK_MEMBER_TWO,
+];
+
+export const MOCK_MESSAGE_WITH_REPLY = {
+  _id: 'msg-reply-001',
+  channelId: 'channel-001',
+  serverId: 'server-001',
+  authorId: 'user-002',
+  content: 'This is a reply',
+  attachmentIds: [],
+  reactions: [],
+  replyTo: {
+    messageId: 'msg-001',
+    authorId: 'user-002',
+    authorName: 'Jane Doe',
+    content: 'Hello from test',
+  },
+  createdAt: '2024-01-01T00:02:00.000Z',
+};
+
+export const MOCK_MESSAGE_WITH_MENTION = {
+  _id: 'msg-mention-001',
+  channelId: 'channel-001',
+  serverId: 'server-001',
+  authorId: 'user-002',
+  content: 'Hey @testuser check this out',
+  attachmentIds: [],
+  reactions: [],
+  mentions: ['user-001'],
+  createdAt: '2024-01-01T00:03:00.000Z',
+};

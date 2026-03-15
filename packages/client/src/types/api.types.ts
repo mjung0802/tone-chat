@@ -66,6 +66,8 @@ export interface UpdateChannelRequest {
 export interface SendMessageRequest {
   content: string;
   attachmentIds?: string[] | undefined;
+  replyToId?: string | undefined;
+  mentions?: string[] | undefined;
 }
 
 export interface UpdateMessageRequest {
