@@ -107,11 +107,18 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
 
 ### Socket.IO Event Payloads
 - The `new_message` event payload is the full messagingService JSON response: `{ message: { content, authorId, ... } }` (wrapped in `message` key), not the message object directly. This is because `messages.socket.ts` emits `result.data` from `serviceRequest`, which includes the response wrapper.
+- Rooms: channel rooms (`server:<serverId>:channel:<channelId>`) for messages, user-level rooms (`user:<userId>`) for targeted notifications like mentions.
 
 ### Message Attachments
 - Messages require **either `content` or `attachmentIds`** (or both). Empty messages return 400 (`MISSING_FIELDS`).
 - `attachmentIds` is a `string[]` on the message model (MongoDB, default `[]`). The messagingService stores IDs only — actual files live in attachmentsService.
 - Socket.IO `send_message` type guard (`isValidSendMessage`) accepts optional `attachmentIds` (max 6 items) but still requires `content` (1–4000 chars). HTTP controller is more lenient (content optional when attachments present).
+
+### Mentions & Replies
+- Message model has `replyTo` (embedded object with `messageId`, `content`, `authorId`, `authorName`) and `mentions` (`string[]` of user IDs).
+- `send_message` socket event and HTTP POST both accept `replyToId` and `mentions`. Replying auto-adds the original author to mentions.
+- Mentions validated: max 20 items, each ≤36 chars, must be server members, sender excluded.
+- BFF emits a `mention` event to user-level socket rooms (`user:{userId}`) for each mentioned user.
 
 ### API Routes (BFF)
 All routes prefixed `/api/v1`. Auth routes → usersService. Server/channel/message/member routes → messagingService. Attachment routes → attachmentsService.
@@ -134,7 +141,7 @@ All backend packages use strict TypeScript with `nodenext` module resolution, `n
 **Structure**:
 - `app/` — Expo Router file-based screens: `(auth)/` (login, register), `(main)/` (drawer with servers, channels, profile, invites)
 - `src/api/` — `client.ts` (fetch wrapper with auto-auth, 401→refresh→retry) + domain modules (`auth`, `users`, `servers`, `channels`, `messages`, `members`, `invites`, `attachments`)
-- `src/stores/` — Zustand: `authStore` (JWT + SecureStore persistence), `socketStore` (Socket.IO lifecycle), `uiStore` (theme, sidebar)
+- `src/stores/` — Zustand: `authStore` (JWT + SecureStore persistence), `socketStore` (Socket.IO lifecycle), `uiStore` (theme, sidebar), `notificationStore` (mention notifications, channel-aware suppression)
 - `src/hooks/` — TanStack Query hooks per domain. `useMessages` uses `useInfiniteQuery` (cursor pagination). `useSocket` manages room join/leave and injects `new_message` events into query cache.
 - `src/components/` — `chat/`, `servers/`, `channels/`, `members/`, `invites/`, `common/`
 - `src/theme/` — WCAG 2.1 AA color palette (4.5:1 contrast), light/dark, min 16px body text

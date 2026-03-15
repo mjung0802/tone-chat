@@ -140,16 +140,32 @@ export async function mockMessagesRoutes(page: Page, messages = MOCK_MESSAGES): 
           body: JSON.stringify({ messages }),
         });
       } else if (route.request().method() === 'POST') {
-        const body = route.request().postDataJSON() as { content?: string };
-        const newMessage = {
+        const body = route.request().postDataJSON() as {
+          content?: string;
+          replyToId?: string;
+          mentions?: string[];
+        };
+        const newMessage: Record<string, unknown> = {
           _id: `msg-new-${Date.now()}`,
           channelId: 'channel-001',
           serverId: 'server-001',
           authorId: 'user-001',
           content: body.content ?? '',
           attachmentIds: [],
+          reactions: [],
           createdAt: new Date().toISOString(),
         };
+        if (body.replyToId) {
+          newMessage.replyTo = {
+            messageId: body.replyToId,
+            authorId: 'user-002',
+            authorName: 'Jane Doe',
+            content: 'Original message content',
+          };
+        }
+        if (body.mentions) {
+          newMessage.mentions = body.mentions;
+        }
         await route.fulfill({
           status: 201,
           contentType: 'application/json',
@@ -215,12 +231,12 @@ export async function mockReactionRoutes(page: Page): Promise<void> {
   );
 }
 
-export async function mockMembersRoutes(page: Page): Promise<void> {
+export async function mockMembersRoutes(page: Page, members = MOCK_MEMBERS): Promise<void> {
   await page.route(`${API}/servers/*/members`, async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ members: MOCK_MEMBERS }),
+      body: JSON.stringify({ members }),
     });
   });
 }

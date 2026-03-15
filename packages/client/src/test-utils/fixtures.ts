@@ -1,4 +1,4 @@
-import type { Attachment, Message, User } from '../types/models';
+import type { Attachment, Message, ServerMember, User } from '../types/models';
 
 export function encodeJwtPayload(payload: Record<string, unknown>): string {
   const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
@@ -52,6 +52,19 @@ export function makeAttachment(overrides: Partial<Attachment> = {}): Attachment 
     status: 'ready',
     url: 'http://localhost:9000/uploads/photo.png',
     created_at: '2025-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+export function makeMember(overrides: Partial<ServerMember> = {}): ServerMember {
+  return {
+    _id: 'member-1',
+    serverId: 'server-1',
+    userId: 'user-123',
+    roles: [],
+    joinedAt: '2025-01-01T00:00:00.000Z',
+    username: 'testuser',
+    display_name: 'Test User',
     ...overrides,
   };
 }

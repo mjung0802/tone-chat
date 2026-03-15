@@ -1,6 +1,6 @@
 import type { Server, Socket } from 'socket.io';
 import * as messagesClient from './messages.client.js';
-import { emitMentionEvents } from './mentions.helper.js';
+import { emitMentionsFromResult } from './mentions.helper.js';
 
 function isValidSendMessage(data: unknown): data is { serverId: string; channelId: string; content: string; attachmentIds?: string[]; replyToId?: string; mentions?: string[] } {
   if (typeof data !== 'object' || data === null) return false;
@@ -55,12 +55,7 @@ export function registerMessageHandlers(io: Server, socket: Socket, userId: stri
       const room = `server:${data.serverId}:channel:${data.channelId}`;
       io.to(room).emit('new_message', result.data);
 
-      // Emit mention events to mentioned users
-      const msg = (result.data as { message: { _id: string; mentions?: string[] } }).message;
-      const mentions = msg.mentions ?? [];
-      if (mentions.length > 0) {
-        await emitMentionEvents(io, userId, data.serverId, data.channelId, msg._id, mentions);
-      }
+      await emitMentionsFromResult(io, userId, data.serverId, data.channelId, result.data);
     }
   });
 

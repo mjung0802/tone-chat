@@ -14,7 +14,7 @@ import { useSocketStore } from '@/stores/socketStore';
 import type { Attachment, Message } from '@/types/models';
 import type { TypingEvent } from '@/types/socket.types';
 import { useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 const TYPING_TIMEOUT = 3000;
@@ -132,10 +132,13 @@ export default function ChannelScreen() {
   }, []);
 
   // Build author name map from members
-  const authorNames: Record<string, string> = {};
-  members?.forEach((m) => {
-    authorNames[m.userId] = m.nickname ?? m.display_name ?? m.username ?? m.userId;
-  });
+  const authorNames = useMemo(() => {
+    const names: Record<string, string> = {};
+    members?.forEach((m) => {
+      names[m.userId] = m.nickname ?? m.display_name ?? m.username ?? m.userId;
+    });
+    return names;
+  }, [members]);
 
   const typingUserNames = Array.from(typingUsers.keys()).map(
     (id) => authorNames[id] ?? 'Someone',

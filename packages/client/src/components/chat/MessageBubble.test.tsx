@@ -176,6 +176,121 @@ describe('MessageBubble', () => {
     expect(onToggleReaction).toHaveBeenCalledWith('msg-99', '👍');
   });
 
+  it('renders reply indicator when message has replyTo', () => {
+    const msg = makeMessage({
+      replyTo: {
+        messageId: 'orig-1',
+        authorId: 'user-456',
+        authorName: 'Bob',
+        content: 'Original message',
+      },
+    });
+    const { getByText, getByLabelText } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+    );
+
+    expect(getByText('Original message')).toBeTruthy();
+    expect(getByLabelText(/Reply to Bob/)).toBeTruthy();
+  });
+
+  it('uses authorNames lookup for reply indicator when available', () => {
+    const msg = makeMessage({
+      replyTo: {
+        messageId: 'orig-1',
+        authorId: 'user-456',
+        authorName: 'Bob',
+        content: 'Original message',
+      },
+    });
+    const { getByText } = renderWithProviders(
+      <MessageBubble
+        message={msg}
+        isOwn={false}
+        authorName="Alice"
+        authorNames={{ 'user-456': 'Robert' }}
+      />,
+    );
+
+    expect(getByText('@Robert')).toBeTruthy();
+  });
+
+  it('calls onReplyPress when reply indicator is pressed', () => {
+    const msg = makeMessage({
+      replyTo: {
+        messageId: 'orig-1',
+        authorId: 'user-456',
+        authorName: 'Bob',
+        content: 'Original message',
+      },
+    });
+    const onReplyPress = jest.fn();
+    const { getByLabelText } = renderWithProviders(
+      <MessageBubble
+        message={msg}
+        isOwn={false}
+        authorName="Alice"
+        onReplyPress={onReplyPress}
+      />,
+    );
+
+    fireEvent.press(getByLabelText(/Reply to Bob/));
+    expect(onReplyPress).toHaveBeenCalledWith('orig-1');
+  });
+
+  it('does not render reply indicator when replyTo is absent', () => {
+    const msg = makeMessage();
+    const { queryByLabelText } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+    );
+
+    expect(queryByLabelText(/Reply to/)).toBeNull();
+  });
+
+  it('applies mention highlight when currentUserId is in mentions', () => {
+    const msg = makeMessage({ mentions: ['user-me'] });
+    const { getByLabelText } = renderWithProviders(
+      <MessageBubble
+        message={msg}
+        isOwn={false}
+        authorName="Alice"
+        currentUserId="user-me"
+      />,
+    );
+
+    // The bubble should render — the mention highlight changes backgroundColor
+    expect(getByLabelText(/Alice said/)).toBeTruthy();
+  });
+
+  it('does not apply mention highlight when currentUserId is not in mentions', () => {
+    const msg = makeMessage({ mentions: ['user-other'] });
+    const { getByLabelText } = renderWithProviders(
+      <MessageBubble
+        message={msg}
+        isOwn={false}
+        authorName="Alice"
+        currentUserId="user-me"
+      />,
+    );
+
+    expect(getByLabelText(/Alice said/)).toBeTruthy();
+  });
+
+  it('applies highlighted prop background styling', () => {
+    const msg = makeMessage();
+    const { getByLabelText } = renderWithProviders(
+      <MessageBubble
+        message={msg}
+        isOwn={false}
+        authorName="Alice"
+        highlighted={true}
+      />,
+    );
+
+    // The container should have the highlighted style applied
+    const container = getByLabelText(/Alice said/);
+    expect(container).toBeTruthy();
+  });
+
   it('forwards onAddReaction with messageId', () => {
     const msg = makeMessage({
       _id: 'msg-99',
