@@ -104,11 +104,11 @@ export const MessageBubble = memo(function MessageBubble({
               onPress={() => onReplyPress?.(message.replyTo!.messageId)}
               style={styles.replyIndicator}
               accessibilityRole="button"
-              accessibilityLabel={`Reply to ${message.replyTo.authorName ?? 'Unknown User'}`}
+              accessibilityLabel={`Reply to ${authorNames?.[message.replyTo.authorId] ?? message.replyTo.authorName ?? 'Unknown User'}`}
             >
               <Icon source="reply" size={12} color={theme.colors.onSurfaceVariant} />
               <Text variant="labelSmall" style={[styles.replyAuthor, { color: theme.colors.primary }]} numberOfLines={1}>
-                @{message.replyTo.authorName ?? 'Unknown User'}
+                @{authorNames?.[message.replyTo.authorId] ?? message.replyTo.authorName ?? 'Unknown User'}
               </Text>
               <Text variant="labelSmall" style={[styles.replyContent, { color: theme.colors.onSurfaceVariant }]} numberOfLines={1}>
                 {message.replyTo.content}
