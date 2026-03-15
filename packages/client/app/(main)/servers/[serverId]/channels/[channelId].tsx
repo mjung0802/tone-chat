@@ -9,6 +9,7 @@ import { useMembers } from '@/hooks/useMembers';
 import { useMessages, useSendMessage } from '@/hooks/useMessages';
 import { useChannelSocket, useTypingEmit } from '@/hooks/useSocket';
 import { useAuthStore } from '@/stores/authStore';
+import { useNotificationStore } from '@/stores/notificationStore';
 import { useSocketStore } from '@/stores/socketStore';
 import type { Attachment, Message } from '@/types/models';
 import type { TypingEvent } from '@/types/socket.types';
@@ -27,6 +28,13 @@ export default function ChannelScreen() {
   const cid = channelId ?? '';
 
   const userId = useAuthStore((s) => s.userId);
+  const setCurrentChannelId = useNotificationStore((s) => s.setCurrentChannelId);
+
+  useEffect(() => {
+    setCurrentChannelId(cid || null);
+    return () => setCurrentChannelId(null);
+  }, [cid, setCurrentChannelId]);
+
   useChannel(sid, cid);
   const {
     data: messagesData,
