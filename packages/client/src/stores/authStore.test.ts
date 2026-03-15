@@ -1,5 +1,14 @@
 import { useAuthStore } from './authStore';
 import { VALID_JWT, EXPIRED_JWT, MALFORMED_JWT } from '../test-utils/fixtures';
+import { getMe } from '../api/users.api';
+import type { UserResponse } from '../types/api.types';
+
+jest.mock('../api/users.api');
+const mockGetMe = jest.mocked(getMe);
+
+const STUB_USER_RESPONSE: UserResponse = {
+  user: { id: 'user-123', username: 'test', email: 'test@test.com', email_verified: true, display_name: null, pronouns: null, avatar_url: null, status: 'online', bio: null, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+};
 
 // With Platform.OS='web' (set in jest.setup.ts), authStore uses localStorage
 
@@ -14,6 +23,7 @@ beforeEach(() => {
   });
   localStorage.clear();
   jest.clearAllMocks();
+  mockGetMe.mockReset();
 });
 
 describe('authStore', () => {
@@ -68,34 +78,7 @@ describe('authStore', () => {
   });
 
   describe('hydrate', () => {
-    it('with valid non-expired token: full auth state + isHydrated', async () => {
-      localStorage.setItem('accessToken', VALID_JWT);
-      localStorage.setItem('refreshToken', 'refresh-token');
-
-      await useAuthStore.getState().hydrate();
-
-      const state = useAuthStore.getState();
-      expect(state.accessToken).toBe(VALID_JWT);
-      expect(state.refreshToken).toBe('refresh-token');
-      expect(state.userId).toBe('user-123');
-      expect(state.isAuthenticated).toBe(true);
-      expect(state.isHydrated).toBe(true);
-    });
-
-    it('with expired access + valid refresh: isAuthenticated=false, refresh kept', async () => {
-      localStorage.setItem('accessToken', EXPIRED_JWT);
-      localStorage.setItem('refreshToken', 'refresh-token');
-
-      await useAuthStore.getState().hydrate();
-
-      const state = useAuthStore.getState();
-      expect(state.accessToken).toBeNull();
-      expect(state.refreshToken).toBe('refresh-token');
-      expect(state.isAuthenticated).toBe(false);
-      expect(state.isHydrated).toBe(true);
-    });
-
-    it('with no tokens: only isHydrated=true', async () => {
+    it('no tokens → only isHydrated', async () => {
       await useAuthStore.getState().hydrate();
 
       const state = useAuthStore.getState();
@@ -105,24 +88,89 @@ describe('authStore', () => {
       expect(state.isHydrated).toBe(true);
     });
 
-    it('loads emailVerified=true from localStorage with valid token', async () => {
+    it('apiGet not called when no tokens', async () => {
+      await useAuthStore.getState().hydrate();
+
+      expect(mockGetMe).not.toHaveBeenCalled();
+    });
+
+    it('valid token + server validates → authenticated', async () => {
+      localStorage.setItem('accessToken', VALID_JWT);
+      localStorage.setItem('refreshToken', 'refresh-token');
+      mockGetMe.mockResolvedValueOnce(STUB_USER_RESPONSE);
+
+      await useAuthStore.getState().hydrate();
+
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(true);
+      expect(state.isHydrated).toBe(true);
+      expect(state.userId).toBe('user-123');
+    });
+
+    it('valid token + server rejects → not authenticated', async () => {
+      localStorage.setItem('accessToken', VALID_JWT);
+      localStorage.setItem('refreshToken', 'refresh-token');
+      mockGetMe.mockRejectedValueOnce(new Error('Unauthorized'));
+
+      await useAuthStore.getState().hydrate();
+
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(false);
+      expect(state.isHydrated).toBe(true);
+      expect(state.accessToken).toBeNull();
+      expect(state.refreshToken).toBeNull();
+    });
+
+    it('expired access + refresh token + server validates → authenticated', async () => {
+      localStorage.setItem('accessToken', EXPIRED_JWT);
+      localStorage.setItem('refreshToken', 'refresh-token');
+      mockGetMe.mockResolvedValueOnce(STUB_USER_RESPONSE);
+
+      await useAuthStore.getState().hydrate();
+
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(true);
+      expect(state.isHydrated).toBe(true);
+    });
+
+    it('expired access + refresh token + server rejects → not authenticated', async () => {
+      localStorage.setItem('accessToken', EXPIRED_JWT);
+      localStorage.setItem('refreshToken', 'refresh-token');
+      mockGetMe.mockRejectedValueOnce(new Error('Unauthorized'));
+
+      await useAuthStore.getState().hydrate();
+
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(false);
+      expect(state.isHydrated).toBe(true);
+      expect(state.accessToken).toBeNull();
+      expect(state.refreshToken).toBeNull();
+    });
+
+    it('valid token + network error → not authenticated', async () => {
+      localStorage.setItem('accessToken', VALID_JWT);
+      localStorage.setItem('refreshToken', 'refresh-token');
+      mockGetMe.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+
+      await useAuthStore.getState().hydrate();
+
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(false);
+      expect(state.isHydrated).toBe(true);
+      expect(state.accessToken).toBeNull();
+    });
+
+    it('server validates → emailVerified preserved', async () => {
       localStorage.setItem('accessToken', VALID_JWT);
       localStorage.setItem('refreshToken', 'refresh-token');
       localStorage.setItem('emailVerified', 'true');
+      mockGetMe.mockResolvedValueOnce(STUB_USER_RESPONSE);
 
       await useAuthStore.getState().hydrate();
 
-      expect(useAuthStore.getState().emailVerified).toBe(true);
-    });
-
-    it('loads emailVerified=true from localStorage with expired access + valid refresh', async () => {
-      localStorage.setItem('accessToken', EXPIRED_JWT);
-      localStorage.setItem('refreshToken', 'refresh-token');
-      localStorage.setItem('emailVerified', 'true');
-
-      await useAuthStore.getState().hydrate();
-
-      expect(useAuthStore.getState().emailVerified).toBe(true);
+      const state = useAuthStore.getState();
+      expect(state.emailVerified).toBe(true);
+      expect(state.isAuthenticated).toBe(true);
     });
   });
 

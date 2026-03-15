@@ -5,6 +5,7 @@ import {
   mockChannelsRoutes,
   mockMessagesRoutes,
   mockMembersRoutes,
+  mockUsersRoutes,
 } from './helpers/mocks';
 import {
   MOCK_MESSAGES,
@@ -18,6 +19,7 @@ const CHANNEL_URL = '/servers/server-001/channels/channel-001';
 
 test.beforeEach(async ({ page }) => {
   await mockSocketIO(page);
+  await mockUsersRoutes(page);
   await mockServersRoutes(page);
   await mockChannelsRoutes(page);
   await mockMembersRoutes(page);

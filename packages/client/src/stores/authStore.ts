@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Platform } from 'react-native';
+import { getMe } from '../api/users.api';
 
 interface AuthState {
   accessToken: string | null;
@@ -24,12 +25,6 @@ function parseJwtPayload(token: string): { sub?: string; exp?: number } | null {
   } catch {
     return null;
   }
-}
-
-function isTokenExpired(token: string): boolean {
-  const payload = parseJwtPayload(token);
-  if (!payload?.exp) return true;
-  return Date.now() >= payload.exp * 1000;
 }
 
 // SECURITY: On web, tokens are stored in localStorage which is vulnerable to XSS.
@@ -121,27 +116,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   hydrate: async () => {
     const { accessToken, refreshToken, emailVerified } = await loadTokens();
-    if (accessToken && !isTokenExpired(accessToken)) {
-      const payload = parseJwtPayload(accessToken);
-      set({
-        accessToken,
-        refreshToken,
-        userId: payload?.sub ?? null,
-        isAuthenticated: true,
-        isHydrated: true,
-        emailVerified,
-      });
-    } else if (refreshToken) {
-      // Access token expired but we have a refresh token — let the API client handle refresh
-      set({
-        accessToken: null,
-        refreshToken,
-        userId: null,
-        isAuthenticated: false,
-        isHydrated: true,
-        emailVerified,
-      });
-    } else {
+
+    if (!accessToken && !refreshToken) {
+      set({ isHydrated: true });
+      return;
+    }
+
+    // Pre-set tokens (without isAuthenticated) so the API client
+    // can read them via configureAuth callbacks during the request
+    const payload = accessToken ? parseJwtPayload(accessToken) : null;
+    set({ accessToken, refreshToken, userId: payload?.sub ?? null, emailVerified });
+
+    try {
+      await getMe();
+      set({ isAuthenticated: true, isHydrated: true });
+    } catch {
+      get().clearAuth();
       set({ isHydrated: true });
     }
   },
