@@ -8,7 +8,7 @@ jest.mock('react-native-paper', () => {
   const { Text, View, Pressable } = require('react-native');
   return {
     Text: (props: any) => <Text {...props} />,
-    IconButton: (props: any) => <Pressable onPress={props.onPress} accessibilityLabel={props.accessibilityLabel}><Text>X</Text></Pressable>,
+    IconButton: (props: any) => <Pressable onPress={props.onPress} accessibilityLabel={props.accessibilityLabel} accessibilityRole="button"><Text>X</Text></Pressable>,
     useTheme: () => ({
       colors: {
         surfaceVariant: '#e7e0ec',
