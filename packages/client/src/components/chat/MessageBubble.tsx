@@ -184,10 +184,9 @@ export const MessageBubble = memo(function MessageBubble({
               </Text>
             </Pressable>
           ) : null}
-          {toneDef && toneDisplay === 'full' ? (
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
-              <Text style={{ fontSize: 18 }}>{toneDef.emoji}</Text>
-              <View style={{ flex: 1 }}>
+          {(() => {
+            const contentBlock = (
+              <>
                 {message.content ? (
                   <Text style={[{ color: effectiveTextColor }, toneTextStyle]}>
                     {renderContentWithMentions(message.content, theme.colors.primary)}
@@ -200,24 +199,16 @@ export const MessageBubble = memo(function MessageBubble({
                     ))}
                   </View>
                 ) : null}
+              </>
+            );
+
+            return toneDef && toneDisplay === 'full' ? (
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                <Text style={{ fontSize: 18 }}>{toneDef.emoji}</Text>
+                <View style={{ flex: 1 }}>{contentBlock}</View>
               </View>
-            </View>
-          ) : (
-            <>
-              {message.content ? (
-                <Text style={{ color: effectiveTextColor }}>
-                  {renderContentWithMentions(message.content, theme.colors.primary)}
-                </Text>
-              ) : null}
-              {hasAttachments ? (
-                <View style={styles.attachments}>
-                  {message.attachmentIds.map((id) => (
-                    <AttachmentBubble key={id} attachmentId={id} onImagePress={onImagePress} />
-                  ))}
-                </View>
-              ) : null}
-            </>
-          )}
+            ) : contentBlock;
+          })()}
           {toneDef ? (
             <Text style={{
               color: toneColor,

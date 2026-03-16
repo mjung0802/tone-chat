@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, Pressable, View, StyleSheet, useColorScheme } from 'react-native';
 import { Text, IconButton, useTheme } from 'react-native-paper';
-import { BASE_TONES, type ToneDefinition } from '../../tone/toneRegistry';
+import { BASE_TONES, customToneToDefinition } from '../../tone/toneRegistry';
 import type { CustomToneDefinition } from '../../types/models';
 
 interface TonePickerProps {
@@ -18,14 +18,7 @@ export function TonePicker({ visible, onSelect, onDismiss, customTones }: TonePi
 
   if (!visible) return null;
 
-  const customDefs: ToneDefinition[] = (customTones ?? []).map((ct) => ({
-    key: ct.key,
-    tag: `/${ct.key}`,
-    label: ct.label,
-    emoji: ct.emoji,
-    color: { light: ct.colorLight, dark: ct.colorDark },
-    textStyle: ct.textStyle,
-  }));
+  const customDefs = (customTones ?? []).map(customToneToDefinition);
 
   const allTones = [...BASE_TONES, ...customDefs];
 

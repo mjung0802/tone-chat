@@ -1,4 +1,4 @@
-import type { User, Server, Channel, Message, ServerMember, Invite, Attachment } from './models';
+import type { User, Server, Channel, Message, ServerMember, Invite, Attachment, CustomToneDefinition } from './models';
 
 export interface ApiError {
   error: {
@@ -116,11 +116,11 @@ export interface AddCustomToneRequest {
 }
 
 export interface CustomTonesResponse {
-  customTones: import('./models').CustomToneDefinition[];
+  customTones: CustomToneDefinition[];
 }
 
 export interface CustomToneResponse {
-  customTone: import('./models').CustomToneDefinition;
+  customTone: CustomToneDefinition;
 }
 
 // Response wrappers

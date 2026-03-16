@@ -1,4 +1,4 @@
-import { getBaseTone, resolveTone, parseToneTag } from './toneRegistry';
+import { getBaseTone, resolveTone, parseToneTag, customToneToDefinition } from './toneRegistry';
 import type { CustomToneDefinition } from '../types/models';
 
 describe('toneRegistry', () => {
@@ -31,6 +31,24 @@ describe('toneRegistry', () => {
 
     it('returns undefined for unknown key with no custom match', () => {
       expect(resolveTone('zzz')).toBeUndefined();
+    });
+  });
+
+  describe('customToneToDefinition', () => {
+    it('converts CustomToneDefinition to ToneDefinition', () => {
+      const custom: CustomToneDefinition = {
+        key: 'chill', label: 'chill', emoji: '😎',
+        colorLight: '#1a1a1a', colorDark: '#e0e0e0', textStyle: 'italic',
+      };
+      const def = customToneToDefinition(custom);
+      expect(def).toEqual({
+        key: 'chill',
+        tag: '/chill',
+        label: 'chill',
+        emoji: '😎',
+        color: { light: '#1a1a1a', dark: '#e0e0e0' },
+        textStyle: 'italic',
+      });
     });
   });
 

@@ -27,17 +27,21 @@ export function getBaseTone(key: string): ToneDefinition | undefined {
   return baseToneMap.get(key);
 }
 
+export function customToneToDefinition(custom: CustomToneDefinition): ToneDefinition {
+  return {
+    key: custom.key,
+    tag: `/${custom.key}`,
+    label: custom.label,
+    emoji: custom.emoji,
+    color: { light: custom.colorLight, dark: custom.colorDark },
+    textStyle: custom.textStyle,
+  };
+}
+
 export function resolveTone(key: string, customTones?: CustomToneDefinition[]): ToneDefinition | undefined {
   const custom = customTones?.find((t) => t.key === key);
   if (custom) {
-    return {
-      key: custom.key,
-      tag: `/${custom.key}`,
-      label: custom.label,
-      emoji: custom.emoji,
-      color: { light: custom.colorLight, dark: custom.colorDark },
-      textStyle: custom.textStyle,
-    };
+    return customToneToDefinition(custom);
   }
   return baseToneMap.get(key);
 }
