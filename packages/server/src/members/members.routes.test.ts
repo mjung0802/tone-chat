@@ -45,8 +45,8 @@ type MembersRes = {
 };
 
 // Extract the GET `/` handler from the router stack
-// @ts-expect-error - Simplified RouterLayer type for testing
 const layer = membersRouter.stack.find(
+  // @ts-expect-error - Simplified RouterLayer type for testing
   (l: RouterLayer) => l.route?.path === "/" && Boolean(l.route?.methods?.get),
 );
 // @ts-expect-error - Casting Express handler to simplified test types
