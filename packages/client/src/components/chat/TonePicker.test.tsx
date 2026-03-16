@@ -5,10 +5,11 @@ import { BASE_TONES } from '../../tone/toneRegistry';
 
 // Mock react-native-paper components
 jest.mock('react-native-paper', () => {
-  const { Text, View, Pressable } = require('react-native');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Text, Pressable } = require('react-native');
   return {
-    Text: (props: any) => <Text {...props} />,
-    IconButton: (props: any) => <Pressable onPress={props.onPress} accessibilityLabel={props.accessibilityLabel} accessibilityRole="button"><Text>X</Text></Pressable>,
+    Text: (props: { children?: React.ReactNode }) => <Text {...props} />,
+    IconButton: (props: { onPress?: () => void; accessibilityLabel?: string }) => <Pressable onPress={props.onPress} accessibilityLabel={props.accessibilityLabel} accessibilityRole="button"><Text>X</Text></Pressable>,
     useTheme: () => ({
       colors: {
         surfaceVariant: '#e7e0ec',

@@ -1,4 +1,4 @@
-import { getBaseTone, resolveTone, parseToneTag, BASE_TONES } from './toneRegistry';
+import { getBaseTone, resolveTone, parseToneTag } from './toneRegistry';
 import type { CustomToneDefinition } from '../types/models';
 
 describe('toneRegistry', () => {

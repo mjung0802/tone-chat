@@ -356,7 +356,7 @@ describe('createMessage — tone', () => {
       body: { content: 'hello', tone: 'j' },
     }), res);
     assert.equal(res.statusCode, 201);
-    assert.equal(mockMessageCreate.mock.calls[0]?.arguments[0]?.tone, 'j');
+    assert.equal((mockMessageCreate.mock.calls[0]?.arguments[0] as Record<string, unknown>)?.tone, 'j');
   });
 
   it('returns 400 with code INVALID_TONE for non-string tone', async () => {
