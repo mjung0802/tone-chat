@@ -1,12 +1,20 @@
-import type { Request, Response } from 'express';
-import { Message } from './message.model.js';
-import { ServerMember } from '../members/serverMember.model.js';
-import { AppError } from '../shared/middleware/errorHandler.js';
+import type { Request, Response } from "express";
+import { Message } from "./message.model.js";
+import { ServerMember } from "../members/serverMember.model.js";
+import { AppError } from "../shared/middleware/errorHandler.js";
 
-export async function createMessage(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+export async function createMessage(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const userId = req.headers["x-user-id"] as string;
   const { serverId, channelId } = req.params;
-  const { content, attachmentIds, replyToId, mentions: rawMentions } = req.body as {
+  const {
+    content,
+    attachmentIds,
+    replyToId,
+    mentions: rawMentions,
+  } = req.body as {
     content: string;
     attachmentIds?: string[];
     replyToId?: unknown;
@@ -14,13 +22,29 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
   };
 
   if (!content && (!attachmentIds || attachmentIds.length === 0)) {
-    res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'content or attachments required', status: 400 } });
+    res
+      .status(400)
+      .json({
+        error: {
+          code: "MISSING_FIELDS",
+          message: "content or attachments required",
+          status: 400,
+        },
+      });
     return;
   }
 
   // Validate replyToId type (NoSQL injection guard)
-  if (replyToId !== undefined && typeof replyToId !== 'string') {
-    res.status(400).json({ error: { code: 'INVALID_REPLY_TO', message: 'replyToId must be a string', status: 400 } });
+  if (replyToId !== undefined && typeof replyToId !== "string") {
+    res
+      .status(400)
+      .json({
+        error: {
+          code: "INVALID_REPLY_TO",
+          message: "replyToId must be a string",
+          status: 400,
+        },
+      });
     return;
   }
 
@@ -30,26 +54,59 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
     if (
       !Array.isArray(rawMentions) ||
       rawMentions.length > 20 ||
-      !rawMentions.every((m: unknown) => typeof m === 'string' && m.length <= 36)
+      !rawMentions.every(
+        (m: unknown) => typeof m === "string" && m.length <= 36,
+      )
     ) {
-      res.status(400).json({ error: { code: 'INVALID_MENTIONS', message: 'mentions must be an array of up to 20 strings (max 36 chars each)', status: 400 } });
+      res
+        .status(400)
+        .json({
+          error: {
+            code: "INVALID_MENTIONS",
+            message:
+              "mentions must be an array of up to 20 strings (max 36 chars each)",
+            status: 400,
+          },
+        });
       return;
     }
     mentions = rawMentions as string[];
   }
 
   // Process replyTo
-  let replyTo: { messageId: string; authorId: string; authorName: string; content: string } | undefined;
-  if (replyToId && typeof replyToId === 'string') {
-    const original = await Message.findOne({ _id: replyToId, channelId, serverId });
+  let replyTo:
+    | {
+        messageId: string;
+        authorId: string;
+        authorName: string;
+        content: string;
+      }
+    | undefined;
+  if (replyToId && typeof replyToId === "string") {
+    const original = await Message.findOne({
+      _id: replyToId,
+      channelId,
+      serverId,
+    });
     if (!original) {
-      res.status(404).json({ error: { code: 'REPLY_TARGET_NOT_FOUND', message: 'Reply target message not found', status: 404 } });
+      res
+        .status(404)
+        .json({
+          error: {
+            code: "REPLY_TARGET_NOT_FOUND",
+            message: "Reply target message not found",
+            status: 404,
+          },
+        });
       return;
     }
 
     // Resolve author name: nickname > userId fallback
     let authorName = original.authorId;
-    const member = await ServerMember.findOne({ serverId, userId: original.authorId });
+    const member = await ServerMember.findOne({
+      serverId,
+      userId: original.authorId,
+    });
     if (member) {
       authorName = member.nickname ?? original.authorId;
     }
@@ -82,12 +139,12 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
 
 export async function listMessages(req: Request, res: Response): Promise<void> {
   const { channelId } = req.params;
-  const limit = Math.min(Number(req.query['limit'] ?? 50), 100);
-  const before = req.query['before'] as string | undefined;
+  const limit = Math.min(Number(req.query["limit"] ?? 50), 100);
+  const before = req.query["before"] as string | undefined;
 
   const filter: Record<string, unknown> = { channelId };
-  if (before && typeof before === 'string') {
-    filter['_id'] = { $lt: before };
+  if (before && typeof before === "string") {
+    filter["_id"] = { $lt: before };
   }
 
   const messages = await Message.find(filter)
@@ -97,15 +154,21 @@ export async function listMessages(req: Request, res: Response): Promise<void> {
   res.json({ messages: messages.reverse() });
 }
 
-export async function updateMessage(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
-  const message = await Message.findOne({ _id: req.params['messageId'], channelId: req.params['channelId'] });
+export async function updateMessage(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const userId = req.headers["x-user-id"] as string;
+  const message = await Message.findOne({
+    _id: req.params["messageId"],
+    channelId: req.params["channelId"],
+  });
 
   if (!message) {
-    throw new AppError('MESSAGE_NOT_FOUND', 'Message not found', 404);
+    throw new AppError("MESSAGE_NOT_FOUND", "Message not found", 404);
   }
   if (message.authorId !== userId) {
-    throw new AppError('FORBIDDEN', 'You can only edit your own messages', 403);
+    throw new AppError("FORBIDDEN", "You can only edit your own messages", 403);
   }
 
   const { content } = req.body as { content: string };

@@ -1,5 +1,5 @@
-import { get, uploadRaw } from './client';
-import type { AttachmentResponse } from '../types/api.types';
+import { get, uploadRaw } from "./client";
+import type { AttachmentResponse } from "../types/api.types";
 
 export function uploadAttachment(
   data: ArrayBuffer | Blob,

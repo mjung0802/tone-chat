@@ -1,18 +1,22 @@
-import React, { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
-import { PaperProvider, useTheme } from 'react-native-paper';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { lightTheme, darkTheme } from '../src/theme';
-import { useAuthStore } from '../src/stores/authStore';
-import { useUiStore } from '../src/stores/uiStore';
-import { configureAuth } from '../src/api/client';
-import { ErrorBoundary } from '../src/components/common/ErrorBoundary';
-import { LoadingSpinner } from '../src/components/common/LoadingSpinner';
-import { useSocketConnection } from '../src/hooks/useSocket';
+import React, { useEffect } from "react";
+import { useColorScheme } from "react-native";
+import { Stack, useRouter, useSegments } from "expo-router";
+import {
+  ThemeProvider,
+  DarkTheme,
+  DefaultTheme,
+} from "@react-navigation/native";
+import { PaperProvider, useTheme } from "react-native-paper";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { lightTheme, darkTheme } from "../src/theme";
+import { useAuthStore } from "../src/stores/authStore";
+import { useUiStore } from "../src/stores/uiStore";
+import { configureAuth } from "../src/api/client";
+import { ErrorBoundary } from "../src/components/common/ErrorBoundary";
+import { LoadingSpinner } from "../src/components/common/LoadingSpinner";
+import { useSocketConnection } from "../src/hooks/useSocket";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,7 +31,8 @@ const queryClient = new QueryClient({
 configureAuth({
   getAccessToken: () => useAuthStore.getState().accessToken,
   getRefreshToken: () => useAuthStore.getState().refreshToken,
-  setTokens: (access, refresh) => useAuthStore.getState().setTokens(access, refresh),
+  setTokens: (access, refresh) =>
+    useAuthStore.getState().setTokens(access, refresh),
   clearAuth: () => useAuthStore.getState().clearAuth(),
 });
 
@@ -50,15 +55,15 @@ function AppContent() {
   useEffect(() => {
     if (!isHydrated) return;
     const segs = segments as string[];
-    const inAuthGroup = segs[0] === '(auth)';
-    const inVerifyScreen = segs[1] === 'verify-email';
+    const inAuthGroup = segs[0] === "(auth)";
+    const inVerifyScreen = segs[1] === "verify-email";
 
     if (isAuthenticated && emailVerified && inAuthGroup) {
-      router.replace('/(main)/servers');
+      router.replace("/(main)/servers");
     } else if (isAuthenticated && !emailVerified && !inVerifyScreen) {
-      router.replace('/(auth)/verify-email');
+      router.replace("/(auth)/verify-email");
     } else if (!isAuthenticated && !inAuthGroup) {
-      router.replace('/(auth)/login');
+      router.replace("/(auth)/login");
     }
   }, [isAuthenticated, emailVerified, isHydrated, segments, router]);
 
@@ -67,7 +72,12 @@ function AppContent() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: theme.colors.background },
+      }}
+    >
       <Stack.Screen name="+not-found" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(main)" />
@@ -80,12 +90,14 @@ export default function RootLayout() {
   const themePreference = useUiStore((s) => s.themePreference);
 
   const effectiveScheme =
-    themePreference === 'system' ? colorScheme : themePreference;
-  const theme = effectiveScheme === 'dark' ? darkTheme : lightTheme;
-  const rnTheme = effectiveScheme === 'dark' ? DarkTheme : DefaultTheme;
+    themePreference === "system" ? colorScheme : themePreference;
+  const theme = effectiveScheme === "dark" ? darkTheme : lightTheme;
+  const rnTheme = effectiveScheme === "dark" ? DarkTheme : DefaultTheme;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <GestureHandlerRootView
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
+    >
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider value={rnTheme}>

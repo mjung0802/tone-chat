@@ -1,5 +1,9 @@
-import { S3Client, CreateBucketCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
-import { config } from './index.js';
+import {
+  S3Client,
+  CreateBucketCommand,
+  HeadBucketCommand,
+} from "@aws-sdk/client-s3";
+import { config } from "./index.js";
 
 export const s3 = new S3Client({
   endpoint: config.s3.endpoint,

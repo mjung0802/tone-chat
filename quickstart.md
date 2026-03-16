@@ -22,12 +22,12 @@ The root `docker-compose.yml` starts all four databases in one command. Run this
 docker-compose up -d
 ```
 
-| Service | Port |
-|---------|------|
-| MongoDB (messagingService) | 27017 |
-| PostgreSQL (usersService) | 5432 |
-| PostgreSQL (attachmentsService) | 5433 |
-| MinIO (attachmentsService) | 9000 (API), 9001 (console) |
+| Service                         | Port                       |
+| ------------------------------- | -------------------------- |
+| MongoDB (messagingService)      | 27017                      |
+| PostgreSQL (usersService)       | 5432                       |
+| PostgreSQL (attachmentsService) | 5433                       |
+| MinIO (attachmentsService)      | 9000 (API), 9001 (console) |
 
 ## 3. Run migrations
 
@@ -85,14 +85,14 @@ The client connects to the BFF at `http://localhost:4000/api/v1`.
 
 ## Port summary
 
-| Service | Port |
-|---------|------|
-| messagingService | 3001 |
-| usersService | 3002 |
-| attachmentsService | 3003 |
-| BFF (tone-chat-server) | 4000 |
-| MongoDB | 27017 |
-| PostgreSQL (users) | 5432 |
-| PostgreSQL (attachments) | 5433 |
-| MinIO API | 9000 |
-| MinIO console | 9001 |
+| Service                  | Port  |
+| ------------------------ | ----- |
+| messagingService         | 3001  |
+| usersService             | 3002  |
+| attachmentsService       | 3003  |
+| BFF (tone-chat-server)   | 4000  |
+| MongoDB                  | 27017 |
+| PostgreSQL (users)       | 5432  |
+| PostgreSQL (attachments) | 5433  |
+| MinIO API                | 9000  |
+| MinIO console            | 9001  |

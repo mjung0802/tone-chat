@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, Button, Card, HelperText, useTheme } from 'react-native-paper';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useJoinViaCode } from '../../../src/hooks/useInvites';
-import { ApiClientError } from '../../../src/api/client';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { Text, Button, Card, HelperText, useTheme } from "react-native-paper";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useJoinViaCode } from "../../../src/hooks/useInvites";
+import { ApiClientError } from "../../../src/api/client";
 
 export default function JoinInviteScreen() {
   const { code } = useLocalSearchParams<{ code: string }>();
@@ -15,8 +15,8 @@ export default function JoinInviteScreen() {
     joinMutation.error instanceof ApiClientError
       ? joinMutation.error.message
       : joinMutation.error
-        ? 'Failed to join server'
-        : '';
+        ? "Failed to join server"
+        : "";
 
   const handleJoin = () => {
     if (!code) return;
@@ -57,10 +57,7 @@ export default function JoinInviteScreen() {
           ) : null}
         </Card.Content>
         <Card.Actions style={styles.actions}>
-          <Button
-            onPress={() => router.back()}
-            accessibilityLabel="Go back"
-          >
+          <Button onPress={() => router.back()} accessibilityLabel="Go back">
             Cancel
           </Button>
           <Button
@@ -82,29 +79,29 @@ export default function JoinInviteScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
   card: {
     maxWidth: 400,
-    width: '100%',
+    width: "100%",
   },
   title: {
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 8,
   },
   description: {
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 12,
     opacity: 0.7,
   },
   code: {
-    textAlign: 'center',
-    fontFamily: 'monospace',
+    textAlign: "center",
+    fontFamily: "monospace",
     marginBottom: 8,
   },
   actions: {
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
 });

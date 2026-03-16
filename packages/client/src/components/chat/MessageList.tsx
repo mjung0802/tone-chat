@@ -1,9 +1,14 @@
-import React, { useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
-import { FlatList, StyleSheet, type ListRenderItemInfo } from 'react-native';
-import { MessageBubble } from './MessageBubble';
-import { LoadingSpinner } from '../common/LoadingSpinner';
-import { EmptyState } from '../common/EmptyState';
-import type { Message, Attachment } from '../../types/models';
+import React, {
+  useCallback,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+} from "react";
+import { FlatList, StyleSheet, type ListRenderItemInfo } from "react-native";
+import { MessageBubble } from "./MessageBubble";
+import { LoadingSpinner } from "../common/LoadingSpinner";
+import { EmptyState } from "../common/EmptyState";
+import type { Message, Attachment } from "../../types/models";
 
 export interface MessageListHandle {
   scrollToMessage: (messageId: string) => boolean;
@@ -25,86 +30,110 @@ interface MessageListProps {
   highlightedMessageId?: string | null | undefined;
 }
 
-export const MessageList = forwardRef<MessageListHandle, MessageListProps>(function MessageList(props, ref) {
-  const {
-    messages,
-    currentUserId,
-    authorNames,
-    authorAvatars,
-    onLoadMore,
-    isLoadingMore,
-    onMessageLongPress,
-    onImagePress,
-    onToggleReaction,
-    onAddReaction,
-    onReply,
-    onReplyPress,
-    highlightedMessageId,
-  } = props;
+export const MessageList = forwardRef<MessageListHandle, MessageListProps>(
+  function MessageList(props, ref) {
+    const {
+      messages,
+      currentUserId,
+      authorNames,
+      authorAvatars,
+      onLoadMore,
+      isLoadingMore,
+      onMessageLongPress,
+      onImagePress,
+      onToggleReaction,
+      onAddReaction,
+      onReply,
+      onReplyPress,
+      highlightedMessageId,
+    } = props;
 
-  const flatListRef = useRef<FlatList>(null);
+    const flatListRef = useRef<FlatList>(null);
 
-  useImperativeHandle(ref, () => ({
-    scrollToMessage(messageId: string): boolean {
-      const index = messages.findIndex((m) => m._id === messageId);
-      if (index === -1) return false;
-      flatListRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
-      return true;
-    },
-  }), [messages]);
+    useImperativeHandle(
+      ref,
+      () => ({
+        scrollToMessage(messageId: string): boolean {
+          const index = messages.findIndex((m) => m._id === messageId);
+          if (index === -1) return false;
+          flatListRef.current?.scrollToIndex({
+            index,
+            animated: true,
+            viewPosition: 0.5,
+          });
+          return true;
+        },
+      }),
+      [messages],
+    );
 
-  const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<Message>) => (
-      <MessageBubble
-        message={item}
-        isOwn={item.authorId === currentUserId}
-        authorName={authorNames?.[item.authorId]}
-        currentUserId={currentUserId}
-        authorNames={authorNames}
-        onLongPress={onMessageLongPress}
-        onImagePress={onImagePress}
-        onToggleReaction={onToggleReaction}
-        onAddReaction={onAddReaction}
-        onReply={onReply}
-        onReplyPress={onReplyPress}
-        highlighted={highlightedMessageId === item._id}
-        authorAvatarId={authorAvatars?.[item.authorId]}
-      />
-    ),
-    [currentUserId, authorNames, authorAvatars, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId],
-  );
+    const renderItem = useCallback(
+      ({ item }: ListRenderItemInfo<Message>) => (
+        <MessageBubble
+          message={item}
+          isOwn={item.authorId === currentUserId}
+          authorName={authorNames?.[item.authorId]}
+          currentUserId={currentUserId}
+          authorNames={authorNames}
+          onLongPress={onMessageLongPress}
+          onImagePress={onImagePress}
+          onToggleReaction={onToggleReaction}
+          onAddReaction={onAddReaction}
+          onReply={onReply}
+          onReplyPress={onReplyPress}
+          highlighted={highlightedMessageId === item._id}
+          authorAvatarId={authorAvatars?.[item.authorId]}
+        />
+      ),
+      [
+        currentUserId,
+        authorNames,
+        authorAvatars,
+        onMessageLongPress,
+        onImagePress,
+        onToggleReaction,
+        onAddReaction,
+        onReply,
+        onReplyPress,
+        highlightedMessageId,
+      ],
+    );
 
-  const keyExtractor = useCallback((item: Message) => item._id, []);
+    const keyExtractor = useCallback((item: Message) => item._id, []);
 
-  if (messages.length === 0) {
+    if (messages.length === 0) {
+      return (
+        <EmptyState
+          icon="chat-outline"
+          title="No messages yet"
+          description="Be the first to send a message!"
+        />
+      );
+    }
+
     return (
-      <EmptyState
-        icon="chat-outline"
-        title="No messages yet"
-        description="Be the first to send a message!"
+      <FlatList
+        ref={flatListRef}
+        onScrollToIndexFailed={(info) => {
+          flatListRef.current?.scrollToOffset({
+            offset: info.averageItemLength * info.index,
+            animated: true,
+          });
+        }}
+        data={messages}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        inverted
+        contentContainerStyle={styles.content}
+        onEndReached={onLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={isLoadingMore ? <LoadingSpinner /> : null}
+        accessibilityRole="list"
+        accessibilityLabel="Messages"
       />
     );
-  }
-
-  return (
-    <FlatList
-      ref={flatListRef}
-      onScrollToIndexFailed={(info) => {
-        flatListRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true });
-      }}
-      data={messages}
-      renderItem={renderItem}
-      keyExtractor={keyExtractor}
-      inverted
-      contentContainerStyle={styles.content}
-      onEndReached={onLoadMore}
-      onEndReachedThreshold={0.5}
-      ListFooterComponent={isLoadingMore ? <LoadingSpinner /> : null}
-      accessibilityRole="list"
-      accessibilityLabel="Messages"
-    />
-  );
-});
+  },
+);
 
 const styles = StyleSheet.create({
   content: {

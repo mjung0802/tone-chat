@@ -1,4 +1,4 @@
-import type { IServerMember } from '../../members/serverMember.model.js';
+import type { IServerMember } from "../../members/serverMember.model.js";
 
 declare global {
   namespace Express {

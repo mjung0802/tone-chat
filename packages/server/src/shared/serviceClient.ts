@@ -1,4 +1,4 @@
-import { config } from '../config/index.js';
+import { config } from "../config/index.js";
 
 export interface ServiceResponse {
   status: number;
@@ -15,16 +15,16 @@ export async function serviceRequest(
     headers?: Record<string, string>;
   } = {},
 ): Promise<ServiceResponse> {
-  const { method = 'GET', body, userId } = options;
+  const { method = "GET", body, userId } = options;
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'X-Internal-Key': config.internalApiKey,
+    "Content-Type": "application/json",
+    "X-Internal-Key": config.internalApiKey,
     ...options.headers,
   };
 
   if (userId) {
-    headers['X-User-Id'] = userId;
+    headers["X-User-Id"] = userId;
   }
 
   const res = await fetch(`${baseUrl}${path}`, {

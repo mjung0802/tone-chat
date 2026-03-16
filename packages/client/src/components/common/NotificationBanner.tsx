@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Text, useTheme } from 'react-native-paper';
-import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import { useNotificationStore } from '../../stores/notificationStore';
-import type { MembersResponse, ChannelsResponse } from '../../types/api.types';
+import React, { useCallback, useEffect, useRef } from "react";
+import { Animated, Pressable, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Text, useTheme } from "react-native-paper";
+import { useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "expo-router";
+import { useNotificationStore } from "../../stores/notificationStore";
+import type { MembersResponse, ChannelsResponse } from "../../types/api.types";
 
 export function NotificationBanner() {
   const theme = useTheme();
@@ -13,19 +13,34 @@ export function NotificationBanner() {
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const notification = useNotificationStore((s) => s.currentNotification);
-  const dismissNotification = useNotificationStore((s) => s.dismissNotification);
+  const dismissNotification = useNotificationStore(
+    (s) => s.dismissNotification,
+  );
   const translateY = useRef(new Animated.Value(-100)).current;
   const isVisible = useRef(false);
 
-  let notificationText = '';
+  let notificationText = "";
   if (notification) {
-    const membersData = queryClient.getQueryData<MembersResponse>(['servers', notification.serverId, 'members']);
-    const member = membersData?.members?.find((m) => m.userId === notification.authorId);
-    const authorName = member?.nickname ?? member?.display_name ?? member?.username ?? 'Someone';
+    const membersData = queryClient.getQueryData<MembersResponse>([
+      "servers",
+      notification.serverId,
+      "members",
+    ]);
+    const member = membersData?.members?.find(
+      (m) => m.userId === notification.authorId,
+    );
+    const authorName =
+      member?.nickname ?? member?.display_name ?? member?.username ?? "Someone";
 
-    const channelsData = queryClient.getQueryData<ChannelsResponse>(['servers', notification.serverId, 'channels']);
-    const channel = channelsData?.channels?.find((c) => c._id === notification.channelId);
-    const channelName = channel?.name ?? 'a channel';
+    const channelsData = queryClient.getQueryData<ChannelsResponse>([
+      "servers",
+      notification.serverId,
+      "channels",
+    ]);
+    const channel = channelsData?.channels?.find(
+      (c) => c._id === notification.channelId,
+    );
+    const channelName = channel?.name ?? "a channel";
 
     notificationText = `@${authorName} mentioned you in #${channelName}`;
   }
@@ -65,7 +80,9 @@ export function NotificationBanner() {
 
   const handleGo = () => {
     if (notification) {
-      router.push(`/(main)/servers/${notification.serverId}/channels/${notification.channelId}`);
+      router.push(
+        `/(main)/servers/${notification.serverId}/channels/${notification.channelId}`,
+      );
       dismissNotification();
     }
   };
@@ -82,7 +99,10 @@ export function NotificationBanner() {
       ]}
     >
       <Text
-        style={[styles.notificationText, { color: theme.colors.inverseOnSurface }]}
+        style={[
+          styles.notificationText,
+          { color: theme.colors.inverseOnSurface },
+        ]}
         numberOfLines={2}
       >
         {notificationText}
@@ -91,9 +111,14 @@ export function NotificationBanner() {
         onPress={handleGo}
         accessibilityRole="button"
         accessibilityLabel="Go to mentioned channel"
-        style={[styles.goButton, { backgroundColor: theme.colors.inversePrimary }]}
+        style={[
+          styles.goButton,
+          { backgroundColor: theme.colors.inversePrimary },
+        ]}
       >
-        <Text style={[styles.goButtonText, { color: theme.colors.onSurface }]}>Go</Text>
+        <Text style={[styles.goButtonText, { color: theme.colors.onSurface }]}>
+          Go
+        </Text>
       </Pressable>
     </Animated.View>
   );
@@ -101,18 +126,18 @@ export function NotificationBanner() {
 
 const styles = StyleSheet.create({
   notification: {
-    position: 'absolute',
-    alignSelf: 'center',
+    position: "absolute",
+    alignSelf: "center",
     maxWidth: 400,
-    width: '90%',
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: "90%",
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 12,
     paddingVertical: 12,
     paddingLeft: 16,
     paddingRight: 8,
     elevation: 6,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -129,11 +154,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     minWidth: 44,
     minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   goButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

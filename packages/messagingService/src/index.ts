@@ -1,6 +1,6 @@
-import { app } from './app.js';
-import { config, validateConfig } from './config/index.js';
-import { connectDatabase } from './config/database.js';
+import { app } from "./app.js";
+import { config, validateConfig } from "./config/index.js";
+import { connectDatabase } from "./config/database.js";
 
 async function start(): Promise<void> {
   validateConfig();
@@ -12,6 +12,6 @@ async function start(): Promise<void> {
 }
 
 start().catch((err) => {
-  console.error('Failed to start messagingService:', err);
+  console.error("Failed to start messagingService:", err);
   process.exit(1);
 });

@@ -1,7 +1,14 @@
-import React from 'react';
-import { Modal, View, Image, StyleSheet, ScrollView, Pressable } from 'react-native';
-import { Text, IconButton } from 'react-native-paper';
-import type { Attachment } from '../../types/models';
+import React from "react";
+import {
+  Modal,
+  View,
+  Image,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+} from "react-native";
+import { Text, IconButton } from "react-native-paper";
+import type { Attachment } from "../../types/models";
 
 interface AttachmentViewerProps {
   visible: boolean;
@@ -9,7 +16,11 @@ interface AttachmentViewerProps {
   onClose: () => void;
 }
 
-export function AttachmentViewer({ visible, attachment, onClose }: AttachmentViewerProps) {
+export function AttachmentViewer({
+  visible,
+  attachment,
+  onClose,
+}: AttachmentViewerProps) {
   if (!attachment || !attachment.url) return null;
 
   return (
@@ -55,28 +66,28 @@ export function AttachmentViewer({ visible, attachment, onClose }: AttachmentVie
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
+    backgroundColor: "rgba(0,0,0,0.9)",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 8,
     paddingTop: 40,
     paddingBottom: 8,
   },
   filename: {
-    color: '#fff',
+    color: "#fff",
     flex: 1,
     marginLeft: 8,
   },
   scrollContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   fullImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
 });

@@ -1,6 +1,6 @@
-import React from 'react';
-import { Avatar, useTheme } from 'react-native-paper';
-import { useAttachment } from '@/hooks/useAttachments';
+import React from "react";
+import { Avatar, useTheme } from "react-native-paper";
+import { useAttachment } from "@/hooks/useAttachments";
 
 interface ServerIconProps {
   name: string;
@@ -12,9 +12,9 @@ function InitialsIcon({ name, size }: { name: string; size: number }) {
   const theme = useTheme();
 
   const initials = name
-    .split(' ')
+    .split(" ")
     .map((w) => w[0])
-    .join('')
+    .join("")
     .slice(0, 2)
     .toUpperCase();
 
@@ -29,11 +29,19 @@ function InitialsIcon({ name, size }: { name: string; size: number }) {
   );
 }
 
-function IconWithAttachment({ attachmentId, name, size }: { attachmentId: string; name: string; size: number }) {
+function IconWithAttachment({
+  attachmentId,
+  name,
+  size,
+}: {
+  attachmentId: string;
+  name: string;
+  size: number;
+}) {
   const { data } = useAttachment(attachmentId);
   const attachment = data?.attachment;
 
-  if (attachment?.status === 'ready' && attachment.url) {
+  if (attachment?.status === "ready" && attachment.url) {
     return (
       <Avatar.Image
         source={{ uri: attachment.url }}

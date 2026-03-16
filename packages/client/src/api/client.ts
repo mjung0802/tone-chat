@@ -1,6 +1,6 @@
-import type { ApiError } from '../types/api.types';
+import type { ApiError } from "../types/api.types";
 
-const BASE_URL = 'http://localhost:4000/api/v1';
+const BASE_URL = "http://localhost:4000/api/v1";
 
 let getAccessToken: () => string | null = () => null;
 let getRefreshToken: () => string | null = () => null;
@@ -28,7 +28,7 @@ class ApiClientError extends Error {
     public status: number,
   ) {
     super(message);
-    this.name = 'ApiClientError';
+    this.name = "ApiClientError";
   }
 }
 
@@ -52,8 +52,8 @@ async function attemptRefresh(): Promise<boolean> {
       }
 
       const res = await fetch(`${BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
       });
 
@@ -62,7 +62,10 @@ async function attemptRefresh(): Promise<boolean> {
         return false;
       }
 
-      const data = (await res.json()) as { accessToken: string; refreshToken: string };
+      const data = (await res.json()) as {
+        accessToken: string;
+        refreshToken: string;
+      };
       setTokens(data.accessToken, data.refreshToken);
       return true;
     } catch {
@@ -86,17 +89,21 @@ async function request<T>(
   const headers: Record<string, string> = {
     ...Object.fromEntries(
       Object.entries(options.headers ?? {}).filter(
-        (entry): entry is [string, string] => typeof entry[1] === 'string',
+        (entry): entry is [string, string] => typeof entry[1] === "string",
       ),
     ),
   };
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
-  if (!headers['Content-Type'] && !(options.body instanceof ArrayBuffer) && !(options.body instanceof Blob)) {
-    headers['Content-Type'] = 'application/json';
+  if (
+    !headers["Content-Type"] &&
+    !(options.body instanceof ArrayBuffer) &&
+    !(options.body instanceof Blob)
+  ) {
+    headers["Content-Type"] = "application/json";
   }
 
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -118,7 +125,7 @@ async function request<T>(
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as ApiError | null;
     throw new ApiClientError(
-      body?.error?.code ?? 'UNKNOWN',
+      body?.error?.code ?? "UNKNOWN",
       body?.error?.message ?? res.statusText,
       res.status,
     );
@@ -128,32 +135,32 @@ async function request<T>(
 }
 
 export function get<T>(path: string): Promise<T> {
-  return request<T>(path, { method: 'GET' });
+  return request<T>(path, { method: "GET" });
 }
 
 export function post<T>(path: string, body?: unknown): Promise<T> {
   return request<T>(path, {
-    method: 'POST',
+    method: "POST",
     body: body != null ? JSON.stringify(body) : null,
   });
 }
 
 export function patch<T>(path: string, body: unknown): Promise<T> {
   return request<T>(path, {
-    method: 'PATCH',
+    method: "PATCH",
     body: JSON.stringify(body),
   });
 }
 
 export function put<T>(path: string, body: unknown): Promise<T> {
   return request<T>(path, {
-    method: 'PUT',
+    method: "PUT",
     body: JSON.stringify(body),
   });
 }
 
 export function del<T = void>(path: string): Promise<T> {
-  return request<T>(path, { method: 'DELETE' });
+  return request<T>(path, { method: "DELETE" });
 }
 
 export function uploadRaw<T>(
@@ -162,8 +169,8 @@ export function uploadRaw<T>(
   contentType: string,
 ): Promise<T> {
   return request<T>(path, {
-    method: 'POST',
-    headers: { 'Content-Type': contentType },
+    method: "POST",
+    headers: { "Content-Type": contentType },
     body: data,
   });
 }

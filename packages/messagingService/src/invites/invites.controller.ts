@@ -1,21 +1,30 @@
-import type { Request, Response } from 'express';
-import { Invite } from './invite.model.js';
-import { Server } from '../servers/server.model.js';
-import { ServerMember } from '../members/serverMember.model.js';
-import { AppError } from '../shared/middleware/errorHandler.js';
+import type { Request, Response } from "express";
+import { Invite } from "./invite.model.js";
+import { Server } from "../servers/server.model.js";
+import { ServerMember } from "../members/serverMember.model.js";
+import { AppError } from "../shared/middleware/errorHandler.js";
 
 export async function createInvite(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.headers["x-user-id"] as string;
   const { serverId } = req.params;
-  const { maxUses, expiresIn } = req.body as { maxUses?: number; expiresIn?: number };
+  const { maxUses, expiresIn } = req.body as {
+    maxUses?: number;
+    expiresIn?: number;
+  };
 
   // Verify user is a member
   const member = await ServerMember.findOne({ serverId, userId });
   if (!member) {
-    throw new AppError('NOT_MEMBER', 'You must be a member to create invites', 403);
+    throw new AppError(
+      "NOT_MEMBER",
+      "You must be a member to create invites",
+      403,
+    );
   }
 
-  const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : undefined;
+  const expiresAt = expiresIn
+    ? new Date(Date.now() + expiresIn * 1000)
+    : undefined;
 
   const invite = await Invite.create({
     serverId,
@@ -28,23 +37,26 @@ export async function createInvite(req: Request, res: Response): Promise<void> {
 }
 
 export async function listInvites(req: Request, res: Response): Promise<void> {
-  const invites = await Invite.find({ serverId: req.params['serverId'], revoked: false });
+  const invites = await Invite.find({
+    serverId: req.params["serverId"],
+    revoked: false,
+  });
   res.json({ invites });
 }
 
 export async function revokeInvite(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.headers["x-user-id"] as string;
   const { serverId, code } = req.params;
 
   // Only admins or owner can revoke
   const server = await Server.findById(serverId);
   if (!server) {
-    throw new AppError('SERVER_NOT_FOUND', 'Server not found', 404);
+    throw new AppError("SERVER_NOT_FOUND", "Server not found", 404);
   }
 
   const member = await ServerMember.findOne({ serverId, userId });
-  if (server.ownerId !== userId && !member?.roles.includes('admin')) {
-    throw new AppError('FORBIDDEN', 'Only admins can revoke invites', 403);
+  if (server.ownerId !== userId && !member?.roles.includes("admin")) {
+    throw new AppError("FORBIDDEN", "Only admins can revoke invites", 403);
   }
 
   const invite = await Invite.findOneAndUpdate(
@@ -54,39 +66,56 @@ export async function revokeInvite(req: Request, res: Response): Promise<void> {
   );
 
   if (!invite) {
-    throw new AppError('INVITE_NOT_FOUND', 'Invite not found', 404);
+    throw new AppError("INVITE_NOT_FOUND", "Invite not found", 404);
   }
 
   res.json({ invite });
 }
 
-export async function joinViaInvite(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+export async function joinViaInvite(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const userId = req.headers["x-user-id"] as string;
   const { code } = req.params;
 
   const invite = await Invite.findOne({ code });
   if (!invite) {
-    throw new AppError('INVITE_NOT_FOUND', 'Invalid invite code', 404);
+    throw new AppError("INVITE_NOT_FOUND", "Invalid invite code", 404);
   }
 
   if (invite.revoked) {
-    throw new AppError('INVITE_REVOKED', 'This invite has been revoked', 410);
+    throw new AppError("INVITE_REVOKED", "This invite has been revoked", 410);
   }
 
   if (invite.expiresAt && invite.expiresAt < new Date()) {
-    throw new AppError('INVITE_EXPIRED', 'This invite has expired', 410);
+    throw new AppError("INVITE_EXPIRED", "This invite has expired", 410);
   }
 
   if (invite.maxUses && invite.uses >= invite.maxUses) {
-    throw new AppError('INVITE_EXHAUSTED', 'This invite has reached its maximum uses', 410);
+    throw new AppError(
+      "INVITE_EXHAUSTED",
+      "This invite has reached its maximum uses",
+      410,
+    );
   }
 
-  const existing = await ServerMember.findOne({ serverId: invite.serverId, userId });
+  const existing = await ServerMember.findOne({
+    serverId: invite.serverId,
+    userId,
+  });
   if (existing) {
-    throw new AppError('ALREADY_MEMBER', 'You are already a member of this server', 409);
+    throw new AppError(
+      "ALREADY_MEMBER",
+      "You are already a member of this server",
+      409,
+    );
   }
 
-  const member = await ServerMember.create({ serverId: invite.serverId, userId });
+  const member = await ServerMember.create({
+    serverId: invite.serverId,
+    userId,
+  });
   invite.uses += 1;
   await invite.save();
 

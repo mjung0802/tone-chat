@@ -1,9 +1,15 @@
-import React from 'react';
-import { Pressable, StyleSheet, type PressableProps, type ViewStyle, type StyleProp } from 'react-native';
+import React from "react";
+import {
+  Pressable,
+  StyleSheet,
+  type PressableProps,
+  type ViewStyle,
+  type StyleProp,
+} from "react-native";
 
 interface AccessiblePressableProps extends PressableProps {
   accessibilityLabel: string;
-  accessibilityRole: PressableProps['accessibilityRole'];
+  accessibilityRole: PressableProps["accessibilityRole"];
   style?: StyleProp<ViewStyle>;
 }
 
@@ -13,10 +19,7 @@ export function AccessiblePressable({
   ...props
 }: AccessiblePressableProps) {
   return (
-    <Pressable
-      {...props}
-      style={[styles.minTarget, style]}
-    >
+    <Pressable {...props} style={[styles.minTarget, style]}>
       {children}
     </Pressable>
   );

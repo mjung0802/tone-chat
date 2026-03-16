@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, Button, Icon } from 'react-native-paper';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { Text, Button, Icon } from "react-native-paper";
 
 interface EmptyStateProps {
   icon?: string;
@@ -10,12 +10,16 @@ interface EmptyStateProps {
   onAction?: () => void;
 }
 
-export function EmptyState({ icon, title, description, actionLabel, onAction }: EmptyStateProps) {
+export function EmptyState({
+  icon,
+  title,
+  description,
+  actionLabel,
+  onAction,
+}: EmptyStateProps) {
   return (
     <View style={styles.container} accessibilityRole="text">
-      {icon ? (
-        <Icon source={icon} size={64} />
-      ) : null}
+      {icon ? <Icon source={icon} size={64} /> : null}
       <Text variant="titleLarge" style={styles.title}>
         {title}
       </Text>
@@ -41,18 +45,18 @@ export function EmptyState({ icon, title, description, actionLabel, onAction }: 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
   title: {
     marginTop: 16,
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   description: {
     marginBottom: 24,
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.7,
   },
   button: {

@@ -1,18 +1,31 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { TextInput, Button, SegmentedButtons, HelperText } from 'react-native-paper';
+import React, { useState } from "react";
+import { View, StyleSheet } from "react-native";
+import {
+  TextInput,
+  Button,
+  SegmentedButtons,
+  HelperText,
+} from "react-native-paper";
 
 interface CreateServerFormProps {
-  onSubmit: (data: { name: string; description?: string | undefined; visibility: 'public' | 'private' }) => void;
+  onSubmit: (data: {
+    name: string;
+    description?: string | undefined;
+    visibility: "public" | "private";
+  }) => void;
   isLoading?: boolean | undefined;
 }
 
-export function CreateServerForm({ onSubmit, isLoading }: CreateServerFormProps) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [visibility, setVisibility] = useState<'public' | 'private'>('private');
+export function CreateServerForm({
+  onSubmit,
+  isLoading,
+}: CreateServerFormProps) {
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [visibility, setVisibility] = useState<"public" | "private">("private");
 
-  const nameError = name.length > 0 && name.trim().length === 0 ? 'Name cannot be blank' : '';
+  const nameError =
+    name.length > 0 && name.trim().length === 0 ? "Name cannot be blank" : "";
 
   const handleSubmit = () => {
     if (!name.trim()) return;
@@ -21,9 +34,9 @@ export function CreateServerForm({ onSubmit, isLoading }: CreateServerFormProps)
       description: description.trim() || undefined,
       visibility,
     });
-    setName('');
-    setDescription('');
-    setVisibility('private');
+    setName("");
+    setDescription("");
+    setVisibility("private");
   };
 
   return (
@@ -56,10 +69,10 @@ export function CreateServerForm({ onSubmit, isLoading }: CreateServerFormProps)
 
       <SegmentedButtons
         value={visibility}
-        onValueChange={(v) => setVisibility(v as 'public' | 'private')}
+        onValueChange={(v) => setVisibility(v as "public" | "private")}
         buttons={[
-          { value: 'private', label: 'Private' },
-          { value: 'public', label: 'Public' },
+          { value: "private", label: "Private" },
+          { value: "public", label: "Public" },
         ]}
         style={styles.segment}
       />

@@ -1,9 +1,9 @@
-import React from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
-import { useTheme } from 'react-native-paper';
-import { useRouter } from 'expo-router';
-import { CreateServerForm } from '../../../src/components/servers/CreateServerForm';
-import { useCreateServer } from '../../../src/hooks/useServers';
+import React from "react";
+import { ScrollView, StyleSheet } from "react-native";
+import { useTheme } from "react-native-paper";
+import { useRouter } from "expo-router";
+import { CreateServerForm } from "../../../src/components/servers/CreateServerForm";
+import { useCreateServer } from "../../../src/hooks/useServers";
 
 export default function CreateServerScreen() {
   const router = useRouter();
@@ -13,7 +13,7 @@ export default function CreateServerScreen() {
   const handleSubmit = (data: {
     name: string;
     description?: string | undefined;
-    visibility: 'public' | 'private';
+    visibility: "public" | "private";
   }) => {
     createMutation.mutate(data, {
       onSuccess: (response) => {
@@ -25,10 +25,16 @@ export default function CreateServerScreen() {
   return (
     <ScrollView
       style={{ backgroundColor: theme.colors.background }}
-      contentContainerStyle={[styles.container, { backgroundColor: theme.colors.background }]}
+      contentContainerStyle={[
+        styles.container,
+        { backgroundColor: theme.colors.background },
+      ]}
       keyboardShouldPersistTaps="handled"
     >
-      <CreateServerForm onSubmit={handleSubmit} isLoading={createMutation.isPending} />
+      <CreateServerForm
+        onSubmit={handleSubmit}
+        isLoading={createMutation.isPending}
+      />
     </ScrollView>
   );
 }
@@ -37,7 +43,7 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     maxWidth: 600,
-    width: '100%',
-    alignSelf: 'center',
+    width: "100%",
+    alignSelf: "center",
   },
 });

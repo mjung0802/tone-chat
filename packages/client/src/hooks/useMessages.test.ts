@@ -1,12 +1,20 @@
-import { QueryClient } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react-native';
-import { injectMessage, updateMessageInCache, useMessages, useSendMessage } from './useMessages';
-import * as messagesApi from '../api/messages.api';
-import { makeMessage } from '../test-utils/fixtures';
-import { createHookWrapper, createTestQueryClient } from '../test-utils/renderWithProviders';
-import type { MessagesResponse } from '../types/api.types';
+import { QueryClient } from "@tanstack/react-query";
+import { renderHook, waitFor } from "@testing-library/react-native";
+import {
+  injectMessage,
+  updateMessageInCache,
+  useMessages,
+  useSendMessage,
+} from "./useMessages";
+import * as messagesApi from "../api/messages.api";
+import { makeMessage } from "../test-utils/fixtures";
+import {
+  createHookWrapper,
+  createTestQueryClient,
+} from "../test-utils/renderWithProviders";
+import type { MessagesResponse } from "../types/api.types";
 
-jest.mock('../api/messages.api');
+jest.mock("../api/messages.api");
 
 // ---------- helpers ----------
 
@@ -15,170 +23,233 @@ type CacheData = {
   pageParams: (string | undefined)[];
 };
 
-function seedCache(queryClient: QueryClient, serverId: string, channelId: string, pages: MessagesResponse[]): void {
+function seedCache(
+  queryClient: QueryClient,
+  serverId: string,
+  channelId: string,
+  pages: MessagesResponse[],
+): void {
   queryClient.setQueryData<CacheData>(
-    ['servers', serverId, 'channels', channelId, 'messages'],
+    ["servers", serverId, "channels", channelId, "messages"],
     { pages, pageParams: [undefined] },
   );
 }
 
 // ---------- injectMessage (pure function — no render needed) ----------
 
-describe('injectMessage', () => {
+describe("injectMessage", () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
     queryClient = createTestQueryClient();
   });
 
-  it('appends message to last page', () => {
-    const existing = makeMessage({ _id: 'msg-1' });
-    seedCache(queryClient, 'server-1', 'channel-1', [{ messages: [existing] }]);
+  it("appends message to last page", () => {
+    const existing = makeMessage({ _id: "msg-1" });
+    seedCache(queryClient, "server-1", "channel-1", [{ messages: [existing] }]);
 
-    const newMsg = makeMessage({ _id: 'msg-2', content: 'New!' });
+    const newMsg = makeMessage({ _id: "msg-2", content: "New!" });
     injectMessage(queryClient, newMsg);
 
-    const data = queryClient.getQueryData<CacheData>(
-      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
-    );
+    const data = queryClient.getQueryData<CacheData>([
+      "servers",
+      "server-1",
+      "channels",
+      "channel-1",
+      "messages",
+    ]);
     const lastPage = data!.pages[data!.pages.length - 1]!;
     expect(lastPage.messages).toHaveLength(2);
-    expect(lastPage.messages[1]!._id).toBe('msg-2');
+    expect(lastPage.messages[1]!._id).toBe("msg-2");
   });
 
-  it('deduplicates by _id', () => {
-    const existing = makeMessage({ _id: 'msg-1' });
-    seedCache(queryClient, 'server-1', 'channel-1', [{ messages: [existing] }]);
+  it("deduplicates by _id", () => {
+    const existing = makeMessage({ _id: "msg-1" });
+    seedCache(queryClient, "server-1", "channel-1", [{ messages: [existing] }]);
 
     injectMessage(queryClient, existing);
 
-    const data = queryClient.getQueryData<CacheData>(
-      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
-    );
+    const data = queryClient.getQueryData<CacheData>([
+      "servers",
+      "server-1",
+      "channels",
+      "channel-1",
+      "messages",
+    ]);
     expect(data!.pages[0]!.messages).toHaveLength(1);
   });
 
-  it('no-ops when cache is empty (no data)', () => {
+  it("no-ops when cache is empty (no data)", () => {
     const msg = makeMessage();
 
     // Should not throw
     injectMessage(queryClient, msg);
 
-    const data = queryClient.getQueryData<CacheData>(
-      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
-    );
+    const data = queryClient.getQueryData<CacheData>([
+      "servers",
+      "server-1",
+      "channels",
+      "channel-1",
+      "messages",
+    ]);
     expect(data).toBeUndefined();
   });
 
-  it('no-ops when pages array is empty', () => {
-    seedCache(queryClient, 'server-1', 'channel-1', []);
+  it("no-ops when pages array is empty", () => {
+    seedCache(queryClient, "server-1", "channel-1", []);
 
     const msg = makeMessage();
     injectMessage(queryClient, msg);
 
-    const data = queryClient.getQueryData<CacheData>(
-      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
-    );
+    const data = queryClient.getQueryData<CacheData>([
+      "servers",
+      "server-1",
+      "channels",
+      "channel-1",
+      "messages",
+    ]);
     expect(data!.pages).toHaveLength(0);
   });
 });
 
 // ---------- updateMessageInCache ----------
 
-describe('updateMessageInCache', () => {
+describe("updateMessageInCache", () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
     queryClient = createTestQueryClient();
   });
 
-  it('replaces message by _id', () => {
-    const original = makeMessage({ _id: 'msg-1', content: 'old' });
-    seedCache(queryClient, 'server-1', 'channel-1', [{ messages: [original] }]);
+  it("replaces message by _id", () => {
+    const original = makeMessage({ _id: "msg-1", content: "old" });
+    seedCache(queryClient, "server-1", "channel-1", [{ messages: [original] }]);
 
-    const updated = makeMessage({ _id: 'msg-1', content: 'old', reactions: [{ emoji: '👍', userIds: ['u1'] }] });
+    const updated = makeMessage({
+      _id: "msg-1",
+      content: "old",
+      reactions: [{ emoji: "👍", userIds: ["u1"] }],
+    });
     updateMessageInCache(queryClient, updated);
 
-    const data = queryClient.getQueryData<CacheData>(
-      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
-    );
-    expect(data!.pages[0]!.messages[0]!.reactions).toEqual([{ emoji: '👍', userIds: ['u1'] }]);
+    const data = queryClient.getQueryData<CacheData>([
+      "servers",
+      "server-1",
+      "channels",
+      "channel-1",
+      "messages",
+    ]);
+    expect(data!.pages[0]!.messages[0]!.reactions).toEqual([
+      { emoji: "👍", userIds: ["u1"] },
+    ]);
   });
 
-  it('works across pages', () => {
-    const msg1 = makeMessage({ _id: 'msg-1' });
-    const msg2 = makeMessage({ _id: 'msg-2' });
-    seedCache(queryClient, 'server-1', 'channel-1', [
+  it("works across pages", () => {
+    const msg1 = makeMessage({ _id: "msg-1" });
+    const msg2 = makeMessage({ _id: "msg-2" });
+    seedCache(queryClient, "server-1", "channel-1", [
       { messages: [msg1] },
       { messages: [msg2] },
     ]);
 
-    const updated = makeMessage({ _id: 'msg-2', reactions: [{ emoji: '🔥', userIds: ['u1'] }] });
+    const updated = makeMessage({
+      _id: "msg-2",
+      reactions: [{ emoji: "🔥", userIds: ["u1"] }],
+    });
     updateMessageInCache(queryClient, updated);
 
-    const data = queryClient.getQueryData<CacheData>(
-      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
-    );
-    expect(data!.pages[1]!.messages[0]!.reactions).toEqual([{ emoji: '🔥', userIds: ['u1'] }]);
+    const data = queryClient.getQueryData<CacheData>([
+      "servers",
+      "server-1",
+      "channels",
+      "channel-1",
+      "messages",
+    ]);
+    expect(data!.pages[1]!.messages[0]!.reactions).toEqual([
+      { emoji: "🔥", userIds: ["u1"] },
+    ]);
   });
 
-  it('no-ops when _id does not match', () => {
-    const original = makeMessage({ _id: 'msg-1', content: 'unchanged' });
-    seedCache(queryClient, 'server-1', 'channel-1', [{ messages: [original] }]);
+  it("no-ops when _id does not match", () => {
+    const original = makeMessage({ _id: "msg-1", content: "unchanged" });
+    seedCache(queryClient, "server-1", "channel-1", [{ messages: [original] }]);
 
-    const updated = makeMessage({ _id: 'msg-999', reactions: [{ emoji: '👍', userIds: ['u1'] }] });
+    const updated = makeMessage({
+      _id: "msg-999",
+      reactions: [{ emoji: "👍", userIds: ["u1"] }],
+    });
     updateMessageInCache(queryClient, updated);
 
-    const data = queryClient.getQueryData<CacheData>(
-      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
-    );
-    expect(data!.pages[0]!.messages[0]!.content).toBe('unchanged');
+    const data = queryClient.getQueryData<CacheData>([
+      "servers",
+      "server-1",
+      "channels",
+      "channel-1",
+      "messages",
+    ]);
+    expect(data!.pages[0]!.messages[0]!.content).toBe("unchanged");
     expect(data!.pages[0]!.messages[0]!.reactions).toBeUndefined();
   });
 
-  it('preserves other messages', () => {
-    const msg1 = makeMessage({ _id: 'msg-1', content: 'first' });
-    const msg2 = makeMessage({ _id: 'msg-2', content: 'second' });
-    seedCache(queryClient, 'server-1', 'channel-1', [{ messages: [msg1, msg2] }]);
+  it("preserves other messages", () => {
+    const msg1 = makeMessage({ _id: "msg-1", content: "first" });
+    const msg2 = makeMessage({ _id: "msg-2", content: "second" });
+    seedCache(queryClient, "server-1", "channel-1", [
+      { messages: [msg1, msg2] },
+    ]);
 
-    const updated = makeMessage({ _id: 'msg-2', content: 'second', reactions: [{ emoji: '👍', userIds: ['u1'] }] });
+    const updated = makeMessage({
+      _id: "msg-2",
+      content: "second",
+      reactions: [{ emoji: "👍", userIds: ["u1"] }],
+    });
     updateMessageInCache(queryClient, updated);
 
-    const data = queryClient.getQueryData<CacheData>(
-      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
-    );
+    const data = queryClient.getQueryData<CacheData>([
+      "servers",
+      "server-1",
+      "channels",
+      "channel-1",
+      "messages",
+    ]);
     expect(data!.pages[0]!.messages).toHaveLength(2);
-    expect(data!.pages[0]!.messages[0]!._id).toBe('msg-1');
+    expect(data!.pages[0]!.messages[0]!._id).toBe("msg-1");
     expect(data!.pages[0]!.messages[0]!.reactions).toBeUndefined();
   });
 
-  it('no-ops when cache is empty', () => {
+  it("no-ops when cache is empty", () => {
     const msg = makeMessage();
     updateMessageInCache(queryClient, msg);
-    const data = queryClient.getQueryData<CacheData>(
-      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
-    );
+    const data = queryClient.getQueryData<CacheData>([
+      "servers",
+      "server-1",
+      "channels",
+      "channel-1",
+      "messages",
+    ]);
     expect(data).toBeUndefined();
   });
 });
 
 // ---------- useMessages hook ----------
 
-describe('useMessages', () => {
-  it('returns messages flattened from all pages', async () => {
-    const page1 = { messages: [makeMessage({ _id: 'a' }), makeMessage({ _id: 'b' })] };
-    const page2 = { messages: [makeMessage({ _id: 'c' })] };
+describe("useMessages", () => {
+  it("returns messages flattened from all pages", async () => {
+    const page1 = {
+      messages: [makeMessage({ _id: "a" }), makeMessage({ _id: "b" })],
+    };
+    const page2 = { messages: [makeMessage({ _id: "c" })] };
 
     jest.mocked(messagesApi.getMessages).mockResolvedValueOnce(page1);
 
     const queryClient = createTestQueryClient();
     // Pre-seed with two pages so the select transform can flatten
     queryClient.setQueryData<CacheData>(
-      ['servers', 's1', 'channels', 'c1', 'messages'],
-      { pages: [page1, page2], pageParams: [undefined, 'a'] },
+      ["servers", "s1", "channels", "c1", "messages"],
+      { pages: [page1, page2], pageParams: [undefined, "a"] },
     );
 
-    const { result } = renderHook(() => useMessages('s1', 'c1'), {
+    const { result } = renderHook(() => useMessages("s1", "c1"), {
       wrapper: createHookWrapper(queryClient),
     });
 
@@ -186,36 +257,55 @@ describe('useMessages', () => {
       expect(result.current.data?.messages).toHaveLength(3);
     });
 
-    expect(result.current.data!.messages.map((m) => m._id)).toEqual(['a', 'b', 'c']);
+    expect(result.current.data!.messages.map((m) => m._id)).toEqual([
+      "a",
+      "b",
+      "c",
+    ]);
   });
 });
 
 // ---------- useSendMessage hook ----------
 
-describe('useSendMessage', () => {
-  it('onSuccess appends message to cache', async () => {
+describe("useSendMessage", () => {
+  it("onSuccess appends message to cache", async () => {
     const queryClient = createTestQueryClient();
-    const existingMsg = makeMessage({ _id: 'existing', serverId: 's1', channelId: 'c1' });
-    seedCache(queryClient, 's1', 'c1', [{ messages: [existingMsg] }]);
+    const existingMsg = makeMessage({
+      _id: "existing",
+      serverId: "s1",
+      channelId: "c1",
+    });
+    seedCache(queryClient, "s1", "c1", [{ messages: [existingMsg] }]);
 
-    const newMsg = makeMessage({ _id: 'new-msg', content: 'Sent!', serverId: 's1', channelId: 'c1' });
-    jest.mocked(messagesApi.sendMessage).mockResolvedValueOnce({ message: newMsg });
+    const newMsg = makeMessage({
+      _id: "new-msg",
+      content: "Sent!",
+      serverId: "s1",
+      channelId: "c1",
+    });
+    jest
+      .mocked(messagesApi.sendMessage)
+      .mockResolvedValueOnce({ message: newMsg });
 
-    const { result } = renderHook(() => useSendMessage('s1', 'c1'), {
+    const { result } = renderHook(() => useSendMessage("s1", "c1"), {
       wrapper: createHookWrapper(queryClient),
     });
 
-    result.current.mutate({ content: 'Sent!' });
+    result.current.mutate({ content: "Sent!" });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    const data = queryClient.getQueryData<CacheData>(
-      ['servers', 's1', 'channels', 'c1', 'messages'],
-    );
+    const data = queryClient.getQueryData<CacheData>([
+      "servers",
+      "s1",
+      "channels",
+      "c1",
+      "messages",
+    ]);
     const lastPage = data!.pages[data!.pages.length - 1]!;
     expect(lastPage.messages).toHaveLength(2);
-    expect(lastPage.messages[1]!._id).toBe('new-msg');
+    expect(lastPage.messages[1]!._id).toBe("new-msg");
   });
 });

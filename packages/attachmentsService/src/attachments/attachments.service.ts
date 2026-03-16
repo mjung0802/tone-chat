@@ -1,7 +1,7 @@
-import path from 'node:path';
-import { sql } from '../config/database.js';
-import { AppError } from '../shared/middleware/errorHandler.js';
-import { getPresignedUrl, uploadToS3 } from './storage.service.js';
+import path from "node:path";
+import { sql } from "../config/database.js";
+import { AppError } from "../shared/middleware/errorHandler.js";
+import { getPresignedUrl, uploadToS3 } from "./storage.service.js";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
@@ -9,7 +9,7 @@ function sanitizeFilename(name: string): string {
   // Extract basename to strip path traversal, then remove control characters
   const base = path.basename(name);
   // eslint-disable-next-line no-control-regex
-  return base.replace(/[\x00-\x1f\x7f]/g, '');
+  return base.replace(/[\x00-\x1f\x7f]/g, "");
 }
 
 interface Attachment {
@@ -26,16 +26,25 @@ interface Attachment {
 
 export async function createAttachment(
   uploaderId: string,
-  file: { buffer: Buffer; mimetype: string; originalname: string; size: number },
+  file: {
+    buffer: Buffer;
+    mimetype: string;
+    originalname: string;
+    size: number;
+  },
 ): Promise<Attachment> {
   if (file.size > MAX_FILE_SIZE) {
-    throw new AppError('FILE_TOO_LARGE', 'File exceeds maximum size of 25MB', 413);
+    throw new AppError(
+      "FILE_TOO_LARGE",
+      "File exceeds maximum size of 25MB",
+      413,
+    );
   }
 
   // Insert metadata with processing status
   const [attachment] = await sql<Attachment[]>`
     INSERT INTO attachments (uploader_id, filename, mime_type, size_bytes, storage_key, status)
-    VALUES (${uploaderId}, ${sanitizeFilename(file.originalname)}, ${file.mimetype}, ${file.size}, ${'pending'}, ${'processing'})
+    VALUES (${uploaderId}, ${sanitizeFilename(file.originalname)}, ${file.mimetype}, ${file.size}, ${"pending"}, ${"processing"})
     RETURNING *
   `;
 
@@ -55,11 +64,17 @@ export async function createAttachment(
 }
 
 export async function getAttachment(id: string): Promise<Attachment> {
-  const [attachment] = await sql<Attachment[]>`SELECT * FROM attachments WHERE id = ${id}`;
+  const [attachment] = await sql<
+    Attachment[]
+  >`SELECT * FROM attachments WHERE id = ${id}`;
   if (!attachment) {
-    throw new AppError('ATTACHMENT_NOT_FOUND', 'Attachment not found', 404);
+    throw new AppError("ATTACHMENT_NOT_FOUND", "Attachment not found", 404);
   }
-  if (attachment.status === 'ready' && attachment.storage_key && attachment.storage_key !== 'pending') {
+  if (
+    attachment.status === "ready" &&
+    attachment.storage_key &&
+    attachment.storage_key !== "pending"
+  ) {
     attachment.url = await getPresignedUrl(attachment.storage_key);
   }
   return attachment;

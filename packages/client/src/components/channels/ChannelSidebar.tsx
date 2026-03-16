@@ -1,8 +1,13 @@
-import React from 'react';
-import { View, FlatList, StyleSheet, type ListRenderItemInfo } from 'react-native';
-import { Divider, Text, IconButton, useTheme } from 'react-native-paper';
-import { ChannelListItem } from './ChannelListItem';
-import type { Channel } from '../../types/models';
+import React from "react";
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  type ListRenderItemInfo,
+} from "react-native";
+import { Divider, Text, IconButton, useTheme } from "react-native-paper";
+import { ChannelListItem } from "./ChannelListItem";
+import type { Channel } from "../../types/models";
 
 interface ChannelSidebarProps {
   serverName: string;
@@ -74,12 +79,12 @@ const styles = StyleSheet.create({
   container: {
     width: 260,
     borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: 'rgba(0,0,0,0.1)',
+    borderRightColor: "rgba(0,0,0,0.1)",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 12,
     paddingVertical: 8,
     minHeight: 48,

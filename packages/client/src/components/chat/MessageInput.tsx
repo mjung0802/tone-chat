@@ -1,37 +1,61 @@
-import React, { useState, useCallback } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
-import { TextInput, Icon, IconButton, Text, useTheme } from 'react-native-paper';
-import { AttachmentPicker } from './AttachmentPicker';
-import { AttachmentPreview, type PendingAttachment } from './AttachmentPreview';
-import { EmojiPicker } from './EmojiPicker';
-import { MentionAutocomplete } from './MentionAutocomplete';
-import { useUpload } from '../../hooks/useAttachments';
-import type { DocumentPickerAsset } from 'expo-document-picker';
-import type { ServerMember } from '../../types/models';
+import React, { useState, useCallback } from "react";
+import { View, StyleSheet, Platform } from "react-native";
+import {
+  TextInput,
+  Icon,
+  IconButton,
+  Text,
+  useTheme,
+} from "react-native-paper";
+import { AttachmentPicker } from "./AttachmentPicker";
+import { AttachmentPreview, type PendingAttachment } from "./AttachmentPreview";
+import { EmojiPicker } from "./EmojiPicker";
+import { MentionAutocomplete } from "./MentionAutocomplete";
+import { useUpload } from "../../hooks/useAttachments";
+import type { DocumentPickerAsset } from "expo-document-picker";
+import type { ServerMember } from "../../types/models";
 
 const MAX_ATTACHMENTS = 6;
 
 interface MessageInputProps {
-  onSend: (content: string, attachmentIds: string[], options?: { replyToId?: string; mentions?: string[] }) => void;
+  onSend: (
+    content: string,
+    attachmentIds: string[],
+    options?: { replyToId?: string; mentions?: string[] },
+  ) => void;
   onTyping?: (() => void) | undefined;
   disabled?: boolean | undefined;
-  replyTarget?: {
-    messageId: string;
-    authorId: string;
-    authorName: string;
-    content: string;
-  } | undefined;
+  replyTarget?:
+    | {
+        messageId: string;
+        authorId: string;
+        authorName: string;
+        content: string;
+      }
+    | undefined;
   onCancelReply?: (() => void) | undefined;
   members?: ServerMember[] | undefined;
   currentUserId?: string | undefined;
 }
 
-export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancelReply, members, currentUserId }: MessageInputProps) {
-  const [text, setText] = useState('');
-  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+export function MessageInput({
+  onSend,
+  onTyping,
+  disabled,
+  replyTarget,
+  onCancelReply,
+  members,
+  currentUserId,
+}: MessageInputProps) {
+  const [text, setText] = useState("");
+  const [pendingAttachments, setPendingAttachments] = useState<
+    PendingAttachment[]
+  >([]);
   const [emojiPickerVisible, setEmojiPickerVisible] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(0);
-  const [pendingMentions, setPendingMentions] = useState<Set<string>>(new Set());
+  const [pendingMentions, setPendingMentions] = useState<Set<string>>(
+    new Set(),
+  );
   const theme = useTheme();
   const upload = useUpload();
 
@@ -57,7 +81,7 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
     }
 
     onSend(trimmed, ids, options);
-    setText('');
+    setText("");
     setPendingAttachments([]);
     setPendingMentions(new Set());
   }, [text, pendingAttachments, onSend, replyTarget, pendingMentions]);
@@ -111,7 +135,7 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
             const result = await upload.mutateAsync({
               data: blob,
               filename: file.name,
-              contentType: file.mimeType ?? 'application/octet-stream',
+              contentType: file.mimeType ?? "application/octet-stream",
             });
 
             setPendingAttachments((prev) =>
@@ -125,7 +149,7 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
             setPendingAttachments((prev) =>
               prev.map((p) =>
                 p.file.uri === file.uri
-                  ? { ...p, uploading: false, error: 'Upload failed' }
+                  ? { ...p, uploading: false, error: "Upload failed" }
                   : p,
               ),
             );
@@ -142,7 +166,10 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
 
   return (
     <View style={[styles.wrapper, { backgroundColor: theme.colors.surface }]}>
-      <AttachmentPreview attachments={pendingAttachments} onRemove={handleRemove} />
+      <AttachmentPreview
+        attachments={pendingAttachments}
+        onRemove={handleRemove}
+      />
       {members ? (
         <MentionAutocomplete
           text={text}
@@ -153,13 +180,25 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
         />
       ) : null}
       {replyTarget ? (
-        <View style={[styles.replyPreview, { backgroundColor: theme.colors.surfaceVariant }]}>
+        <View
+          style={[
+            styles.replyPreview,
+            { backgroundColor: theme.colors.surfaceVariant },
+          ]}
+        >
           <Icon source="reply" size={16} color={theme.colors.primary} />
           <View style={styles.replyPreviewText}>
-            <Text variant="labelSmall" style={{ color: theme.colors.primary, fontWeight: '600' }}>
+            <Text
+              variant="labelSmall"
+              style={{ color: theme.colors.primary, fontWeight: "600" }}
+            >
               Replying to @{replyTarget.authorName}
             </Text>
-            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+            <Text
+              variant="labelSmall"
+              style={{ color: theme.colors.onSurfaceVariant }}
+              numberOfLines={1}
+            >
               {replyTarget.content.slice(0, 80)}
             </Text>
           </View>
@@ -180,7 +219,9 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
           style={styles.input}
           value={text}
           onChangeText={handleChange}
-          onSelectionChange={(e) => setCursorPosition(e.nativeEvent.selection.end)}
+          onSelectionChange={(e) =>
+            setCursorPosition(e.nativeEvent.selection.end)
+          }
           placeholder="Type a message..."
           maxLength={4000}
           disabled={disabled ?? false}
@@ -188,8 +229,11 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
           accessibilityHint="Type your message and press send"
           submitBehavior="newline"
           onKeyPress={(e) => {
-            if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter') {
-              const { shiftKey } = e.nativeEvent as { key: string; shiftKey?: boolean };
+            if (Platform.OS === "web" && e.nativeEvent.key === "Enter") {
+              const { shiftKey } = e.nativeEvent as {
+                key: string;
+                shiftKey?: boolean;
+              };
               if (!shiftKey) {
                 handleSend();
               }
@@ -226,13 +270,13 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
 
 const styles = StyleSheet.create({
   wrapper: {
-    position: 'relative' as const,
+    position: "relative" as const,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.1)',
+    borderTopColor: "rgba(0,0,0,0.1)",
   },
   container: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
@@ -248,13 +292,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   replyPreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 4,
     gap: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    borderBottomColor: "rgba(0,0,0,0.1)",
   },
   replyPreviewText: {
     flex: 1,

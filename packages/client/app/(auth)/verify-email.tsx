@@ -1,28 +1,44 @@
-import { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, HelperText, useTheme } from 'react-native-paper';
-import { useVerifyEmail, useResendVerification } from '../../src/hooks/useAuth';
-import { useMe } from '../../src/hooks/useUser';
-import { ApiClientError } from '../../src/api/client';
+import { useState, useEffect, useRef } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import {
+  TextInput,
+  Button,
+  Text,
+  HelperText,
+  useTheme,
+} from "react-native-paper";
+import { useVerifyEmail, useResendVerification } from "../../src/hooks/useAuth";
+import { useMe } from "../../src/hooks/useUser";
+import { ApiClientError } from "../../src/api/client";
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
 function getVerifyErrorMessage(error: unknown): string {
-  if (!error) return '';
+  if (!error) return "";
   if (error instanceof ApiClientError) {
     switch (error.code) {
-      case 'INVALID_CODE': return 'Invalid verification code. Please check and try again.';
-      case 'CODE_EXPIRED': return 'This code has expired. Please request a new one.';
-      case 'TOO_MANY_REQUESTS': return 'Too many attempts. Please wait a moment and try again.';
-      default: return error.message || 'An unexpected error occurred.';
+      case "INVALID_CODE":
+        return "Invalid verification code. Please check and try again.";
+      case "CODE_EXPIRED":
+        return "This code has expired. Please request a new one.";
+      case "TOO_MANY_REQUESTS":
+        return "Too many attempts. Please wait a moment and try again.";
+      default:
+        return error.message || "An unexpected error occurred.";
     }
   }
-  return 'An unexpected error occurred. Please try again.';
+  return "An unexpected error occurred. Please try again.";
 }
 
 export default function VerifyEmailScreen() {
   const theme = useTheme();
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -66,7 +82,7 @@ export default function VerifyEmailScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
         style={{ backgroundColor: theme.colors.background }}
@@ -79,7 +95,7 @@ export default function VerifyEmailScreen() {
         <Text variant="bodyMedium" style={styles.subtitle}>
           {user?.email
             ? `We sent a 6-digit code to ${user.email}`
-            : 'We sent a 6-digit code to your email'}
+            : "We sent a 6-digit code to your email"}
         </Text>
 
         {errorMessage ? (
@@ -96,7 +112,7 @@ export default function VerifyEmailScreen() {
         <TextInput
           label="Verification Code"
           value={code}
-          onChangeText={(text) => setCode(text.replace(/\D/g, '').slice(0, 6))}
+          onChangeText={(text) => setCode(text.replace(/\D/g, "").slice(0, 6))}
           keyboardType="number-pad"
           maxLength={6}
           textContentType="oneTimeCode"
@@ -129,10 +145,12 @@ export default function VerifyEmailScreen() {
             accessibilityLabel={
               resendCooldown > 0
                 ? `Resend code available in ${resendCooldown} seconds`
-                : 'Resend verification code'
+                : "Resend verification code"
             }
           >
-            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
+            {resendCooldown > 0
+              ? `Resend in ${resendCooldown}s`
+              : "Resend Code"}
           </Button>
         </View>
       </ScrollView>
@@ -144,18 +162,18 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 24,
     maxWidth: 480,
-    width: '100%',
-    alignSelf: 'center',
+    width: "100%",
+    alignSelf: "center",
   },
   title: {
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 4,
   },
   subtitle: {
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 24,
     opacity: 0.7,
   },
@@ -169,9 +187,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   resendRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 24,
   },
 });

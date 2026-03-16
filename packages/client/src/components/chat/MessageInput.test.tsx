@@ -1,28 +1,30 @@
-import React from 'react';
-import { fireEvent, waitFor } from '@testing-library/react-native';
-import { MessageInput } from './MessageInput';
-import { renderWithProviders } from '../../test-utils/renderWithProviders';
-import * as useAttachmentsModule from '../../hooks/useAttachments';
-import { makeAttachment } from '../../test-utils/fixtures';
+import React from "react";
+import { fireEvent, waitFor } from "@testing-library/react-native";
+import { MessageInput } from "./MessageInput";
+import { renderWithProviders } from "../../test-utils/renderWithProviders";
+import * as useAttachmentsModule from "../../hooks/useAttachments";
+import { makeAttachment } from "../../test-utils/fixtures";
 
-jest.mock('expo-document-picker', () => ({
+jest.mock("expo-document-picker", () => ({
   getDocumentAsync: jest.fn(),
 }));
-jest.mock('../../hooks/useAttachments');
+jest.mock("../../hooks/useAttachments");
 
-const DocumentPicker = jest.requireMock('expo-document-picker') as { getDocumentAsync: jest.Mock };
+const DocumentPicker = jest.requireMock("expo-document-picker") as {
+  getDocumentAsync: jest.Mock;
+};
 
 // Helpers to mock global fetch for the blob conversion in handlePick
-const mockBlob = new Blob(['data']);
+const mockBlob = new Blob(["data"]);
 const mockFetchResponse = {
   blob: () => Promise.resolve(mockBlob),
   ok: true,
   status: 200,
-  statusText: 'OK',
+  statusText: "OK",
   headers: new Headers(),
   redirected: false,
-  type: 'basic' as ResponseType,
-  url: '',
+  type: "basic" as ResponseType,
+  url: "",
   body: null,
   bodyUsed: false,
   clone: jest.fn(),
@@ -33,7 +35,9 @@ const mockFetchResponse = {
   bytes: jest.fn(),
 } as Response;
 
-function mockUseUpload(overrides: Partial<ReturnType<typeof useAttachmentsModule.useUpload>> = {}) {
+function mockUseUpload(
+  overrides: Partial<ReturnType<typeof useAttachmentsModule.useUpload>> = {},
+) {
   const defaults = {
     data: undefined,
     variables: undefined,
@@ -42,7 +46,7 @@ function mockUseUpload(overrides: Partial<ReturnType<typeof useAttachmentsModule
     isIdle: true,
     isPending: false,
     isSuccess: false,
-    status: 'idle' as const,
+    status: "idle" as const,
     mutate: jest.fn(),
     mutateAsync: jest.fn(),
     reset: jest.fn(),
@@ -53,119 +57,134 @@ function mockUseUpload(overrides: Partial<ReturnType<typeof useAttachmentsModule
     context: undefined,
     ...overrides,
   };
-  jest.mocked(useAttachmentsModule.useUpload).mockReturnValue(
-    defaults as ReturnType<typeof useAttachmentsModule.useUpload>
-  );
+  jest
+    .mocked(useAttachmentsModule.useUpload)
+    .mockReturnValue(
+      defaults as ReturnType<typeof useAttachmentsModule.useUpload>,
+    );
   return defaults;
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseUpload();
-  jest.spyOn(global, 'fetch').mockResolvedValue(mockFetchResponse);
+  jest.spyOn(global, "fetch").mockResolvedValue(mockFetchResponse);
 });
 
-describe('MessageInput', () => {
-  it('renders input with accessibilityLabel', () => {
+describe("MessageInput", () => {
+  it("renders input with accessibilityLabel", () => {
     const { getByLabelText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
 
-    expect(getByLabelText('Message input')).toBeTruthy();
+    expect(getByLabelText("Message input")).toBeTruthy();
   });
 
-  it('send button disabled when input is empty', () => {
+  it("send button disabled when input is empty", () => {
     const { getByLabelText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
 
-    const sendButton = getByLabelText('Send message');
-    expect(sendButton.props.accessibilityState?.disabled ?? sendButton.props.disabled).toBeTruthy();
+    const sendButton = getByLabelText("Send message");
+    expect(
+      sendButton.props.accessibilityState?.disabled ??
+        sendButton.props.disabled,
+    ).toBeTruthy();
   });
 
-  it('send button disabled for whitespace-only text', () => {
+  it("send button disabled for whitespace-only text", () => {
     const { getByLabelText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
 
-    fireEvent.changeText(getByLabelText('Message input'), '   ');
-    const sendButton = getByLabelText('Send message');
-    expect(sendButton.props.accessibilityState?.disabled ?? sendButton.props.disabled).toBeTruthy();
+    fireEvent.changeText(getByLabelText("Message input"), "   ");
+    const sendButton = getByLabelText("Send message");
+    expect(
+      sendButton.props.accessibilityState?.disabled ??
+        sendButton.props.disabled,
+    ).toBeTruthy();
   });
 
-  it('send button enabled with real text', () => {
+  it("send button enabled with real text", () => {
     const { getByLabelText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
 
-    fireEvent.changeText(getByLabelText('Message input'), 'Hello');
-    const sendButton = getByLabelText('Send message');
+    fireEvent.changeText(getByLabelText("Message input"), "Hello");
+    const sendButton = getByLabelText("Send message");
     // When not disabled, accessibilityState.disabled is either false or undefined
-    const isDisabled = sendButton.props.accessibilityState?.disabled ?? sendButton.props.disabled;
+    const isDisabled =
+      sendButton.props.accessibilityState?.disabled ??
+      sendButton.props.disabled;
     expect(isDisabled).toBeFalsy();
   });
 
-  it('pressing send calls onSend with trimmed text', () => {
+  it("pressing send calls onSend with trimmed text", () => {
     const onSend = jest.fn();
     const { getByLabelText } = renderWithProviders(
       <MessageInput onSend={onSend} />,
     );
 
-    fireEvent.changeText(getByLabelText('Message input'), '  Hello world  ');
-    fireEvent.press(getByLabelText('Send message'));
+    fireEvent.changeText(getByLabelText("Message input"), "  Hello world  ");
+    fireEvent.press(getByLabelText("Send message"));
 
-    expect(onSend).toHaveBeenCalledWith('Hello world', [], {});
+    expect(onSend).toHaveBeenCalledWith("Hello world", [], {});
   });
 
-  it('pressing send clears input', () => {
+  it("pressing send clears input", () => {
     const { getByLabelText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
 
-    const input = getByLabelText('Message input');
-    fireEvent.changeText(input, 'Hello');
-    fireEvent.press(getByLabelText('Send message'));
+    const input = getByLabelText("Message input");
+    fireEvent.changeText(input, "Hello");
+    fireEvent.press(getByLabelText("Send message"));
 
-    expect(input.props.value).toBe('');
+    expect(input.props.value).toBe("");
   });
 
-  it('typing calls onTyping callback', () => {
+  it("typing calls onTyping callback", () => {
     const onTyping = jest.fn();
     const { getByLabelText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} onTyping={onTyping} />,
     );
 
-    fireEvent.changeText(getByLabelText('Message input'), 'H');
+    fireEvent.changeText(getByLabelText("Message input"), "H");
 
     expect(onTyping).toHaveBeenCalled();
   });
 
-  it('no crash when onTyping is undefined', () => {
+  it("no crash when onTyping is undefined", () => {
     const { getByLabelText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
 
     // Should not throw
-    fireEvent.changeText(getByLabelText('Message input'), 'Hello');
+    fireEvent.changeText(getByLabelText("Message input"), "Hello");
   });
 
-  it('attach button renders with accessibility label', () => {
+  it("attach button renders with accessibility label", () => {
     const { getByLabelText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
 
-    expect(getByLabelText('Attach file')).toBeTruthy();
+    expect(getByLabelText("Attach file")).toBeTruthy();
   });
 
-  it('uploads files when picked', async () => {
+  it("uploads files when picked", async () => {
     const mutateAsync = jest.fn().mockResolvedValue({
       attachment: makeAttachment(),
     });
     mockUseUpload({ mutateAsync });
 
     const assets = [
-      { uri: 'file://a.png', name: 'a.png', mimeType: 'image/png', size: 100 },
-      { uri: 'file://b.pdf', name: 'b.pdf', mimeType: 'application/pdf', size: 200 },
+      { uri: "file://a.png", name: "a.png", mimeType: "image/png", size: 100 },
+      {
+        uri: "file://b.pdf",
+        name: "b.pdf",
+        mimeType: "application/pdf",
+        size: 200,
+      },
     ];
     DocumentPicker.getDocumentAsync.mockResolvedValueOnce({
       canceled: false,
@@ -176,21 +195,28 @@ describe('MessageInput', () => {
       <MessageInput onSend={jest.fn()} />,
     );
 
-    fireEvent.press(getByLabelText('Attach file'));
+    fireEvent.press(getByLabelText("Attach file"));
 
     await waitFor(() => {
       expect(mutateAsync).toHaveBeenCalledTimes(2);
     });
   });
 
-  it('sends attachment IDs with message', async () => {
-    const attachment = makeAttachment({ id: 'att-uploaded-1' });
+  it("sends attachment IDs with message", async () => {
+    const attachment = makeAttachment({ id: "att-uploaded-1" });
     const mutateAsync = jest.fn().mockResolvedValue({ attachment });
     mockUseUpload({ mutateAsync });
 
     DocumentPicker.getDocumentAsync.mockResolvedValueOnce({
       canceled: false,
-      assets: [{ uri: 'file://a.png', name: 'a.png', mimeType: 'image/png', size: 100 }],
+      assets: [
+        {
+          uri: "file://a.png",
+          name: "a.png",
+          mimeType: "image/png",
+          size: 100,
+        },
+      ],
     });
 
     const onSend = jest.fn();
@@ -198,26 +224,33 @@ describe('MessageInput', () => {
       <MessageInput onSend={onSend} />,
     );
 
-    fireEvent.press(getByLabelText('Attach file'));
+    fireEvent.press(getByLabelText("Attach file"));
 
     await waitFor(() => {
       expect(mutateAsync).toHaveBeenCalled();
     });
 
-    fireEvent.changeText(getByLabelText('Message input'), 'Hello');
-    fireEvent.press(getByLabelText('Send message'));
+    fireEvent.changeText(getByLabelText("Message input"), "Hello");
+    fireEvent.press(getByLabelText("Send message"));
 
-    expect(onSend).toHaveBeenCalledWith('Hello', ['att-uploaded-1'], {});
+    expect(onSend).toHaveBeenCalledWith("Hello", ["att-uploaded-1"], {});
   });
 
-  it('sends with attachments but no text', async () => {
-    const attachment = makeAttachment({ id: 'att-no-text' });
+  it("sends with attachments but no text", async () => {
+    const attachment = makeAttachment({ id: "att-no-text" });
     const mutateAsync = jest.fn().mockResolvedValue({ attachment });
     mockUseUpload({ mutateAsync });
 
     DocumentPicker.getDocumentAsync.mockResolvedValueOnce({
       canceled: false,
-      assets: [{ uri: 'file://a.png', name: 'a.png', mimeType: 'image/png', size: 100 }],
+      assets: [
+        {
+          uri: "file://a.png",
+          name: "a.png",
+          mimeType: "image/png",
+          size: 100,
+        },
+      ],
     });
 
     const onSend = jest.fn();
@@ -225,45 +258,54 @@ describe('MessageInput', () => {
       <MessageInput onSend={onSend} />,
     );
 
-    fireEvent.press(getByLabelText('Attach file'));
+    fireEvent.press(getByLabelText("Attach file"));
 
     await waitFor(() => {
       expect(mutateAsync).toHaveBeenCalled();
     });
 
-    fireEvent.press(getByLabelText('Send message'));
+    fireEvent.press(getByLabelText("Send message"));
 
-    expect(onSend).toHaveBeenCalledWith('', ['att-no-text'], {});
+    expect(onSend).toHaveBeenCalledWith("", ["att-no-text"], {});
   });
 
-  it('disables send while uploads are in progress', async () => {
+  it("disables send while uploads are in progress", async () => {
     // mutateAsync returns a never-resolving promise to simulate in-progress upload
     const mutateAsync = jest.fn().mockReturnValue(new Promise(() => {}));
     mockUseUpload({ mutateAsync });
 
     DocumentPicker.getDocumentAsync.mockResolvedValueOnce({
       canceled: false,
-      assets: [{ uri: 'file://a.png', name: 'a.png', mimeType: 'image/png', size: 100 }],
+      assets: [
+        {
+          uri: "file://a.png",
+          name: "a.png",
+          mimeType: "image/png",
+          size: 100,
+        },
+      ],
     });
 
     const { getByLabelText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
 
-    fireEvent.press(getByLabelText('Attach file'));
+    fireEvent.press(getByLabelText("Attach file"));
 
     await waitFor(() => {
       expect(mutateAsync).toHaveBeenCalled();
     });
 
     // Text entered but uploads still pending — send should be disabled
-    fireEvent.changeText(getByLabelText('Message input'), 'Hello');
-    const sendButton = getByLabelText('Send message');
-    const isDisabled = sendButton.props.accessibilityState?.disabled ?? sendButton.props.disabled;
+    fireEvent.changeText(getByLabelText("Message input"), "Hello");
+    const sendButton = getByLabelText("Send message");
+    const isDisabled =
+      sendButton.props.accessibilityState?.disabled ??
+      sendButton.props.disabled;
     expect(isDisabled).toBeTruthy();
   });
 
-  it('disables picker at MAX_ATTACHMENTS (6)', async () => {
+  it("disables picker at MAX_ATTACHMENTS (6)", async () => {
     const attachment = makeAttachment();
     const mutateAsync = jest.fn().mockResolvedValue({ attachment });
     mockUseUpload({ mutateAsync });
@@ -272,7 +314,7 @@ describe('MessageInput', () => {
     const assets = Array.from({ length: 6 }, (_, i) => ({
       uri: `file://file-${i}.png`,
       name: `file-${i}.png`,
-      mimeType: 'image/png',
+      mimeType: "image/png",
       size: 100,
     }));
     DocumentPicker.getDocumentAsync.mockResolvedValueOnce({
@@ -284,86 +326,95 @@ describe('MessageInput', () => {
       <MessageInput onSend={jest.fn()} />,
     );
 
-    fireEvent.press(getByLabelText('Attach file'));
+    fireEvent.press(getByLabelText("Attach file"));
 
     await waitFor(() => {
       expect(mutateAsync).toHaveBeenCalledTimes(6);
     });
 
-    const attachButton = getByLabelText('Attach file');
-    const isDisabled = attachButton.props.accessibilityState?.disabled ?? attachButton.props.disabled;
+    const attachButton = getByLabelText("Attach file");
+    const isDisabled =
+      attachButton.props.accessibilityState?.disabled ??
+      attachButton.props.disabled;
     expect(isDisabled).toBeTruthy();
   });
 
-  it('shows error on failed upload', async () => {
-    const mutateAsync = jest.fn().mockRejectedValue(new Error('Upload failed'));
+  it("shows error on failed upload", async () => {
+    const mutateAsync = jest.fn().mockRejectedValue(new Error("Upload failed"));
     mockUseUpload({ mutateAsync });
 
     DocumentPicker.getDocumentAsync.mockResolvedValueOnce({
       canceled: false,
-      assets: [{ uri: 'file://a.png', name: 'a.png', mimeType: 'image/png', size: 100 }],
+      assets: [
+        {
+          uri: "file://a.png",
+          name: "a.png",
+          mimeType: "image/png",
+          size: 100,
+        },
+      ],
     });
 
     const { getByLabelText, getByText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
 
-    fireEvent.press(getByLabelText('Attach file'));
+    fireEvent.press(getByLabelText("Attach file"));
 
     await waitFor(() => {
-      expect(getByText('!')).toBeTruthy();
+      expect(getByText("!")).toBeTruthy();
     });
   });
 
-  it('renders emoji button with accessibility label', () => {
+  it("renders emoji button with accessibility label", () => {
     const { getByLabelText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
 
-    expect(getByLabelText('Open emoji picker')).toBeTruthy();
+    expect(getByLabelText("Open emoji picker")).toBeTruthy();
   });
 
-  it('opens emoji picker when emoji button is pressed', () => {
+  it("opens emoji picker when emoji button is pressed", () => {
     const { getByLabelText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
 
-    fireEvent.press(getByLabelText('Open emoji picker'));
+    fireEvent.press(getByLabelText("Open emoji picker"));
 
-    expect(getByLabelText('Emoji picker')).toBeTruthy();
+    expect(getByLabelText("Emoji picker")).toBeTruthy();
   });
 
-  it('appends emoji to input text when selected', () => {
+  it("appends emoji to input text when selected", () => {
     const { getByLabelText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
 
-    fireEvent.changeText(getByLabelText('Message input'), 'Hello');
-    fireEvent.press(getByLabelText('Open emoji picker'));
-    fireEvent.press(getByLabelText('😀'));
+    fireEvent.changeText(getByLabelText("Message input"), "Hello");
+    fireEvent.press(getByLabelText("Open emoji picker"));
+    fireEvent.press(getByLabelText("😀"));
 
-    expect(getByLabelText('Message input').props.value).toBe('Hello😀');
+    expect(getByLabelText("Message input").props.value).toBe("Hello😀");
   });
 
-  it('renders reply preview when replyTarget is set', () => {
+  it("renders reply preview when replyTarget is set", () => {
     const { getByText, getByLabelText } = renderWithProviders(
       <MessageInput
         onSend={jest.fn()}
         replyTarget={{
-          messageId: 'msg-1',
-          authorId: 'user-2',
-          authorName: 'Bob',
-          content: 'Hello there',
+          messageId: "msg-1",
+          authorId: "user-2",
+          authorName: "Bob",
+          content: "Hello there",
         }}
       />,
     );
 
-    expect(getByText('Replying to @Bob')).toBeTruthy();
-    expect(getByText('Hello there')).toBeTruthy();
-    expect(getByLabelText('Cancel reply')).toBeTruthy();
+    expect(getByText("Replying to @Bob")).toBeTruthy();
+    expect(getByText("Hello there")).toBeTruthy();
+    expect(getByLabelText("Cancel reply")).toBeTruthy();
   });
 
-  it('does not render reply preview when replyTarget is undefined', () => {
+  it("does not render reply preview when replyTarget is undefined", () => {
     const { queryByText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
@@ -371,67 +422,76 @@ describe('MessageInput', () => {
     expect(queryByText(/Replying to/)).toBeNull();
   });
 
-  it('calls onCancelReply when cancel button is pressed', () => {
+  it("calls onCancelReply when cancel button is pressed", () => {
     const onCancelReply = jest.fn();
     const { getByLabelText } = renderWithProviders(
       <MessageInput
         onSend={jest.fn()}
         replyTarget={{
-          messageId: 'msg-1',
-          authorId: 'user-2',
-          authorName: 'Bob',
-          content: 'Hello there',
+          messageId: "msg-1",
+          authorId: "user-2",
+          authorName: "Bob",
+          content: "Hello there",
         }}
         onCancelReply={onCancelReply}
       />,
     );
 
-    fireEvent.press(getByLabelText('Cancel reply'));
+    fireEvent.press(getByLabelText("Cancel reply"));
     expect(onCancelReply).toHaveBeenCalled();
   });
 
-  it('includes replyToId in onSend options when replyTarget is set', () => {
+  it("includes replyToId in onSend options when replyTarget is set", () => {
     const onSend = jest.fn();
     const { getByLabelText } = renderWithProviders(
       <MessageInput
         onSend={onSend}
         replyTarget={{
-          messageId: 'msg-reply-1',
-          authorId: 'user-2',
-          authorName: 'Bob',
-          content: 'Hello',
+          messageId: "msg-reply-1",
+          authorId: "user-2",
+          authorName: "Bob",
+          content: "Hello",
         }}
       />,
     );
 
-    fireEvent.changeText(getByLabelText('Message input'), 'My reply');
-    fireEvent.press(getByLabelText('Send message'));
+    fireEvent.changeText(getByLabelText("Message input"), "My reply");
+    fireEvent.press(getByLabelText("Send message"));
 
-    expect(onSend).toHaveBeenCalledWith('My reply', [], { replyToId: 'msg-reply-1' });
+    expect(onSend).toHaveBeenCalledWith("My reply", [], {
+      replyToId: "msg-reply-1",
+    });
   });
 
-  it('clears pending attachments after send', async () => {
-    const attachment = makeAttachment({ id: 'att-clear' });
+  it("clears pending attachments after send", async () => {
+    const attachment = makeAttachment({ id: "att-clear" });
     const mutateAsync = jest.fn().mockResolvedValue({ attachment });
     mockUseUpload({ mutateAsync });
 
     DocumentPicker.getDocumentAsync.mockResolvedValueOnce({
       canceled: false,
-      assets: [{ uri: 'file://a.png', name: 'a.png', mimeType: 'image/png', size: 100 }],
+      assets: [
+        {
+          uri: "file://a.png",
+          name: "a.png",
+          mimeType: "image/png",
+          size: 100,
+        },
+      ],
     });
 
     const { getByLabelText, getByText, queryByText } = renderWithProviders(
       <MessageInput onSend={jest.fn()} />,
     );
 
-    fireEvent.press(getByLabelText('Attach file'));
+    fireEvent.press(getByLabelText("Attach file"));
 
     await waitFor(() => {
-      expect(getByText('a.png')).toBeTruthy();
+      expect(getByText("a.png")).toBeTruthy();
     });
 
-    fireEvent.press(getByLabelText('Send message'));
+    fireEvent.press(getByLabelText("Send message"));
 
-    expect(queryByText('a.png')).toBeNull();
+    expect(queryByText("a.png")).toBeNull();
   });
 });

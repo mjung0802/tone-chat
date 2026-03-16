@@ -1,13 +1,13 @@
-import { get, post, patch, del } from './client';
+import { get, post, patch, del } from "./client";
 import type {
   ServerResponse,
   ServersResponse,
   CreateServerRequest,
   UpdateServerRequest,
-} from '../types/api.types';
+} from "../types/api.types";
 
 export function getServers() {
-  return get<ServersResponse>('/servers');
+  return get<ServersResponse>("/servers");
 }
 
 export function getServer(serverId: string) {
@@ -15,7 +15,7 @@ export function getServer(serverId: string) {
 }
 
 export function createServer(data: CreateServerRequest) {
-  return post<ServerResponse>('/servers', data);
+  return post<ServerResponse>("/servers", data);
 }
 
 export function updateServer(serverId: string, data: UpdateServerRequest) {

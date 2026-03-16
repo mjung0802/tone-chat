@@ -1,10 +1,10 @@
-import assert from 'node:assert/strict';
-import { beforeEach, describe, it, mock } from 'node:test';
+import assert from "node:assert/strict";
+import { beforeEach, describe, it, mock } from "node:test";
 
 const mockListMembers = mock.fn<AnyFn>();
 const mockGetUsersBatch = mock.fn<AnyFn>();
 
-mock.module('./members.client.js', {
+mock.module("./members.client.js", {
   namedExports: {
     listMembers: mockListMembers,
     joinServer: mock.fn(),
@@ -14,7 +14,7 @@ mock.module('./members.client.js', {
   },
 });
 
-mock.module('../users/users.client.js', {
+mock.module("../users/users.client.js", {
   namedExports: {
     getUsersBatch: mockGetUsersBatch,
     getMe: mock.fn(),
@@ -23,10 +23,19 @@ mock.module('../users/users.client.js', {
   },
 });
 
-const { membersRouter } = await import('./members.routes.js');
+const { membersRouter } = await import("./members.routes.js");
 
-type RouteStackEntry = { method?: string; handle?: (req: unknown, res: unknown) => Promise<void> };
-type RouterLayer = { route?: { path?: string; methods?: Record<string, boolean>; stack?: RouteStackEntry[] } };
+type RouteStackEntry = {
+  method?: string;
+  handle?: (req: unknown, res: unknown) => Promise<void>;
+};
+type RouterLayer = {
+  route?: {
+    path?: string;
+    methods?: Record<string, boolean>;
+    stack?: RouteStackEntry[];
+  };
+};
 type MembersReq = { userId: string; params: { serverId: string } };
 type MembersRes = {
   statusCode: number;
@@ -37,12 +46,18 @@ type MembersRes = {
 
 // Extract the GET `/` handler from the router stack
 // @ts-expect-error - Simplified RouterLayer type for testing
-const layer = membersRouter.stack.find((l: RouterLayer) => l.route?.path === '/' && Boolean(l.route?.methods?.get));
+const layer = membersRouter.stack.find(
+  (l: RouterLayer) => l.route?.path === "/" && Boolean(l.route?.methods?.get),
+);
 // @ts-expect-error - Casting Express handler to simplified test types
-const getHandler = (layer?.route?.stack?.find((s) => s.method === 'get')?.handle ?? (async () => {})) as (req: MembersReq, res: MembersRes) => Promise<void>;
+const getHandler = (layer?.route?.stack?.find((s) => s.method === "get")
+  ?.handle ?? (async () => {})) as (
+  req: MembersReq,
+  res: MembersRes,
+) => Promise<void>;
 
 function makeReq(overrides: Partial<MembersReq> = {}): MembersReq {
-  return { userId: 'user-1', params: { serverId: 'server-1' }, ...overrides };
+  return { userId: "user-1", params: { serverId: "server-1" }, ...overrides };
 }
 
 function makeRes(): MembersRes {
@@ -62,34 +77,39 @@ function makeRes(): MembersRes {
 }
 
 function makeMember(id: string) {
-  return { userId: id, role: 'member' };
+  return { userId: id, role: "member" };
 }
 
 function makeUser(id: string) {
-  return { id, username: `user_${id}`, display_name: `User ${id}`, avatar_url: `att-avatar-${id}` };
+  return {
+    id,
+    username: `user_${id}`,
+    display_name: `User ${id}`,
+    avatar_url: `att-avatar-${id}`,
+  };
 }
 
-describe('GET / (list members with user enrichment)', () => {
+describe("GET / (list members with user enrichment)", () => {
   beforeEach(() => {
     mockListMembers.mock.resetCalls();
     mockGetUsersBatch.mock.resetCalls();
   });
 
-  it('forwards status and data when listMembers returns non-200', async () => {
+  it("forwards status and data when listMembers returns non-200", async () => {
     mockListMembers.mock.mockImplementation(async () => ({
       status: 403,
-      data: { error: 'Forbidden' },
+      data: { error: "Forbidden" },
     }));
 
     const res = makeRes();
     await getHandler(makeReq(), res);
 
     assert.equal(res.statusCode, 403);
-    assert.deepEqual(res._json, { error: 'Forbidden' });
+    assert.deepEqual(res._json, { error: "Forbidden" });
     assert.equal(mockGetUsersBatch.mock.callCount(), 0);
   });
 
-  it('returns empty array and skips getUsersBatch when 0 members', async () => {
+  it("returns empty array and skips getUsersBatch when 0 members", async () => {
     mockListMembers.mock.mockImplementation(async () => ({
       status: 200,
       data: { members: [] },
@@ -103,24 +123,28 @@ describe('GET / (list members with user enrichment)', () => {
     assert.equal(mockGetUsersBatch.mock.callCount(), 0);
   });
 
-  it('makes a single getUsersBatch call for < 100 members', async () => {
-    const members = [makeMember('a'), makeMember('b'), makeMember('c')];
+  it("makes a single getUsersBatch call for < 100 members", async () => {
+    const members = [makeMember("a"), makeMember("b"), makeMember("c")];
     mockListMembers.mock.mockImplementation(async () => ({
       status: 200,
       data: { members },
     }));
     mockGetUsersBatch.mock.mockImplementation(async () => ({
       status: 200,
-      data: { users: [makeUser('a'), makeUser('b'), makeUser('c')] },
+      data: { users: [makeUser("a"), makeUser("b"), makeUser("c")] },
     }));
 
     const res = makeRes();
     await getHandler(makeReq(), res);
 
     assert.equal(mockGetUsersBatch.mock.callCount(), 1);
-    assert.deepEqual(mockGetUsersBatch.mock.calls[0]!.arguments, ['user-1', ['a', 'b', 'c']]);
+    assert.deepEqual(mockGetUsersBatch.mock.calls[0]!.arguments, [
+      "user-1",
+      ["a", "b", "c"],
+    ]);
 
-    const result = (res._json as { members: Array<Record<string, unknown>> }).members;
+    const result = (res._json as { members: Array<Record<string, unknown>> })
+      .members;
     assert.equal(result.length, 3);
     for (const m of result) {
       assert.equal(m.username, `user_${m.userId}`);
@@ -129,7 +153,7 @@ describe('GET / (list members with user enrichment)', () => {
     }
   });
 
-  it('makes a single getUsersBatch call for exactly 100 members', async () => {
+  it("makes a single getUsersBatch call for exactly 100 members", async () => {
     const ids = Array.from({ length: 100 }, (_, i) => `id-${i}`);
     const members = ids.map(makeMember);
     mockListMembers.mock.mockImplementation(async () => ({
@@ -145,29 +169,41 @@ describe('GET / (list members with user enrichment)', () => {
     await getHandler(makeReq(), res);
 
     assert.equal(mockGetUsersBatch.mock.callCount(), 1);
-    assert.equal((mockGetUsersBatch.mock.calls[0]!.arguments[1] as string[]).length, 100);
+    assert.equal(
+      (mockGetUsersBatch.mock.calls[0]!.arguments[1] as string[]).length,
+      100,
+    );
   });
 
-  it('splits into two getUsersBatch calls for 150 members', async () => {
+  it("splits into two getUsersBatch calls for 150 members", async () => {
     const ids = Array.from({ length: 150 }, (_, i) => `id-${i}`);
     const members = ids.map(makeMember);
     mockListMembers.mock.mockImplementation(async () => ({
       status: 200,
       data: { members },
     }));
-    mockGetUsersBatch.mock.mockImplementation(async (_userId, batch: unknown) => ({
-      status: 200,
-      data: { users: (batch as string[]).map(makeUser) },
-    }));
+    mockGetUsersBatch.mock.mockImplementation(
+      async (_userId, batch: unknown) => ({
+        status: 200,
+        data: { users: (batch as string[]).map(makeUser) },
+      }),
+    );
 
     const res = makeRes();
     await getHandler(makeReq(), res);
 
     assert.equal(mockGetUsersBatch.mock.callCount(), 2);
-    assert.equal((mockGetUsersBatch.mock.calls[0]!.arguments[1] as string[]).length, 100);
-    assert.equal((mockGetUsersBatch.mock.calls[1]!.arguments[1] as string[]).length, 50);
+    assert.equal(
+      (mockGetUsersBatch.mock.calls[0]!.arguments[1] as string[]).length,
+      100,
+    );
+    assert.equal(
+      (mockGetUsersBatch.mock.calls[1]!.arguments[1] as string[]).length,
+      50,
+    );
 
-    const result = (res._json as { members: Array<Record<string, unknown>> }).members;
+    const result = (res._json as { members: Array<Record<string, unknown>> })
+      .members;
     assert.equal(result.length, 150);
     for (const m of result) {
       assert.equal(m.username, `user_${m.userId}`);
@@ -176,7 +212,7 @@ describe('GET / (list members with user enrichment)', () => {
     }
   });
 
-  it('enriches members from successful batches even when another batch fails', async () => {
+  it("enriches members from successful batches even when another batch fails", async () => {
     const ids = Array.from({ length: 150 }, (_, i) => `id-${i}`);
     const members = ids.map(makeMember);
     mockListMembers.mock.mockImplementation(async () => ({
@@ -185,20 +221,26 @@ describe('GET / (list members with user enrichment)', () => {
     }));
 
     let callIndex = 0;
-    mockGetUsersBatch.mock.mockImplementation(async (_userId, batch: unknown) => {
-      callIndex++;
-      if (callIndex === 1) {
-        return { status: 200, data: { users: (batch as string[]).map(makeUser) } };
-      }
-      return { status: 500, data: { error: 'Internal error' } };
-    });
+    mockGetUsersBatch.mock.mockImplementation(
+      async (_userId, batch: unknown) => {
+        callIndex++;
+        if (callIndex === 1) {
+          return {
+            status: 200,
+            data: { users: (batch as string[]).map(makeUser) },
+          };
+        }
+        return { status: 500, data: { error: "Internal error" } };
+      },
+    );
 
     const res = makeRes();
     await getHandler(makeReq(), res);
 
     assert.equal(mockGetUsersBatch.mock.callCount(), 2);
 
-    const result = (res._json as { members: Array<Record<string, unknown>> }).members;
+    const result = (res._json as { members: Array<Record<string, unknown>> })
+      .members;
     assert.equal(result.length, 150);
 
     // First 100 should be enriched

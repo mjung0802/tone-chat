@@ -1,11 +1,11 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { AccessibilityInfo } from 'react-native';
-import { useSocketStore } from '../stores/socketStore';
-import { useAuthStore } from '../stores/authStore';
-import { injectMessage, updateMessageInCache } from './useMessages';
-import type { Message } from '../types/models';
-import type { TypingEvent } from '../types/socket.types';
+import { useEffect, useRef, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { AccessibilityInfo } from "react-native";
+import { useSocketStore } from "../stores/socketStore";
+import { useAuthStore } from "../stores/authStore";
+import { injectMessage, updateMessageInCache } from "./useMessages";
+import type { Message } from "../types/models";
+import type { TypingEvent } from "../types/socket.types";
 
 export function useSocketConnection() {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -45,11 +45,11 @@ export function useChannelSocket(
   useEffect(() => {
     if (!socket || !serverId || !channelId) return;
 
-    socket.emit('join_channel', { serverId, channelId });
+    socket.emit("join_channel", { serverId, channelId });
 
     const handleNewMessage = (data: { message: Message }) => {
       injectMessage(queryClient, data.message);
-      AccessibilityInfo.announceForAccessibility('New message received');
+      AccessibilityInfo.announceForAccessibility("New message received");
     };
 
     const handleTyping = (event: TypingEvent) => {
@@ -62,20 +62,23 @@ export function useChannelSocket(
       updateMessageInCache(queryClient, data.message);
     };
 
-    socket.on('new_message', handleNewMessage);
-    socket.on('typing', handleTyping);
-    socket.on('reaction_updated', handleReactionUpdated);
+    socket.on("new_message", handleNewMessage);
+    socket.on("typing", handleTyping);
+    socket.on("reaction_updated", handleReactionUpdated);
 
     return () => {
-      socket.emit('leave_channel', { serverId, channelId });
-      socket.off('new_message', handleNewMessage);
-      socket.off('typing', handleTyping);
-      socket.off('reaction_updated', handleReactionUpdated);
+      socket.emit("leave_channel", { serverId, channelId });
+      socket.off("new_message", handleNewMessage);
+      socket.off("typing", handleTyping);
+      socket.off("reaction_updated", handleReactionUpdated);
     };
   }, [socket, serverId, channelId, queryClient, onTyping]);
 }
 
-export function useTypingEmit(serverId: string | undefined, channelId: string | undefined) {
+export function useTypingEmit(
+  serverId: string | undefined,
+  channelId: string | undefined,
+) {
   const socket = useSocketStore((s) => s.socket);
   const lastEmitRef = useRef(0);
 
@@ -87,6 +90,6 @@ export function useTypingEmit(serverId: string | undefined, channelId: string | 
     if (now - lastEmitRef.current < 2000) return;
     lastEmitRef.current = now;
 
-    socket.emit('typing', { serverId, channelId });
+    socket.emit("typing", { serverId, channelId });
   }, [socket, serverId, channelId]);
 }

@@ -1,19 +1,27 @@
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { CreateInviteForm } from '@/components/invites/CreateInviteForm';
-import { InviteCard } from '@/components/invites/InviteCard';
-import { MemberList } from '@/components/members/MemberList';
-import { ServerIcon } from '@/components/servers/ServerIcon';
-import { useUpload } from '@/hooks/useAttachments';
-import { useChannels, useCreateChannel } from '@/hooks/useChannels';
-import { useCreateInvite, useInvites, useRevokeInvite } from '@/hooks/useInvites';
-import { useMembers } from '@/hooks/useMembers';
-import { useDeleteServer, useServer, useUpdateServer } from '@/hooks/useServers';
-import { useAuthStore } from '@/stores/authStore';
-import * as DocumentPicker from 'expo-document-picker';
-import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { CreateInviteForm } from "@/components/invites/CreateInviteForm";
+import { InviteCard } from "@/components/invites/InviteCard";
+import { MemberList } from "@/components/members/MemberList";
+import { ServerIcon } from "@/components/servers/ServerIcon";
+import { useUpload } from "@/hooks/useAttachments";
+import { useChannels, useCreateChannel } from "@/hooks/useChannels";
+import {
+  useCreateInvite,
+  useInvites,
+  useRevokeInvite,
+} from "@/hooks/useInvites";
+import { useMembers } from "@/hooks/useMembers";
+import {
+  useDeleteServer,
+  useServer,
+  useUpdateServer,
+} from "@/hooks/useServers";
+import { useAuthStore } from "@/stores/authStore";
+import * as DocumentPicker from "expo-document-picker";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useState } from "react";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import {
   ActivityIndicator,
   Button,
@@ -24,11 +32,11 @@ import {
   Text,
   TextInput,
   useTheme,
-} from 'react-native-paper';
+} from "react-native-paper";
 
 export default function ServerSettingsScreen() {
   const { serverId } = useLocalSearchParams<{ serverId: string }>();
-  const sid = serverId ?? '';
+  const sid = serverId ?? "";
   const router = useRouter();
   const userId = useAuthStore((s) => s.userId);
   const theme = useTheme();
@@ -50,15 +58,17 @@ export default function ServerSettingsScreen() {
   const revokeInvite = useRevokeInvite(sid);
   const upload = useUpload();
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [newChannelName, setNewChannelName] = useState('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [newChannelName, setNewChannelName] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [nameInitialized, setNameInitialized] = useState(false);
   const [isUploadingIcon, setIsUploadingIcon] = useState(false);
-  const [iconError, setIconError] = useState('');
+  const [iconError, setIconError] = useState("");
 
-  const isAdmin = members?.some((m) => m.userId === userId && m.roles.includes('admin')) ?? false;
+  const isAdmin =
+    members?.some((m) => m.userId === userId && m.roles.includes("admin")) ??
+    false;
 
   if (isLoading || !server) {
     return <LoadingSpinner />;
@@ -70,29 +80,29 @@ export default function ServerSettingsScreen() {
 
   if (!nameInitialized) {
     setName(server.name);
-    setDescription(server.description ?? '');
+    setDescription(server.description ?? "");
     setNameInitialized(true);
   }
 
   const isOwner = server.ownerId === userId;
 
   const handleIconPress = async () => {
-    const result = await DocumentPicker.getDocumentAsync({ type: ['image/*'] });
+    const result = await DocumentPicker.getDocumentAsync({ type: ["image/*"] });
     if (result.canceled || result.assets.length === 0) return;
     const asset = result.assets[0]!;
     setIsUploadingIcon(true);
-    setIconError('');
+    setIconError("");
     try {
       const response = await fetch(asset.uri);
       const blob = await response.blob();
       const uploadResult = await upload.mutateAsync({
         data: blob,
         filename: asset.name,
-        contentType: asset.mimeType ?? 'image/jpeg',
+        contentType: asset.mimeType ?? "image/jpeg",
       });
       updateServer.mutate({ icon: uploadResult.attachment.id });
     } catch {
-      setIconError('Failed to upload server icon');
+      setIconError("Failed to upload server icon");
     } finally {
       setIsUploadingIcon(false);
     }
@@ -108,22 +118,27 @@ export default function ServerSettingsScreen() {
   const handleDeleteServer = () => {
     deleteServer.mutate(undefined, {
       onSuccess: () => {
-        router.replace('/(main)/servers');
+        router.replace("/(main)/servers");
       },
     });
   };
 
   const handleCreateChannel = () => {
     if (!newChannelName.trim()) return;
-    createChannel.mutate({ name: newChannelName.trim() }, {
-      onSuccess: () => setNewChannelName(''),
-    });
+    createChannel.mutate(
+      { name: newChannelName.trim() },
+      {
+        onSuccess: () => setNewChannelName(""),
+      },
+    );
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/* Server Info */}
-      <Text variant="titleLarge" style={styles.section}>Server Info</Text>
+      <Text variant="titleLarge" style={styles.section}>
+        Server Info
+      </Text>
       <>
         <Pressable
           onPress={handleIconPress}
@@ -132,7 +147,12 @@ export default function ServerSettingsScreen() {
           accessibilityLabel="Change server icon"
         >
           <ServerIcon name={server.name} icon={server.icon} size={80} />
-          <View style={[styles.cameraOverlay, { backgroundColor: theme.colors.surface }]}>
+          <View
+            style={[
+              styles.cameraOverlay,
+              { backgroundColor: theme.colors.surface },
+            ]}
+          >
             {isUploadingIcon ? (
               <ActivityIndicator size={16} />
             ) : (
@@ -174,7 +194,9 @@ export default function ServerSettingsScreen() {
       <Divider style={styles.divider} />
 
       {/* Channels */}
-      <Text variant="titleLarge" style={styles.section}>Channels</Text>
+      <Text variant="titleLarge" style={styles.section}>
+        Channels
+      </Text>
       {channels?.map((channel) => (
         <List.Item
           key={channel._id}
@@ -213,7 +235,9 @@ export default function ServerSettingsScreen() {
       <Divider style={styles.divider} />
 
       {/* Invites */}
-      <Text variant="titleLarge" style={styles.section}>Invites</Text>
+      <Text variant="titleLarge" style={styles.section}>
+        Invites
+      </Text>
       {invites?.map((invite) => (
         <InviteCard
           key={invite._id}
@@ -230,7 +254,10 @@ export default function ServerSettingsScreen() {
       {isOwner ? (
         <>
           <Divider style={styles.divider} />
-          <Text variant="titleLarge" style={[styles.section, { color: theme.colors.error }]}>
+          <Text
+            variant="titleLarge"
+            style={[styles.section, { color: theme.colors.error }]}
+          >
             Danger Zone
           </Text>
           <Button
@@ -262,8 +289,8 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
     maxWidth: 600,
-    alignSelf: 'center',
-    width: '100%',
+    alignSelf: "center",
+    width: "100%",
   },
   section: {
     marginBottom: 12,
@@ -279,27 +306,27 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   iconContainer: {
-    position: 'relative',
+    position: "relative",
     marginBottom: 12,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   subdued: {
     opacity: 0.7,
   },
   cameraOverlay: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     right: 0,
     borderRadius: 12,
     width: 24,
     height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     elevation: 2,
   },
 });

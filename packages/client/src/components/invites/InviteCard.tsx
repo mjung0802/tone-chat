@@ -1,6 +1,6 @@
-import React from 'react';
-import { Card, Text, Button, useTheme } from 'react-native-paper';
-import type { Invite } from '../../types/models';
+import React from "react";
+import { Card, Text, Button, useTheme } from "react-native-paper";
+import type { Invite } from "../../types/models";
 
 interface InviteCardProps {
   invite: Invite;
@@ -9,19 +9,25 @@ interface InviteCardProps {
 
 export function InviteCard({ invite, onRevoke }: InviteCardProps) {
   const theme = useTheme();
-  const isExpired = invite.expiresAt ? new Date(invite.expiresAt) < new Date() : false;
+  const isExpired = invite.expiresAt
+    ? new Date(invite.expiresAt) < new Date()
+    : false;
   const isExhausted = invite.maxUses != null && invite.uses >= invite.maxUses;
 
   return (
     <Card style={{ marginVertical: 4 }} accessibilityRole="text">
       <Card.Content>
-        <Text variant="titleMedium" style={{ fontFamily: 'monospace' }}>
+        <Text variant="titleMedium" style={{ fontFamily: "monospace" }}>
           {invite.code}
         </Text>
-        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-          Uses: {invite.uses}{invite.maxUses != null ? ` / ${invite.maxUses}` : ''}
-          {isExpired ? ' (expired)' : ''}
-          {isExhausted ? ' (exhausted)' : ''}
+        <Text
+          variant="bodySmall"
+          style={{ color: theme.colors.onSurfaceVariant }}
+        >
+          Uses: {invite.uses}
+          {invite.maxUses != null ? ` / ${invite.maxUses}` : ""}
+          {isExpired ? " (expired)" : ""}
+          {isExhausted ? " (exhausted)" : ""}
         </Text>
       </Card.Content>
       {onRevoke ? (

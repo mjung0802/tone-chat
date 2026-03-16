@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import React from "react";
+import { View, StyleSheet } from "react-native";
+import { Text, useTheme } from "react-native-paper";
 
 interface TypingIndicatorProps {
   userNames: string[];
@@ -15,7 +15,7 @@ export function TypingIndicator({ userNames }: TypingIndicatorProps) {
   } else if (userNames.length === 2) {
     text = `${userNames[0]} and ${userNames[1]} are typing...`;
   } else {
-    text = 'Several people are typing...';
+    text = "Several people are typing...";
   }
 
   const theme = useTheme();

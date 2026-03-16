@@ -1,7 +1,7 @@
-import { createServer } from 'node:http';
-import { app } from './app.js';
-import { config, validateConfig } from './config/index.js';
-import { setupSocketIO } from './socket/index.js';
+import { createServer } from "node:http";
+import { app } from "./app.js";
+import { config, validateConfig } from "./config/index.js";
+import { setupSocketIO } from "./socket/index.js";
 
 validateConfig();
 

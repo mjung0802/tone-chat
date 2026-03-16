@@ -1,21 +1,30 @@
-import { AttachmentViewer } from '@/components/chat/AttachmentViewer';
-import { EmojiPicker } from '@/components/chat/EmojiPicker';
-import { MessageInput } from '@/components/chat/MessageInput';
-import { MessageList, type MessageListHandle } from '@/components/chat/MessageList';
-import { TypingIndicator } from '@/components/chat/TypingIndicator';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { useChannel } from '@/hooks/useChannels';
-import { useMembers } from '@/hooks/useMembers';
-import { useMessages, useSendMessage } from '@/hooks/useMessages';
-import { useChannelSocket, useTypingEmit } from '@/hooks/useSocket';
-import { useAuthStore } from '@/stores/authStore';
-import { useNotificationStore } from '@/stores/notificationStore';
-import { useSocketStore } from '@/stores/socketStore';
-import type { Attachment, Message } from '@/types/models';
-import type { TypingEvent } from '@/types/socket.types';
-import { useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { AttachmentViewer } from "@/components/chat/AttachmentViewer";
+import { EmojiPicker } from "@/components/chat/EmojiPicker";
+import { MessageInput } from "@/components/chat/MessageInput";
+import {
+  MessageList,
+  type MessageListHandle,
+} from "@/components/chat/MessageList";
+import { TypingIndicator } from "@/components/chat/TypingIndicator";
+import { LoadingSpinner } from "@/components/common/LoadingSpinner";
+import { useChannel } from "@/hooks/useChannels";
+import { useMembers } from "@/hooks/useMembers";
+import { useMessages, useSendMessage } from "@/hooks/useMessages";
+import { useChannelSocket, useTypingEmit } from "@/hooks/useSocket";
+import { useAuthStore } from "@/stores/authStore";
+import { useNotificationStore } from "@/stores/notificationStore";
+import { useSocketStore } from "@/stores/socketStore";
+import type { Attachment, Message } from "@/types/models";
+import type { TypingEvent } from "@/types/socket.types";
+import { useLocalSearchParams } from "expo-router";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { StyleSheet, View } from "react-native";
 
 const TYPING_TIMEOUT = 3000;
 
@@ -24,11 +33,13 @@ export default function ChannelScreen() {
     serverId: string;
     channelId: string;
   }>();
-  const sid = serverId ?? '';
-  const cid = channelId ?? '';
+  const sid = serverId ?? "";
+  const cid = channelId ?? "";
 
   const userId = useAuthStore((s) => s.userId);
-  const setCurrentChannelId = useNotificationStore((s) => s.setCurrentChannelId);
+  const setCurrentChannelId = useNotificationStore(
+    (s) => s.setCurrentChannelId,
+  );
 
   useEffect(() => {
     setCurrentChannelId(cid || null);
@@ -48,20 +59,35 @@ export default function ChannelScreen() {
   const emitTyping = useTypingEmit(sid, cid);
 
   // Typing state
-  const [typingUsers, setTypingUsers] = useState<Map<string, number>>(new Map());
-  const typingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const [typingUsers, setTypingUsers] = useState<Map<string, number>>(
+    new Map(),
+  );
+  const typingTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
+    new Map(),
+  );
 
   // Attachment viewer state
-  const [viewerAttachment, setViewerAttachment] = useState<Attachment | null>(null);
+  const [viewerAttachment, setViewerAttachment] = useState<Attachment | null>(
+    null,
+  );
   const [viewerVisible, setViewerVisible] = useState(false);
 
   // Reply state
-  const [replyTarget, setReplyTarget] = useState<{ messageId: string; authorId: string; authorName: string; content: string } | null>(null);
-  const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
+  const [replyTarget, setReplyTarget] = useState<{
+    messageId: string;
+    authorId: string;
+    authorName: string;
+    content: string;
+  } | null>(null);
+  const [highlightMessageId, setHighlightMessageId] = useState<string | null>(
+    null,
+  );
   const messageListRef = useRef<MessageListHandle>(null);
 
   // Reaction state
-  const [reactionTargetMessageId, setReactionTargetMessageId] = useState<string | null>(null);
+  const [reactionTargetMessageId, setReactionTargetMessageId] = useState<
+    string | null
+  >(null);
   const socket = useSocketStore((s) => s.socket);
 
   const handleImagePress = useCallback((attachment: Attachment) => {
@@ -77,7 +103,12 @@ export default function ChannelScreen() {
   const handleToggleReaction = useCallback(
     (messageId: string, emoji: string) => {
       if (!socket) return;
-      socket.emit('toggle_reaction', { serverId: sid, channelId: cid, messageId, emoji });
+      socket.emit("toggle_reaction", {
+        serverId: sid,
+        channelId: cid,
+        messageId,
+        emoji,
+      });
     },
     [socket, sid, cid],
   );
@@ -143,17 +174,20 @@ export default function ChannelScreen() {
   }, [members]);
 
   const typingUserNames = Array.from(typingUsers.keys()).map(
-    (id) => authorNames[id] ?? 'Someone',
+    (id) => authorNames[id] ?? "Someone",
   );
 
-  const handleReply = useCallback((message: Message) => {
-    setReplyTarget({
-      messageId: message._id,
-      authorId: message.authorId,
-      authorName: authorNames[message.authorId] ?? 'Unknown',
-      content: message.content,
-    });
-  }, [authorNames]);
+  const handleReply = useCallback(
+    (message: Message) => {
+      setReplyTarget({
+        messageId: message._id,
+        authorId: message.authorId,
+        authorName: authorNames[message.authorId] ?? "Unknown",
+        content: message.content,
+      });
+    },
+    [authorNames],
+  );
 
   const handleCancelReply = useCallback(() => {
     setReplyTarget(null);
@@ -168,7 +202,11 @@ export default function ChannelScreen() {
   }, []);
 
   const handleSend = useCallback(
-    (content: string, attachmentIds: string[], options?: { replyToId?: string; mentions?: string[] }) => {
+    (
+      content: string,
+      attachmentIds: string[],
+      options?: { replyToId?: string; mentions?: string[] },
+    ) => {
       sendMessage.mutate({
         content,
         attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,

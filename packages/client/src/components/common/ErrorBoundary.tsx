@@ -1,6 +1,6 @@
-import React, { Component, type ReactNode } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, Button } from 'react-native-paper';
+import React, { Component, type ReactNode } from "react";
+import { View, StyleSheet } from "react-native";
+import { Text, Button } from "react-native-paper";
 
 interface Props {
   children: ReactNode;
@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
             Something went wrong
           </Text>
           <Text variant="bodyMedium" style={styles.message}>
-            {this.state.error?.message ?? 'An unexpected error occurred'}
+            {this.state.error?.message ?? "An unexpected error occurred"}
           </Text>
           <Button
             mode="contained"
@@ -57,8 +57,8 @@ export class ErrorBoundary extends Component<Props, State> {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
   title: {
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   message: {
     marginBottom: 24,
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.7,
   },
   button: {

@@ -1,5 +1,5 @@
-import { app } from './app.js';
-import { config, validateConfig } from './config/index.js';
+import { app } from "./app.js";
+import { config, validateConfig } from "./config/index.js";
 
 validateConfig();
 

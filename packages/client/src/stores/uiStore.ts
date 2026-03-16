@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { Appearance } from 'react-native';
+import { create } from "zustand";
+import { Appearance } from "react-native";
 
-type ThemePreference = 'light' | 'dark' | 'system';
+type ThemePreference = "light" | "dark" | "system";
 
 interface UiState {
   themePreference: ThemePreference;
@@ -9,11 +9,11 @@ interface UiState {
   setThemePreference: (pref: ThemePreference) => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
-  getEffectiveTheme: () => 'light' | 'dark';
+  getEffectiveTheme: () => "light" | "dark";
 }
 
 export const useUiStore = create<UiState>((set, get) => ({
-  themePreference: 'system',
+  themePreference: "system",
   isSidebarOpen: true,
 
   setThemePreference: (pref: ThemePreference) => {
@@ -30,9 +30,9 @@ export const useUiStore = create<UiState>((set, get) => ({
 
   getEffectiveTheme: () => {
     const { themePreference } = get();
-    if (themePreference === 'system') {
+    if (themePreference === "system") {
       const scheme = Appearance.getColorScheme();
-      return scheme === 'light' ? 'light' : 'dark';
+      return scheme === "light" ? "light" : "dark";
     }
     return themePreference;
   },

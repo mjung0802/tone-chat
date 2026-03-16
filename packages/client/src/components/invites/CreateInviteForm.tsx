@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { TextInput, Button } from 'react-native-paper';
+import React, { useState } from "react";
+import { View, StyleSheet } from "react-native";
+import { TextInput, Button } from "react-native-paper";
 
 interface CreateInviteFormProps {
   onSubmit: (data: { maxUses?: number; expiresIn?: number }) => void;
   isLoading?: boolean | undefined;
 }
 
-export function CreateInviteForm({ onSubmit, isLoading }: CreateInviteFormProps) {
-  const [maxUses, setMaxUses] = useState('');
-  const [expiresInHours, setExpiresInHours] = useState('');
+export function CreateInviteForm({
+  onSubmit,
+  isLoading,
+}: CreateInviteFormProps) {
+  const [maxUses, setMaxUses] = useState("");
+  const [expiresInHours, setExpiresInHours] = useState("");
 
   const handleSubmit = () => {
     const data: { maxUses?: number; expiresIn?: number } = {};
@@ -22,8 +25,8 @@ export function CreateInviteForm({ onSubmit, isLoading }: CreateInviteFormProps)
       data.expiresIn = parsedHours * 3600;
     }
     onSubmit(data);
-    setMaxUses('');
-    setExpiresInHours('');
+    setMaxUses("");
+    setExpiresInHours("");
   };
 
   return (

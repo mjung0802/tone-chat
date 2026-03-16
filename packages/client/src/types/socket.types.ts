@@ -1,4 +1,4 @@
-import type { Message } from './models';
+import type { Message } from "./models";
 
 export interface JoinChannelPayload {
   serverId: string;

@@ -46,15 +46,16 @@ Tests use `mock.module()` (synchronous) for module mocking, followed by `await i
 
 ```ts
 // mock.module() is synchronous — no await
-mock.module('./dep.js', { namedExports: { fn: mockFn } });
+mock.module("./dep.js", { namedExports: { fn: mockFn } });
 
 // import is async — await required
-const { handler } = await import('./module-under-test.js');
+const { handler } = await import("./module-under-test.js");
 ```
 
 A global `AnyFn` type is declared in `test-types.d.ts` for use with `mock.fn<AnyFn>()`.
 
 ### Client (packages/client)
+
 ```bash
 pnpm --filter tone-chat-client start --web   # Start Expo dev server (web)
 pnpm --filter tone-chat-client typecheck      # tsc --noEmit
@@ -64,11 +65,13 @@ pnpm --filter tone-chat-client test:e2e:ui    # Playwright UI mode (interactive 
 ```
 
 First time only — install the Chromium browser:
+
 ```bash
 pnpm --filter tone-chat-client exec playwright install chromium
 ```
 
 ### Docker (messagingService)
+
 ```bash
 cd packages/messagingService
 docker-compose up   # Starts MongoDB on port 27017 and messaging service on port 3000
@@ -96,31 +99,37 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
 - **attachmentsService** (`packages/attachmentsService`): MinIO for file storage (S3-compatible, swappable to AWS S3). PostgreSQL for metadata. Async uploads so attachments don't block messages. `GET /attachments/:id` regenerates a presigned URL (15min TTL) on each request for `ready` attachments.
 
 ### Auth Flow
+
 - JWT access tokens (15 min) + refresh tokens (7 day, rotated). BFF verifies JWTs locally.
 - BFF passes `X-User-Id` + `X-Internal-Key` headers to backend services (not internet-exposed).
 - Socket.IO auth via JWT in handshake `auth` field.
 
 ### Email Verification
+
 - Registration sends a 6-digit OTP to the user's email. Users must verify before full access.
 - **Dev mode** (no `SMTP_HOST`): OTP is logged to the usersService console instead of emailed.
 - **Local email testing**: `docker compose up` starts Mailpit (SMTP on `:1025`, web UI on `:8025`). Set `SMTP_HOST=localhost` and `SMTP_PORT=1025` in `packages/usersService/.env` to route emails to Mailpit. View caught emails at `http://localhost:8025`.
 
 ### Socket.IO Event Payloads
+
 - The `new_message` event payload is the full messagingService JSON response: `{ message: { content, authorId, ... } }` (wrapped in `message` key), not the message object directly. This is because `messages.socket.ts` emits `result.data` from `serviceRequest`, which includes the response wrapper.
 - Rooms: channel rooms (`server:<serverId>:channel:<channelId>`) for messages, user-level rooms (`user:<userId>`) for targeted notifications like mentions.
 
 ### Message Attachments
+
 - Messages require **either `content` or `attachmentIds`** (or both). Empty messages return 400 (`MISSING_FIELDS`).
 - `attachmentIds` is a `string[]` on the message model (MongoDB, default `[]`). The messagingService stores IDs only — actual files live in attachmentsService.
 - Socket.IO `send_message` type guard (`isValidSendMessage`) accepts optional `attachmentIds` (max 6 items) but still requires `content` (1–4000 chars). HTTP controller is more lenient (content optional when attachments present).
 
 ### Mentions & Replies
+
 - Message model has `replyTo` (embedded object with `messageId`, `content`, `authorId`, `authorName`) and `mentions` (`string[]` of user IDs).
 - `send_message` socket event and HTTP POST both accept `replyToId` and `mentions`. Replying auto-adds the original author to mentions.
 - Mentions validated: max 20 items, each ≤36 chars, must be server members, sender excluded.
 - BFF emits a `mention` event to user-level socket rooms (`user:{userId}`) for each mentioned user.
 
 ### API Routes (BFF)
+
 All routes prefixed `/api/v1`. Auth routes → usersService. Server/channel/message/member routes → messagingService. Attachment routes → attachmentsService.
 
 ## TypeScript
@@ -139,6 +148,7 @@ All backend packages use strict TypeScript with `nodenext` module resolution, `n
 **Stack**: Expo 55, Expo Router v4, React Native Paper v5 (MD3), TanStack Query v5, Zustand v5, socket.io-client v4.
 
 **Structure**:
+
 - `app/` — Expo Router file-based screens: `(auth)/` (login, register), `(main)/` (drawer with servers, channels, profile, invites)
 - `src/api/` — `client.ts` (fetch wrapper with auto-auth, 401→refresh→retry) + domain modules (`auth`, `users`, `servers`, `channels`, `messages`, `members`, `invites`, `attachments`)
 - `src/stores/` — Zustand: `authStore` (JWT + SecureStore persistence), `socketStore` (Socket.IO lifecycle), `uiStore` (theme, sidebar), `notificationStore` (mention notifications, channel-aware suppression)

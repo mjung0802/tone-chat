@@ -1,15 +1,27 @@
-import type { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { config } from '../../config/index.js';
+import type { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import { config } from "../../config/index.js";
 
 export interface AuthRequest extends Request {
   userId?: string;
 }
 
-export function requireAuth(req: AuthRequest, res: Response, next: NextFunction): void {
+export function requireAuth(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): void {
   const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    res.status(401).json({ error: { code: 'MISSING_TOKEN', message: 'Authorization header required', status: 401 } });
+  if (!authHeader?.startsWith("Bearer ")) {
+    res
+      .status(401)
+      .json({
+        error: {
+          code: "MISSING_TOKEN",
+          message: "Authorization header required",
+          status: 401,
+        },
+      });
     return;
   }
 
@@ -20,6 +32,14 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
     req.userId = payload.sub;
     next();
   } catch {
-    res.status(401).json({ error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token', status: 401 } });
+    res
+      .status(401)
+      .json({
+        error: {
+          code: "INVALID_TOKEN",
+          message: "Invalid or expired token",
+          status: 401,
+        },
+      });
   }
 }

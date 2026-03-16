@@ -1,6 +1,9 @@
-import { create } from 'zustand';
-import { io, type Socket } from 'socket.io-client';
-import type { ClientToServerEvents, ServerToClientEvents } from '../types/socket.types';
+import { create } from "zustand";
+import { io, type Socket } from "socket.io-client";
+import type {
+  ClientToServerEvents,
+  ServerToClientEvents,
+} from "../types/socket.types";
 
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -12,7 +15,7 @@ interface SocketState {
   updateToken: (token: string) => void;
 }
 
-const SOCKET_URL = 'http://localhost:4000';
+const SOCKET_URL = "http://localhost:4000";
 
 export const useSocketStore = create<SocketState>((set, get) => ({
   socket: null,
@@ -27,14 +30,14 @@ export const useSocketStore = create<SocketState>((set, get) => ({
 
     const socket: TypedSocket = io(SOCKET_URL, {
       auth: { token },
-      transports: ['websocket', 'polling'],
+      transports: ["websocket", "polling"],
     });
 
-    socket.on('connect', () => {
+    socket.on("connect", () => {
       set({ isConnected: true });
     });
 
-    socket.on('disconnect', () => {
+    socket.on("disconnect", () => {
       set({ isConnected: false });
     });
 

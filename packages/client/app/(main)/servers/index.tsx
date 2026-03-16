@@ -1,27 +1,42 @@
-import React, { useState } from 'react';
-import { View, FlatList, StyleSheet, type ListRenderItemInfo } from 'react-native';
-import { FAB, useTheme, Portal, Dialog, TextInput as PaperTextInput, Button, HelperText } from 'react-native-paper';
-import { useRouter } from 'expo-router';
-import { useServers } from '../../../src/hooks/useServers';
-import { useJoinViaCode } from '../../../src/hooks/useInvites';
-import { ApiClientError } from '../../../src/api/client';
-import { ServerListItem } from '../../../src/components/servers/ServerListItem';
-import { LoadingSpinner } from '../../../src/components/common/LoadingSpinner';
-import { EmptyState } from '../../../src/components/common/EmptyState';
-import type { Server } from '../../../src/types/models';
+import React, { useState } from "react";
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  type ListRenderItemInfo,
+} from "react-native";
+import {
+  FAB,
+  useTheme,
+  Portal,
+  Dialog,
+  TextInput as PaperTextInput,
+  Button,
+  HelperText,
+} from "react-native-paper";
+import { useRouter } from "expo-router";
+import { useServers } from "../../../src/hooks/useServers";
+import { useJoinViaCode } from "../../../src/hooks/useInvites";
+import { ApiClientError } from "../../../src/api/client";
+import { ServerListItem } from "../../../src/components/servers/ServerListItem";
+import { LoadingSpinner } from "../../../src/components/common/LoadingSpinner";
+import { EmptyState } from "../../../src/components/common/EmptyState";
+import type { Server } from "../../../src/types/models";
 
 export default function ServersScreen() {
   const { data: servers, isLoading, refetch, isRefetching } = useServers();
   const router = useRouter();
   const theme = useTheme();
   const [joinDialogVisible, setJoinDialogVisible] = useState(false);
-  const [inviteCode, setInviteCode] = useState('');
+  const [inviteCode, setInviteCode] = useState("");
   const joinServer = useJoinViaCode();
 
   const joinError =
     joinServer.error instanceof ApiClientError
       ? joinServer.error.message
-      : joinServer.error ? 'Failed to join server' : '';
+      : joinServer.error
+        ? "Failed to join server"
+        : "";
 
   if (isLoading) {
     return <LoadingSpinner message="Loading servers..." />;
@@ -32,11 +47,11 @@ export default function ServersScreen() {
   };
 
   const handleCreate = () => {
-    router.push('/(main)/servers/create');
+    router.push("/(main)/servers/create");
   };
 
   const handleOpenJoin = () => {
-    setInviteCode('');
+    setInviteCode("");
     joinServer.reset();
     setJoinDialogVisible(true);
   };
@@ -57,7 +72,9 @@ export default function ServersScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       {!servers || servers.length === 0 ? (
         <EmptyState
           icon="server-network"
@@ -104,7 +121,10 @@ export default function ServersScreen() {
             <PaperTextInput
               label="Invite code"
               value={inviteCode}
-              onChangeText={(text) => { setInviteCode(text); joinServer.reset(); }}
+              onChangeText={(text) => {
+                setInviteCode(text);
+                joinServer.reset();
+              }}
               autoFocus
               autoCapitalize="none"
               autoCorrect={false}
@@ -139,18 +159,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     bottom: 80,
   },
   fabJoin: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     bottom: 16,
   },
   dialog: {
     maxWidth: 480,
-    width: '100%',
-    alignSelf: 'center',
+    width: "100%",
+    alignSelf: "center",
   },
 });

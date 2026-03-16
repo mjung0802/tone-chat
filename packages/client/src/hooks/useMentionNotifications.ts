@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
-import { useSocketStore } from '../stores/socketStore';
-import { useNotificationStore } from '../stores/notificationStore';
-import type { MentionEvent } from '../types/socket.types';
+import { useEffect } from "react";
+import { useSocketStore } from "../stores/socketStore";
+import { useNotificationStore } from "../stores/notificationStore";
+import type { MentionEvent } from "../types/socket.types";
 
 export function useMentionNotifications() {
   const socket = useSocketStore((s) => s.socket);
@@ -18,10 +18,10 @@ export function useMentionNotifications() {
       showNotification(event);
     };
 
-    socket.on('mention', handleMention);
+    socket.on("mention", handleMention);
 
     return () => {
-      socket.off('mention', handleMention);
+      socket.off("mention", handleMention);
     };
   }, [socket, currentChannelId, showNotification]);
 }

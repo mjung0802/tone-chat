@@ -18,7 +18,7 @@ export interface Server {
   ownerId: string;
   icon?: string;
   description?: string;
-  visibility: 'public' | 'private';
+  visibility: "public" | "private";
   createdAt: string;
   updatedAt: string;
 }
@@ -27,7 +27,7 @@ export interface Channel {
   _id: string;
   serverId: string;
   name: string;
-  type: 'text' | 'voice';
+  type: "text" | "voice";
   topic?: string;
   position: number;
   createdAt: string;
@@ -43,7 +43,14 @@ export interface Message {
   attachmentIds: string[];
   editedAt?: string;
   reactions?: { emoji: string; userIds: string[] }[] | undefined;
-  replyTo?: { messageId: string; authorId: string; authorName: string; content: string } | undefined;
+  replyTo?:
+    | {
+        messageId: string;
+        authorId: string;
+        authorName: string;
+        content: string;
+      }
+    | undefined;
   mentions?: string[] | undefined;
   createdAt: string;
 }
@@ -79,7 +86,7 @@ export interface Attachment {
   mime_type: string;
   size_bytes: number;
   storage_key: string;
-  status: 'processing' | 'ready' | 'failed';
+  status: "processing" | "ready" | "failed";
   url: string | null;
   created_at: string;
 }

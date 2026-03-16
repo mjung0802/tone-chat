@@ -1,6 +1,6 @@
-import { MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
-import { lightColors, darkColors } from './colors';
-import { fonts } from './typography';
+import { MD3LightTheme, MD3DarkTheme } from "react-native-paper";
+import { lightColors, darkColors } from "./colors";
+import { fonts } from "./typography";
 
 export const lightTheme = {
   ...MD3LightTheme,

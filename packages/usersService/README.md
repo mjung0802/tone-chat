@@ -39,14 +39,14 @@ pnpm migrate
 
 All routes require `X-Internal-Key` and (where applicable) `X-User-Id` headers set by the BFF.
 
-| Method | Path | Response | Notes |
-|--------|------|----------|-------|
-| POST | `/auth/register` | `{ user, accessToken, refreshToken }` | Creates account + issues tokens |
-| POST | `/auth/login` | `{ user, accessToken, refreshToken }` | Validates credentials + issues tokens |
-| POST | `/auth/refresh` | `{ accessToken, refreshToken }` | Rotates refresh token |
-| GET | `/users/me` | `{ user }` | Requires `X-User-Id` |
-| PATCH | `/users/me` | `{ user }` | Update profile; requires `X-User-Id` |
-| GET | `/users/:id` | `{ user }` | Look up any user by ID |
+| Method | Path             | Response                              | Notes                                 |
+| ------ | ---------------- | ------------------------------------- | ------------------------------------- |
+| POST   | `/auth/register` | `{ user, accessToken, refreshToken }` | Creates account + issues tokens       |
+| POST   | `/auth/login`    | `{ user, accessToken, refreshToken }` | Validates credentials + issues tokens |
+| POST   | `/auth/refresh`  | `{ accessToken, refreshToken }`       | Rotates refresh token                 |
+| GET    | `/users/me`      | `{ user }`                            | Requires `X-User-Id`                  |
+| PATCH  | `/users/me`      | `{ user }`                            | Update profile; requires `X-User-Id`  |
+| GET    | `/users/:id`     | `{ user }`                            | Look up any user by ID                |
 
 ## Auth
 
@@ -74,11 +74,11 @@ pnpm migrate  # Apply database migrations
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `3002` | HTTP port |
-| `DATABASE_URL` | `postgres://tone:tone_dev@localhost:5432/tone_users` | PostgreSQL connection string |
-| `JWT_SECRET` | `dev-secret-change-in-production` | Secret for signing JWTs |
-| `JWT_ACCESS_EXPIRES_IN` | `15m` | Access token lifespan |
-| `JWT_REFRESH_EXPIRES_DAYS` | `7` | Refresh token lifespan in days |
-| `INTERNAL_API_KEY` | `dev-internal-key` | Shared key for internal auth |
+| Variable                   | Default                                              | Description                    |
+| -------------------------- | ---------------------------------------------------- | ------------------------------ |
+| `PORT`                     | `3002`                                               | HTTP port                      |
+| `DATABASE_URL`             | `postgres://tone:tone_dev@localhost:5432/tone_users` | PostgreSQL connection string   |
+| `JWT_SECRET`               | `dev-secret-change-in-production`                    | Secret for signing JWTs        |
+| `JWT_ACCESS_EXPIRES_IN`    | `15m`                                                | Access token lifespan          |
+| `JWT_REFRESH_EXPIRES_DAYS` | `7`                                                  | Refresh token lifespan in days |
+| `INTERNAL_API_KEY`         | `dev-internal-key`                                   | Shared key for internal auth   |

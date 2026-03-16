@@ -1,5 +1,5 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
-import * as attachmentsApi from '../api/attachments.api';
+import { useMutation, useQuery } from "@tanstack/react-query";
+import * as attachmentsApi from "../api/attachments.api";
 
 export function useUpload() {
   return useMutation({
@@ -18,7 +18,7 @@ export function useUpload() {
 
 export function useAttachment(attachmentId: string) {
   return useQuery({
-    queryKey: ['attachments', attachmentId],
+    queryKey: ["attachments", attachmentId],
     queryFn: () => attachmentsApi.getAttachment(attachmentId),
     staleTime: Infinity,
     enabled: !!attachmentId,

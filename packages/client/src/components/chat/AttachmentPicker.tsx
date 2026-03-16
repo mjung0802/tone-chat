@@ -1,16 +1,16 @@
-import React, { useCallback } from 'react';
-import { IconButton } from 'react-native-paper';
-import * as DocumentPicker from 'expo-document-picker';
-import type { DocumentPickerAsset } from 'expo-document-picker';
+import React, { useCallback } from "react";
+import { IconButton } from "react-native-paper";
+import * as DocumentPicker from "expo-document-picker";
+import type { DocumentPickerAsset } from "expo-document-picker";
 
 const ALLOWED_TYPES = [
-  'image/*',
-  'video/mp4',
-  'video/webm',
-  'audio/mpeg',
-  'audio/ogg',
-  'application/pdf',
-  'text/plain',
+  "image/*",
+  "video/mp4",
+  "video/webm",
+  "audio/mpeg",
+  "audio/ogg",
+  "application/pdf",
+  "text/plain",
 ];
 
 interface AttachmentPickerProps {

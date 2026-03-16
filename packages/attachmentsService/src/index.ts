@@ -1,6 +1,6 @@
-import { app } from './app.js';
-import { config, validateConfig } from './config/index.js';
-import { ensureBucket } from './config/storage.js';
+import { app } from "./app.js";
+import { config, validateConfig } from "./config/index.js";
+import { ensureBucket } from "./config/storage.js";
 
 async function start(): Promise<void> {
   validateConfig();
@@ -12,6 +12,6 @@ async function start(): Promise<void> {
 }
 
 start().catch((err) => {
-  console.error('Failed to start attachmentsService:', err);
+  console.error("Failed to start attachmentsService:", err);
   process.exit(1);
 });

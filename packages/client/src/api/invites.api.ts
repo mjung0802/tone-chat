@@ -1,10 +1,10 @@
-import { get, post, del } from './client';
+import { get, post, del } from "./client";
 import type {
   InviteResponse,
   InvitesResponse,
   CreateInviteRequest,
   JoinInviteResponse,
-} from '../types/api.types';
+} from "../types/api.types";
 
 export function getInvites(serverId: string) {
   return get<InvitesResponse>(`/servers/${serverId}/invites`);

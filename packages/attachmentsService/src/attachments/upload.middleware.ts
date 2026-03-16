@@ -1,4 +1,4 @@
-import multer from 'multer';
+import multer from "multer";
 
 const ALLOWED_MIME_PATTERNS = [
   /^image\//,
@@ -14,7 +14,7 @@ export const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    const allowed = ALLOWED_MIME_PATTERNS.some(p => p.test(file.mimetype));
+    const allowed = ALLOWED_MIME_PATTERNS.some((p) => p.test(file.mimetype));
     if (!allowed) {
       cb(new Error(`File type '${file.mimetype}' is not allowed`));
       return;

@@ -29,7 +29,7 @@ A Discord-style chat app. Create servers, join channels, send messages in real t
 ## Packages
 
 | Package              | Port | Database           | Purpose                                              |
-|----------------------|------|--------------------|------------------------------------------------------|
+| -------------------- | ---- | ------------------ | ---------------------------------------------------- |
 | `tone-chat-client`   | ---— | -----------------— | React Native app (iOS, Android, Web)                 |
 | `tone-chat-server`   | 4000 | -----------------— | BFF — routes all client requests to backend services |
 | `messagingservice`   | 3001 | MongoDB            | Servers, channels, messages, members, invites        |

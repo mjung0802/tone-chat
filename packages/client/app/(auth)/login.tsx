@@ -1,18 +1,30 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, HelperText, useTheme } from 'react-native-paper';
-import { Link } from 'expo-router';
-import { useLogin } from '../../src/hooks/useAuth';
-import { getAuthErrorMessage } from '../../src/api/errors';
+import React, { useState } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import {
+  TextInput,
+  Button,
+  Text,
+  HelperText,
+  useTheme,
+} from "react-native-paper";
+import { Link } from "expo-router";
+import { useLogin } from "../../src/hooks/useAuth";
+import { getAuthErrorMessage } from "../../src/api/errors";
 
 export default function LoginScreen() {
   const theme = useTheme();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const loginMutation = useLogin();
 
-  const errorMessage = getAuthErrorMessage(loginMutation.error, 'login');
+  const errorMessage = getAuthErrorMessage(loginMutation.error, "login");
 
   const handleLogin = () => {
     if (!email.trim() || !password) return;
@@ -22,7 +34,7 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
         style={{ backgroundColor: theme.colors.background }}
@@ -73,9 +85,11 @@ export default function LoginScreen() {
           onSubmitEditing={handleLogin}
           right={
             <TextInput.Icon
-              icon={showPassword ? 'eye-off' : 'eye'}
+              icon={showPassword ? "eye-off" : "eye"}
               onPress={() => setShowPassword(!showPassword)}
-              accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+              accessibilityLabel={
+                showPassword ? "Hide password" : "Show password"
+              }
             />
           }
           style={styles.input}
@@ -115,18 +129,18 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: {
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
     padding: 24,
     maxWidth: 480,
-    width: '100%',
-    alignSelf: 'center',
+    width: "100%",
+    alignSelf: "center",
   },
   title: {
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 4,
   },
   subtitle: {
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 24,
     opacity: 0.7,
   },
@@ -140,9 +154,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     marginTop: 24,
   },
 });

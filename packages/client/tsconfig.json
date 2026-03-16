@@ -6,14 +6,8 @@
     "exactOptionalPropertyTypes": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "index.ts"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", "index.ts"]
 }

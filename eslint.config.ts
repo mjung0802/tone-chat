@@ -1,36 +1,41 @@
-import js from '@eslint/js';
-import { defineConfig } from 'eslint/config';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
+import js from "@eslint/js";
+import { defineConfig } from "eslint/config";
+import globals from "globals";
+import tseslint from "typescript-eslint";
 
 export default defineConfig([
-  { 
-    files: ['**/*.{js,mjs,cjs,ts,mts,cts}'], 
-    plugins: { js }, 
-    extends: ['js/recommended'], 
+  {
+    files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
+    plugins: { js },
+    extends: ["js/recommended", "prettier"],
     languageOptions: { globals: globals.browser },
   },
   {
-    files: ['**/*.{js,mjs,cjs,ts,mts,cts}'],
+    files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
     rules: {
-      'no-unused-vars': 'warn',
-      'no-undef': 'error',
-      'no-console': 'warn',
-      'prefer-const': 'error',
-      'semi': ['error', 'always'],
-      'quotes': ['warn', 'single'],
-      'indent': ['error', 2],
-      'linebreak-style': 'off',
-      'no-multiple-empty-lines': ['error', { 'max': 1, 'maxEOF': 0 }],
-      'comma-dangle': ['error', 'always-multiline'],
+      "no-unused-vars": "warn",
+      "no-undef": "error",
+      "no-console": "warn",
+      "prefer-const": "error",
+      semi: ["error", "always"],
+      quotes: ["warn", "single"],
+      indent: ["error", 2],
+      "linebreak-style": "off",
+      "no-multiple-empty-lines": ["error", { max: 1, maxEOF: 0 }],
+      "comma-dangle": ["error", "always-multiline"],
     },
   },
   tseslint.configs.recommended,
   {
-    files: ['**/babel.config.{js,cjs}', '**/jest.config.{js,cjs,ts}', '**/metro.config.{js,cjs}', '**/*.config.js'],
+    files: [
+      "**/babel.config.{js,cjs}",
+      "**/jest.config.{js,cjs,ts}",
+      "**/metro.config.{js,cjs}",
+      "**/*.config.js",
+    ],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
     rules: {
-      '@typescript-eslint/no-require-imports': 'off',
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
 ]);

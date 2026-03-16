@@ -1,8 +1,8 @@
-import React from 'react';
-import { View, Image, StyleSheet, Pressable, Linking } from 'react-native';
-import { Text, ActivityIndicator, Icon, useTheme } from 'react-native-paper';
-import { useAttachment } from '../../hooks/useAttachments';
-import type { Attachment } from '../../types/models';
+import React from "react";
+import { View, Image, StyleSheet, Pressable, Linking } from "react-native";
+import { Text, ActivityIndicator, Icon, useTheme } from "react-native-paper";
+import { useAttachment } from "../../hooks/useAttachments";
+import type { Attachment } from "../../types/models";
 
 interface AttachmentBubbleProps {
   attachmentId: string;
@@ -15,7 +15,10 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function AttachmentBubble({ attachmentId, onImagePress }: AttachmentBubbleProps) {
+export function AttachmentBubble({
+  attachmentId,
+  onImagePress,
+}: AttachmentBubbleProps) {
   const theme = useTheme();
   const { data, isLoading, isError } = useAttachment(attachmentId);
   const attachment = data?.attachment;
@@ -28,17 +31,25 @@ export function AttachmentBubble({ attachmentId, onImagePress }: AttachmentBubbl
     );
   }
 
-  if (isError || !attachment || attachment.status !== 'ready' || !attachment.url) {
+  if (
+    isError ||
+    !attachment ||
+    attachment.status !== "ready" ||
+    !attachment.url
+  ) {
     return (
       <View style={styles.errorContainer}>
-        <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+        <Text
+          variant="labelSmall"
+          style={{ color: theme.colors.onSurfaceVariant }}
+        >
           Attachment unavailable
         </Text>
       </View>
     );
   }
 
-  const isImage = attachment.mime_type.startsWith('image/');
+  const isImage = attachment.mime_type.startsWith("image/");
 
   if (isImage) {
     return (
@@ -63,9 +74,16 @@ export function AttachmentBubble({ attachmentId, onImagePress }: AttachmentBubbl
       }}
       accessibilityRole="link"
       accessibilityLabel={`File: ${attachment.filename}, ${formatSize(attachment.size_bytes)}`}
-      style={[styles.fileCard, { backgroundColor: theme.colors.surfaceVariant }]}
+      style={[
+        styles.fileCard,
+        { backgroundColor: theme.colors.surfaceVariant },
+      ]}
     >
-      <Icon source="file-outline" size={24} color={theme.colors.onSurfaceVariant} />
+      <Icon
+        source="file-outline"
+        size={24}
+        color={theme.colors.onSurfaceVariant}
+      />
       <View style={styles.fileInfo}>
         <Text
           variant="labelMedium"
@@ -74,7 +92,10 @@ export function AttachmentBubble({ attachmentId, onImagePress }: AttachmentBubbl
         >
           {attachment.filename}
         </Text>
-        <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, opacity: 0.7 }}>
+        <Text
+          variant="labelSmall"
+          style={{ color: theme.colors.onSurfaceVariant, opacity: 0.7 }}
+        >
           {formatSize(attachment.size_bytes)}
         </Text>
       </View>
@@ -85,8 +106,8 @@ export function AttachmentBubble({ attachmentId, onImagePress }: AttachmentBubbl
 const styles = StyleSheet.create({
   skeleton: {
     height: 60,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   errorContainer: {
     paddingVertical: 4,
@@ -98,8 +119,8 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   fileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 10,
     borderRadius: 8,
     marginTop: 6,

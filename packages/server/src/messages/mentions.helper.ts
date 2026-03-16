@@ -1,5 +1,5 @@
-import type { Server } from 'socket.io';
-import { getMember } from '../members/members.client.js';
+import type { Server } from "socket.io";
+import { getMember } from "../members/members.client.js";
 
 interface CreateMessageResult {
   message: { _id: string; mentions?: string[] };
@@ -15,7 +15,14 @@ export async function emitMentionsFromResult(
   const msg = (resultData as CreateMessageResult).message;
   const mentions = msg.mentions ?? [];
   if (mentions.length > 0) {
-    await emitMentionEvents(io, senderId, serverId, channelId, msg._id, mentions);
+    await emitMentionEvents(
+      io,
+      senderId,
+      serverId,
+      channelId,
+      msg._id,
+      mentions,
+    );
   }
 }
 
@@ -27,7 +34,9 @@ export async function emitMentionEvents(
   messageId: string,
   mentions: string[],
 ): Promise<void> {
-  const uniqueMentions = [...new Set(mentions)].filter((uid) => uid !== senderId);
+  const uniqueMentions = [...new Set(mentions)].filter(
+    (uid) => uid !== senderId,
+  );
   if (uniqueMentions.length === 0) return;
 
   await Promise.all(
@@ -35,7 +44,7 @@ export async function emitMentionEvents(
       const result = await getMember(senderId, serverId, userId);
       if (result.status !== 200) return;
 
-      io.to(`user:${userId}`).emit('mention', {
+      io.to(`user:${userId}`).emit("mention", {
         messageId,
         channelId,
         serverId,

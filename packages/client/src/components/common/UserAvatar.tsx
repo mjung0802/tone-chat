@@ -1,6 +1,6 @@
-import React from 'react';
-import { Avatar } from 'react-native-paper';
-import { useAttachment } from '../../hooks/useAttachments';
+import React from "react";
+import { Avatar } from "react-native-paper";
+import { useAttachment } from "../../hooks/useAttachments";
 
 interface UserAvatarProps {
   avatarAttachmentId?: string | null | undefined;
@@ -18,11 +18,19 @@ function InitialsAvatar({ name, size }: { name: string; size: number }) {
   );
 }
 
-function AvatarWithAttachment({ attachmentId, name, size }: { attachmentId: string; name: string; size: number }) {
+function AvatarWithAttachment({
+  attachmentId,
+  name,
+  size,
+}: {
+  attachmentId: string;
+  name: string;
+  size: number;
+}) {
   const { data } = useAttachment(attachmentId);
   const attachment = data?.attachment;
 
-  if (attachment?.status === 'ready' && attachment.url) {
+  if (attachment?.status === "ready" && attachment.url) {
     return (
       <Avatar.Image
         source={{ uri: attachment.url }}
@@ -35,9 +43,19 @@ function AvatarWithAttachment({ attachmentId, name, size }: { attachmentId: stri
   return <InitialsAvatar name={name} size={size} />;
 }
 
-export function UserAvatar({ avatarAttachmentId, name, size = 32 }: UserAvatarProps) {
+export function UserAvatar({
+  avatarAttachmentId,
+  name,
+  size = 32,
+}: UserAvatarProps) {
   if (avatarAttachmentId) {
-    return <AvatarWithAttachment attachmentId={avatarAttachmentId} name={name} size={size} />;
+    return (
+      <AvatarWithAttachment
+        attachmentId={avatarAttachmentId}
+        name={name}
+        size={size}
+      />
+    );
   }
 
   return <InitialsAvatar name={name} size={size} />;

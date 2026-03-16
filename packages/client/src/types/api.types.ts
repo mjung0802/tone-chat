@@ -1,4 +1,12 @@
-import type { User, Server, Channel, Message, ServerMember, Invite, Attachment } from './models';
+import type {
+  User,
+  Server,
+  Channel,
+  Message,
+  ServerMember,
+  Invite,
+  Attachment,
+} from "./models";
 
 export interface ApiError {
   error: {
@@ -41,19 +49,19 @@ export interface UpdateUserRequest {
 export interface CreateServerRequest {
   name: string;
   description?: string | undefined;
-  visibility?: 'public' | 'private' | undefined;
+  visibility?: "public" | "private" | undefined;
 }
 
 export interface UpdateServerRequest {
   name?: string | undefined;
   description?: string | undefined;
   icon?: string | undefined;
-  visibility?: 'public' | 'private' | undefined;
+  visibility?: "public" | "private" | undefined;
 }
 
 export interface CreateChannelRequest {
   name: string;
-  type?: 'text' | 'voice' | undefined;
+  type?: "text" | "voice" | undefined;
   topic?: string | undefined;
 }
 
@@ -106,16 +114,43 @@ export interface ResendVerificationResponse {
 }
 
 // Response wrappers
-export interface UserResponse { user: User }
-export interface ServerResponse { server: Server }
-export interface ServersResponse { servers: Server[] }
-export interface ChannelResponse { channel: Channel }
-export interface ChannelsResponse { channels: Channel[] }
-export interface MessageResponse { message: Message }
-export interface MessagesResponse { messages: Message[] }
-export interface MemberResponse { member: ServerMember }
-export interface MembersResponse { members: ServerMember[] }
-export interface InviteResponse { invite: Invite }
-export interface InvitesResponse { invites: Invite[] }
-export interface AttachmentResponse { attachment: Attachment }
-export interface JoinInviteResponse { member: ServerMember; server: Server }
+export interface UserResponse {
+  user: User;
+}
+export interface ServerResponse {
+  server: Server;
+}
+export interface ServersResponse {
+  servers: Server[];
+}
+export interface ChannelResponse {
+  channel: Channel;
+}
+export interface ChannelsResponse {
+  channels: Channel[];
+}
+export interface MessageResponse {
+  message: Message;
+}
+export interface MessagesResponse {
+  messages: Message[];
+}
+export interface MemberResponse {
+  member: ServerMember;
+}
+export interface MembersResponse {
+  members: ServerMember[];
+}
+export interface InviteResponse {
+  invite: Invite;
+}
+export interface InvitesResponse {
+  invites: Invite[];
+}
+export interface AttachmentResponse {
+  attachment: Attachment;
+}
+export interface JoinInviteResponse {
+  member: ServerMember;
+  server: Server;
+}

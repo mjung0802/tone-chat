@@ -1,10 +1,10 @@
-import React, { memo, useState } from 'react';
-import { View, Pressable, Platform, StyleSheet } from 'react-native';
-import { Text, Icon, IconButton, useTheme } from 'react-native-paper';
-import { AttachmentBubble } from './AttachmentBubble';
-import { ReactionChips } from './ReactionChips';
-import { UserAvatar } from '../common/UserAvatar';
-import type { Message, Attachment } from '../../types/models';
+import React, { memo, useState } from "react";
+import { View, Pressable, Platform, StyleSheet } from "react-native";
+import { Text, Icon, IconButton, useTheme } from "react-native-paper";
+import { AttachmentBubble } from "./AttachmentBubble";
+import { ReactionChips } from "./ReactionChips";
+import { UserAvatar } from "../common/UserAvatar";
+import type { Message, Attachment } from "../../types/models";
 
 interface MessageBubbleProps {
   message: Message;
@@ -24,7 +24,7 @@ interface MessageBubbleProps {
 
 function formatTime(dateStr: string): string {
   const date = new Date(dateStr);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 export const MessageBubble = memo(function MessageBubble({
@@ -45,14 +45,16 @@ export const MessageBubble = memo(function MessageBubble({
   const theme = useTheme();
   const [hovered, setHovered] = useState(false);
 
-  const isMentioned = message.mentions?.includes(currentUserId ?? '') ?? false;
+  const isMentioned = message.mentions?.includes(currentUserId ?? "") ?? false;
 
   const bubbleStyle = isOwn
     ? [styles.bubble, { backgroundColor: theme.colors.primaryContainer }]
     : [
         styles.bubble,
         { backgroundColor: theme.colors.surfaceVariant },
-        isMentioned && { backgroundColor: theme.colors.tertiaryContainer + '4D' },
+        isMentioned && {
+          backgroundColor: theme.colors.tertiaryContainer + "4D",
+        },
       ];
 
   const textColor = isOwn
@@ -61,124 +63,165 @@ export const MessageBubble = memo(function MessageBubble({
 
   const hasAttachments = message.attachmentIds.length > 0;
   const attachmentLabel = hasAttachments
-    ? `, ${message.attachmentIds.length} attachment${message.attachmentIds.length > 1 ? 's' : ''}`
-    : '';
+    ? `, ${message.attachmentIds.length} attachment${message.attachmentIds.length > 1 ? "s" : ""}`
+    : "";
 
   const hasReactions = (message.reactions?.length ?? 0) > 0;
 
   const containerStyle = [
     styles.container,
-    highlighted && { backgroundColor: theme.colors.tertiaryContainer + '40' },
+    highlighted && { backgroundColor: theme.colors.tertiaryContainer + "40" },
   ];
 
   return (
     <View
-      onPointerEnter={Platform.OS === 'web' ? () => setHovered(true) : undefined}
-      onPointerLeave={Platform.OS === 'web' ? () => setHovered(false) : undefined}
+      onPointerEnter={
+        Platform.OS === "web" ? () => setHovered(true) : undefined
+      }
+      onPointerLeave={
+        Platform.OS === "web" ? () => setHovered(false) : undefined
+      }
       style={[containerStyle, styles.messageRow]}
       accessibilityRole="text"
-      accessibilityLabel={`${authorName ?? 'Unknown'} said: ${message.content}. ${formatTime(message.createdAt)}${message.editedAt ? ', edited' : ''}${attachmentLabel}`}
+      accessibilityLabel={`${authorName ?? "Unknown"} said: ${message.content}. ${formatTime(message.createdAt)}${message.editedAt ? ", edited" : ""}${attachmentLabel}`}
     >
       {authorName ? (
         <View style={styles.avatarColumn}>
-          <UserAvatar avatarAttachmentId={authorAvatarId} name={authorName} size={32} />
+          <UserAvatar
+            avatarAttachmentId={authorAvatarId}
+            name={authorName}
+            size={32}
+          />
         </View>
       ) : (
         <View style={styles.avatarSpacer} />
       )}
       <View style={styles.messageContent}>
-      {authorName ? (
-        <View style={styles.authorRow}>
-          <Text
-            variant="labelMedium"
-            style={{ color: theme.colors.primary }}
-          >
-            {authorName}
-          </Text>
-          <Text variant="labelSmall" style={[styles.time, { color: theme.colors.onSurfaceVariant, opacity: 0.6 }]}>
-            {formatTime(message.createdAt)}
-          </Text>
-          {message.editedAt ? (
-            <Text variant="labelSmall" style={[styles.edited, { color: theme.colors.onSurfaceVariant, opacity: 0.6 }]}>
-              (edited)
+        {authorName ? (
+          <View style={styles.authorRow}>
+            <Text variant="labelMedium" style={{ color: theme.colors.primary }}>
+              {authorName}
             </Text>
-          ) : null}
-        </View>
-      ) : null}
-      <View style={styles.bubbleRow}>
-        <View
-          style={[styles.bubbleWrapper, bubbleStyle]}
-          onTouchEnd={onLongPress ? () => onLongPress(message) : undefined}
-        >
-          {message.replyTo ? (
-            <Pressable
-              onPress={() => onReplyPress?.(message.replyTo!.messageId)}
-              style={styles.replyIndicator}
-              accessibilityRole="button"
-              accessibilityLabel={`Reply to ${authorNames?.[message.replyTo.authorId] ?? message.replyTo.authorName ?? 'Unknown User'}`}
+            <Text
+              variant="labelSmall"
+              style={[
+                styles.time,
+                { color: theme.colors.onSurfaceVariant, opacity: 0.6 },
+              ]}
             >
-              <Icon source="reply" size={12} color={theme.colors.onSurfaceVariant} />
-              <Text variant="labelSmall" style={[styles.replyAuthor, { color: theme.colors.primary }]} numberOfLines={1}>
-                @{authorNames?.[message.replyTo.authorId] ?? message.replyTo.authorName ?? 'Unknown User'}
+              {formatTime(message.createdAt)}
+            </Text>
+            {message.editedAt ? (
+              <Text
+                variant="labelSmall"
+                style={[
+                  styles.edited,
+                  { color: theme.colors.onSurfaceVariant, opacity: 0.6 },
+                ]}
+              >
+                (edited)
               </Text>
-              <Text variant="labelSmall" style={[styles.replyContent, { color: theme.colors.onSurfaceVariant }]} numberOfLines={1}>
-                {message.replyTo.content}
-              </Text>
-            </Pressable>
-          ) : null}
-          {message.content ? (
-            <Text style={{ color: textColor }}>{message.content}</Text>
-          ) : null}
-          {hasAttachments ? (
-            <View style={styles.attachments}>
-              {message.attachmentIds.map((id) => (
-                <AttachmentBubble
-                  key={id}
-                  attachmentId={id}
-                  onImagePress={onImagePress}
-                />
-              ))}
-            </View>
-          ) : null}
-        </View>
-        {(onAddReaction || onReply) ? (
-          <View style={styles.hoverButtonPlaceholder}>
-            {hovered ? (
-              <View style={styles.hoverButtonRow}>
-                {onReply ? (
-                  <IconButton
-                    icon="reply"
-                    size={18}
-                    onPress={() => onReply(message)}
-                    accessibilityLabel="Reply to message"
-                    style={[styles.hoverReactionButton, { backgroundColor: theme.colors.surface }]}
-                    testID="hover-reply-button"
-                  />
-                ) : null}
-                {onAddReaction ? (
-                  <IconButton
-                    icon="emoticon-outline"
-                    size={18}
-                    onPress={() => onAddReaction(message._id)}
-                    accessibilityLabel="Add reaction"
-                    style={[styles.hoverReactionButton, { backgroundColor: theme.colors.surface }]}
-                    testID="hover-reaction-button"
-                  />
-                ) : null}
-              </View>
             ) : null}
           </View>
         ) : null}
-      </View>
-      {hasReactions ? (
-        <ReactionChips
-          reactions={message.reactions!}
-          currentUserId={currentUserId ?? null}
-          authorNames={authorNames}
-          onToggle={(emoji) => onToggleReaction?.(message._id, emoji)}
-          onAddReaction={() => onAddReaction?.(message._id)}
-        />
-      ) : null}
+        <View style={styles.bubbleRow}>
+          <View
+            style={[styles.bubbleWrapper, bubbleStyle]}
+            onTouchEnd={onLongPress ? () => onLongPress(message) : undefined}
+          >
+            {message.replyTo ? (
+              <Pressable
+                onPress={() => onReplyPress?.(message.replyTo!.messageId)}
+                style={styles.replyIndicator}
+                accessibilityRole="button"
+                accessibilityLabel={`Reply to ${authorNames?.[message.replyTo.authorId] ?? message.replyTo.authorName ?? "Unknown User"}`}
+              >
+                <Icon
+                  source="reply"
+                  size={12}
+                  color={theme.colors.onSurfaceVariant}
+                />
+                <Text
+                  variant="labelSmall"
+                  style={[styles.replyAuthor, { color: theme.colors.primary }]}
+                  numberOfLines={1}
+                >
+                  @
+                  {authorNames?.[message.replyTo.authorId] ??
+                    message.replyTo.authorName ??
+                    "Unknown User"}
+                </Text>
+                <Text
+                  variant="labelSmall"
+                  style={[
+                    styles.replyContent,
+                    { color: theme.colors.onSurfaceVariant },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {message.replyTo.content}
+                </Text>
+              </Pressable>
+            ) : null}
+            {message.content ? (
+              <Text style={{ color: textColor }}>{message.content}</Text>
+            ) : null}
+            {hasAttachments ? (
+              <View style={styles.attachments}>
+                {message.attachmentIds.map((id) => (
+                  <AttachmentBubble
+                    key={id}
+                    attachmentId={id}
+                    onImagePress={onImagePress}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
+          {onAddReaction || onReply ? (
+            <View style={styles.hoverButtonPlaceholder}>
+              {hovered ? (
+                <View style={styles.hoverButtonRow}>
+                  {onReply ? (
+                    <IconButton
+                      icon="reply"
+                      size={18}
+                      onPress={() => onReply(message)}
+                      accessibilityLabel="Reply to message"
+                      style={[
+                        styles.hoverReactionButton,
+                        { backgroundColor: theme.colors.surface },
+                      ]}
+                      testID="hover-reply-button"
+                    />
+                  ) : null}
+                  {onAddReaction ? (
+                    <IconButton
+                      icon="emoticon-outline"
+                      size={18}
+                      onPress={() => onAddReaction(message._id)}
+                      accessibilityLabel="Add reaction"
+                      style={[
+                        styles.hoverReactionButton,
+                        { backgroundColor: theme.colors.surface },
+                      ]}
+                      testID="hover-reaction-button"
+                    />
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+        </View>
+        {hasReactions ? (
+          <ReactionChips
+            reactions={message.reactions!}
+            currentUserId={currentUserId ?? null}
+            authorNames={authorNames}
+            onToggle={(emoji) => onToggleReaction?.(message._id, emoji)}
+            onAddReaction={() => onAddReaction?.(message._id)}
+          />
+        ) : null}
       </View>
     </View>
   );
@@ -186,14 +229,14 @@ export const MessageBubble = memo(function MessageBubble({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'relative',
+    position: "relative",
     paddingHorizontal: 12,
     paddingVertical: 2,
-    maxWidth: '80%',
+    maxWidth: "80%",
   },
   messageRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   avatarColumn: {
     width: 40,
@@ -206,8 +249,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bubbleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   bubbleWrapper: {
     flex: 1,
@@ -218,8 +261,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   authorRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
     gap: 6,
     marginBottom: 2,
     marginLeft: 4,
@@ -238,7 +281,7 @@ const styles = StyleSheet.create({
     height: 34,
   },
   hoverButtonRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 2,
     paddingLeft: 4,
   },
@@ -247,16 +290,16 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   replyIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     marginBottom: 4,
     paddingBottom: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
+    borderBottomColor: "rgba(0,0,0,0.1)",
   },
   replyAuthor: {
-    fontWeight: '600',
+    fontWeight: "600",
     flexShrink: 0,
   },
   replyContent: {

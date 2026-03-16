@@ -4,15 +4,15 @@ React Native client for Tone — a Discord-style chat app. Targets iOS, Android,
 
 ## Stack
 
-| Layer | Library |
-|-------|---------|
-| Framework | Expo 55 + Expo Router v5 (file-based routing) |
-| UI | React Native Paper v5 (Material Design 3) |
-| Server state | TanStack Query v5 |
-| Client state | Zustand v5 |
-| Real-time | socket.io-client v4 |
-| Testing | Jest + React Native Testing Library |
-| E2E testing | Playwright 1.44+ |
+| Layer        | Library                                       |
+| ------------ | --------------------------------------------- |
+| Framework    | Expo 55 + Expo Router v5 (file-based routing) |
+| UI           | React Native Paper v5 (Material Design 3)     |
+| Server state | TanStack Query v5                             |
+| Client state | Zustand v5                                    |
+| Real-time    | socket.io-client v4                           |
+| Testing      | Jest + React Native Testing Library           |
+| E2E testing  | Playwright 1.44+                              |
 
 ## App Structure
 

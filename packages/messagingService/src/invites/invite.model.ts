@@ -1,5 +1,5 @@
-import mongoose, { Schema, type Document, type Types } from 'mongoose';
-import crypto from 'node:crypto';
+import mongoose, { Schema, type Document, type Types } from "mongoose";
+import crypto from "node:crypto";
 
 export interface IInvite extends Document {
   serverId: Types.ObjectId;
@@ -14,12 +14,12 @@ export interface IInvite extends Document {
 
 const inviteSchema = new Schema<IInvite>(
   {
-    serverId: { type: Schema.Types.ObjectId, ref: 'Server', required: true },
+    serverId: { type: Schema.Types.ObjectId, ref: "Server", required: true },
     code: {
       type: String,
       required: true,
       unique: true,
-      default: () => crypto.randomBytes(9).toString('base64url'),
+      default: () => crypto.randomBytes(9).toString("base64url"),
     },
     createdBy: { type: String, required: true },
     maxUses: { type: Number },
@@ -33,4 +33,4 @@ const inviteSchema = new Schema<IInvite>(
 inviteSchema.index({ serverId: 1 });
 inviteSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-export const Invite = mongoose.model<IInvite>('Invite', inviteSchema);
+export const Invite = mongoose.model<IInvite>("Invite", inviteSchema);

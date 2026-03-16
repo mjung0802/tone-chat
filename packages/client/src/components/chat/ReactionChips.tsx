@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, Pressable, Platform, StyleSheet } from 'react-native';
-import { Text, IconButton, useTheme, type MD3Theme } from 'react-native-paper';
+import React, { useState } from "react";
+import { View, Pressable, Platform, StyleSheet } from "react-native";
+import { Text, IconButton, useTheme, type MD3Theme } from "react-native-paper";
 
 interface ReactionChipsProps {
   reactions: { emoji: string; userIds: string[] }[];
@@ -36,14 +36,23 @@ function ChipWithTooltip({
             },
           ]}
         >
-          <Text style={[styles.tooltipText, { color: theme.colors.inverseOnSurface }]}>
+          <Text
+            style={[
+              styles.tooltipText,
+              { color: theme.colors.inverseOnSurface },
+            ]}
+          >
             {tooltipText}
           </Text>
         </View>
       ) : null}
       <Pressable
-        onPointerEnter={Platform.OS === 'web' ? () => setShowTooltip(true) : undefined}
-        onPointerLeave={Platform.OS === 'web' ? () => setShowTooltip(false) : undefined}
+        onPointerEnter={
+          Platform.OS === "web" ? () => setShowTooltip(true) : undefined
+        }
+        onPointerLeave={
+          Platform.OS === "web" ? () => setShowTooltip(false) : undefined
+        }
         onPress={onToggle}
         style={[
           styles.chip,
@@ -57,7 +66,7 @@ function ChipWithTooltip({
           },
         ]}
         accessibilityRole="button"
-        accessibilityLabel={`${reaction.emoji} ${reaction.userIds.length} reaction${reaction.userIds.length !== 1 ? 's' : ''}, ${tooltipText}`}
+        accessibilityLabel={`${reaction.emoji} ${reaction.userIds.length} reaction${reaction.userIds.length !== 1 ? "s" : ""}, ${tooltipText}`}
         testID={`reaction-chip-${reaction.emoji}`}
       >
         <Text style={styles.chipText}>
@@ -82,10 +91,11 @@ export function ReactionChips({
   return (
     <View style={styles.container}>
       {reactions.map((reaction) => {
-        const isActive = currentUserId != null && reaction.userIds.includes(currentUserId);
+        const isActive =
+          currentUserId != null && reaction.userIds.includes(currentUserId);
         const tooltipText = reaction.userIds
           .map((id) => authorNames?.[id] ?? id)
-          .join(', ');
+          .join(", ");
 
         return (
           <ChipWithTooltip
@@ -112,19 +122,19 @@ export function ReactionChips({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 4,
     paddingHorizontal: 4,
     paddingTop: 4,
-    alignItems: 'center',
+    alignItems: "center",
   },
   chipWrapper: {
-    position: 'relative',
+    position: "relative",
   },
   tooltip: {
-    position: 'absolute',
-    bottom: '100%',
+    position: "absolute",
+    bottom: "100%",
     left: 0,
     marginBottom: 4,
     paddingHorizontal: 8,
@@ -136,8 +146,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,

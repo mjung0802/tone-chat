@@ -1,4 +1,4 @@
-import mongoose, { Schema, type Document, type Types } from 'mongoose';
+import mongoose, { Schema, type Document, type Types } from "mongoose";
 
 export interface IServerMember extends Document {
   serverId: Types.ObjectId;
@@ -9,7 +9,7 @@ export interface IServerMember extends Document {
 }
 
 const serverMemberSchema = new Schema<IServerMember>({
-  serverId: { type: Schema.Types.ObjectId, ref: 'Server', required: true },
+  serverId: { type: Schema.Types.ObjectId, ref: "Server", required: true },
   userId: { type: String, required: true },
   nickname: { type: String },
   roles: { type: [String], default: [] },
@@ -19,4 +19,7 @@ const serverMemberSchema = new Schema<IServerMember>({
 serverMemberSchema.index({ serverId: 1, userId: 1 }, { unique: true });
 serverMemberSchema.index({ userId: 1 });
 
-export const ServerMember = mongoose.model<IServerMember>('ServerMember', serverMemberSchema);
+export const ServerMember = mongoose.model<IServerMember>(
+  "ServerMember",
+  serverMemberSchema,
+);

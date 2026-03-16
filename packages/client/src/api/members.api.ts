@@ -1,5 +1,9 @@
-import { get, post, patch, del } from './client';
-import type { MemberResponse, MembersResponse, UpdateMemberRequest } from '../types/api.types';
+import { get, post, patch, del } from "./client";
+import type {
+  MemberResponse,
+  MembersResponse,
+  UpdateMemberRequest,
+} from "../types/api.types";
 
 export function getMembers(serverId: string) {
   return get<MembersResponse>(`/servers/${serverId}/members`);
@@ -13,7 +17,11 @@ export function joinServer(serverId: string) {
   return post<MemberResponse>(`/servers/${serverId}/members`);
 }
 
-export function updateMember(serverId: string, userId: string, data: UpdateMemberRequest) {
+export function updateMember(
+  serverId: string,
+  userId: string,
+  data: UpdateMemberRequest,
+) {
   return patch<MemberResponse>(`/servers/${serverId}/members/${userId}`, data);
 }
 

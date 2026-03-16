@@ -30,17 +30,17 @@ PostgreSQL — default URL: `postgres://tone:tone_dev@localhost:5433/tone_attach
 
 ### `attachments` table
 
-| Column | Type | Notes |
-|--------|------|-------|
-| `id` | UUID | primary key |
-| `uploader_id` | String | user who uploaded |
-| `filename` | String | original filename |
-| `mime_type` | String | |
-| `size_bytes` | Integer | |
-| `storage_key` | String | S3 object key |
-| `status` | `'processing' \| 'ready' \| 'failed'` | updated after S3 upload |
-| `url` | String | public URL (null until ready) |
-| `created_at` | Timestamp | |
+| Column        | Type                                  | Notes                         |
+| ------------- | ------------------------------------- | ----------------------------- |
+| `id`          | UUID                                  | primary key                   |
+| `uploader_id` | String                                | user who uploaded             |
+| `filename`    | String                                | original filename             |
+| `mime_type`   | String                                |                               |
+| `size_bytes`  | Integer                               |                               |
+| `storage_key` | String                                | S3 object key                 |
+| `status`      | `'processing' \| 'ready' \| 'failed'` | updated after S3 upload       |
+| `url`         | String                                | public URL (null until ready) |
+| `created_at`  | Timestamp                             |                               |
 
 Run migrations before first start:
 
@@ -52,10 +52,10 @@ pnpm migrate
 
 All routes require `X-Internal-Key` and `X-User-Id` headers set by the BFF.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/attachments/upload?filename=<name>` | Upload raw binary; returns attachment metadata |
-| GET | `/attachments/:attachmentId` | Retrieve attachment metadata |
+| Method | Path                                  | Description                                    |
+| ------ | ------------------------------------- | ---------------------------------------------- |
+| POST   | `/attachments/upload?filename=<name>` | Upload raw binary; returns attachment metadata |
+| GET    | `/attachments/:attachmentId`          | Retrieve attachment metadata                   |
 
 ## Auth
 
@@ -83,13 +83,13 @@ pnpm migrate  # Apply database migrations
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PORT` | `3003` | HTTP port |
-| `DATABASE_URL` | `postgres://tone:tone_dev@localhost:5433/tone_attachments` | PostgreSQL connection string |
-| `INTERNAL_API_KEY` | `dev-internal-key` | Shared key for internal auth |
-| `S3_ENDPOINT` | `http://localhost:9000` | S3 / MinIO endpoint |
-| `S3_BUCKET` | `tone-attachments` | Bucket name |
-| `S3_ACCESS_KEY` | `minioadmin` | S3 access key |
-| `S3_SECRET_KEY` | `minioadmin` | S3 secret key |
-| `S3_REGION` | `us-east-1` | S3 region |
+| Variable           | Default                                                    | Description                  |
+| ------------------ | ---------------------------------------------------------- | ---------------------------- |
+| `PORT`             | `3003`                                                     | HTTP port                    |
+| `DATABASE_URL`     | `postgres://tone:tone_dev@localhost:5433/tone_attachments` | PostgreSQL connection string |
+| `INTERNAL_API_KEY` | `dev-internal-key`                                         | Shared key for internal auth |
+| `S3_ENDPOINT`      | `http://localhost:9000`                                    | S3 / MinIO endpoint          |
+| `S3_BUCKET`        | `tone-attachments`                                         | Bucket name                  |
+| `S3_ACCESS_KEY`    | `minioadmin`                                               | S3 access key                |
+| `S3_SECRET_KEY`    | `minioadmin`                                               | S3 secret key                |
+| `S3_REGION`        | `us-east-1`                                                | S3 region                    |

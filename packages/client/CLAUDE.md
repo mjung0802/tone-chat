@@ -14,15 +14,15 @@ pnpm test:e2e:ui          # Playwright UI mode
 
 ## Tech Stack
 
-| Layer | Choice |
-|-------|--------|
-| Framework | Expo 55 + Expo Router v5 (file-based routing) |
-| UI | React Native Paper v5 (Material Design 3) |
-| Server state | TanStack Query v5 |
-| Client state | Zustand v5 |
-| Real-time | socket.io-client v4 |
-| Testing | Jest + React Native Testing Library |
-| E2E testing | Playwright 1.44+ |
+| Layer        | Choice                                        |
+| ------------ | --------------------------------------------- |
+| Framework    | Expo 55 + Expo Router v5 (file-based routing) |
+| UI           | React Native Paper v5 (Material Design 3)     |
+| Server state | TanStack Query v5                             |
+| Client state | Zustand v5                                    |
+| Real-time    | socket.io-client v4                           |
+| Testing      | Jest + React Native Testing Library           |
+| E2E testing  | Playwright 1.44+                              |
 
 ## Project Structure
 
@@ -236,13 +236,13 @@ return <Redirect href={`/some/path/${target}`} />;
 
 All routes prefixed `/api/v1`. Auth routes are public; all others require `Authorization: Bearer <token>`.
 
-| Domain | Base Path | Key Endpoints |
-|--------|-----------|---------------|
-| Auth | `/auth` | `POST /register`, `POST /login`, `POST /refresh` |
-| Users | `/users` | `GET /me`, `PATCH /me`, `GET /:id` |
-| Servers | `/servers` | CRUD, `GET` returns user's memberships |
-| Channels | `/servers/:sid/channels` | CRUD, sorted by position |
-| Messages | `/servers/:sid/channels/:cid/messages` | `GET` (cursor: `?before=`), `POST`, `PATCH /:mid` |
-| Members | `/servers/:sid/members` | `POST` (join), `GET`, `PATCH /:uid`, `DELETE /:uid` |
-| Invites | `/servers/:sid/invites` | `POST`, `GET`, `DELETE /:code`; `POST /invites/:code/join` (top-level) |
-| Attachments | `/attachments` | `POST /upload?filename=` (raw binary), `GET /:id` |
+| Domain      | Base Path                              | Key Endpoints                                                          |
+| ----------- | -------------------------------------- | ---------------------------------------------------------------------- |
+| Auth        | `/auth`                                | `POST /register`, `POST /login`, `POST /refresh`                       |
+| Users       | `/users`                               | `GET /me`, `PATCH /me`, `GET /:id`                                     |
+| Servers     | `/servers`                             | CRUD, `GET` returns user's memberships                                 |
+| Channels    | `/servers/:sid/channels`               | CRUD, sorted by position                                               |
+| Messages    | `/servers/:sid/channels/:cid/messages` | `GET` (cursor: `?before=`), `POST`, `PATCH /:mid`                      |
+| Members     | `/servers/:sid/members`                | `POST` (join), `GET`, `PATCH /:uid`, `DELETE /:uid`                    |
+| Invites     | `/servers/:sid/invites`                | `POST`, `GET`, `DELETE /:code`; `POST /invites/:code/join` (top-level) |
+| Attachments | `/attachments`                         | `POST /upload?filename=` (raw binary), `GET /:id`                      |

@@ -1,8 +1,8 @@
-import React from 'react';
-import { FlatList, type ListRenderItemInfo } from 'react-native';
-import { MemberListItem } from './MemberListItem';
-import { EmptyState } from '../common/EmptyState';
-import type { ServerMember } from '../../types/models';
+import React from "react";
+import { FlatList, type ListRenderItemInfo } from "react-native";
+import { MemberListItem } from "./MemberListItem";
+import { EmptyState } from "../common/EmptyState";
+import type { ServerMember } from "../../types/models";
 
 interface MemberListProps {
   members: ServerMember[];
@@ -10,7 +10,11 @@ interface MemberListProps {
   onMemberPress?: ((member: ServerMember) => void) | undefined;
 }
 
-export function MemberList({ members, displayNames, onMemberPress }: MemberListProps) {
+export function MemberList({
+  members,
+  displayNames,
+  onMemberPress,
+}: MemberListProps) {
   const renderItem = ({ item }: ListRenderItemInfo<ServerMember>) => (
     <MemberListItem
       member={item}
