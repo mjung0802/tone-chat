@@ -342,6 +342,69 @@ describe('createMessage — replyTo', () => {
   });
 });
 
+describe('createMessage — tone', () => {
+  beforeEach(() => {
+    mockMessageCreate.mock.resetCalls();
+    mockMessageCreate.mock.mockImplementation(async (...args: unknown[]) => ({ _id: 'm1', ...(args[0] as Record<string, unknown>) }));
+  });
+
+  it('stores tone when provided as valid string', async () => {
+    const res = makeRes();
+    await createMessage(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1', channelId: 'c1' },
+      body: { content: 'hello', tone: 'j' },
+    }), res);
+    assert.equal(res.statusCode, 201);
+    assert.equal(mockMessageCreate.mock.calls[0]?.arguments[0]?.tone, 'j');
+  });
+
+  it('returns 400 with code INVALID_TONE for non-string tone', async () => {
+    const res = makeRes();
+    await createMessage(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1', channelId: 'c1' },
+      body: { content: 'hello', tone: { $gt: '' } },
+    }), res);
+    assert.equal(res.statusCode, 400);
+    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_TONE');
+  });
+
+  it('returns 400 for tone exceeding 50 chars', async () => {
+    const res = makeRes();
+    await createMessage(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1', channelId: 'c1' },
+      body: { content: 'hello', tone: 'a'.repeat(51) },
+    }), res);
+    assert.equal(res.statusCode, 400);
+    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_TONE');
+  });
+
+  it('returns 400 for empty string tone', async () => {
+    const res = makeRes();
+    await createMessage(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1', channelId: 'c1' },
+      body: { content: 'hello', tone: '' },
+    }), res);
+    assert.equal(res.statusCode, 400);
+    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_TONE');
+  });
+
+  it('creates message without tone when tone is undefined', async () => {
+    const res = makeRes();
+    await createMessage(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1', channelId: 'c1' },
+      body: { content: 'hello' },
+    }), res);
+    assert.equal(res.statusCode, 201);
+    const createArg = mockMessageCreate.mock.calls[0]?.arguments[0] as Record<string, unknown>;
+    assert.equal('tone' in createArg, false);
+  });
+});
+
 describe('updateMessage', () => {
   beforeEach(() => mockMessageFindOne.mock.resetCalls());
 
