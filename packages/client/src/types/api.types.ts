@@ -68,6 +68,7 @@ export interface SendMessageRequest {
   attachmentIds?: string[] | undefined;
   replyToId?: string | undefined;
   mentions?: string[] | undefined;
+  tone?: string | undefined;
 }
 
 export interface UpdateMessageRequest {
@@ -103,6 +104,23 @@ export interface VerifyEmailResponse {
 
 export interface ResendVerificationResponse {
   message: string;
+}
+
+export interface AddCustomToneRequest {
+  key: string;
+  label: string;
+  emoji: string;
+  colorLight: string;
+  colorDark: string;
+  textStyle?: 'normal' | 'italic' | 'medium' | undefined;
+}
+
+export interface CustomTonesResponse {
+  customTones: import('./models').CustomToneDefinition[];
+}
+
+export interface CustomToneResponse {
+  customTone: import('./models').CustomToneDefinition;
 }
 
 // Response wrappers

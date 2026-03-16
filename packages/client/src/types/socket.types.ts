@@ -17,6 +17,7 @@ export interface SendMessagePayload {
   attachmentIds?: string[];
   replyToId?: string;
   mentions?: string[];
+  tone?: string;
 }
 
 export interface TypingPayload {
