@@ -1,6 +1,7 @@
 import { ChannelSidebar } from '@/components/channels/ChannelSidebar';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useChannels, useCreateChannel } from '@/hooks/useChannels';
+import { useMembers } from '@/hooks/useMembers';
 import { useServer } from '@/hooks/useServers';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
@@ -14,6 +15,7 @@ export default function ServerLayout() {
   const { serverId } = useLocalSearchParams<{ serverId: string }>();
   const { data: server, isLoading: serverLoading } = useServer(serverId ?? '');
   const { data: channels, isLoading: channelsLoading } = useChannels(serverId ?? '');
+  const { data: members } = useMembers(serverId ?? '');
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isSidebarOpen = useUiStore((s) => s.isSidebarOpen);
@@ -22,7 +24,7 @@ export default function ServerLayout() {
 
   const isWide = width >= 768;
   const showSidebar = isWide || isSidebarOpen;
-  const isOwner = server?.ownerId === userId;
+  const isAdmin = members?.some((m) => m.userId === userId && m.roles.includes('admin')) ?? false;
   const theme = useTheme();
 
   const [createDialogVisible, setCreateDialogVisible] = useState(false);
@@ -68,7 +70,7 @@ export default function ServerLayout() {
           channels={channels ?? []}
           onChannelPress={handleChannelPress}
           onCreateChannel={handleCreateChannel}
-          canManage={isOwner}
+          canManage={isAdmin}
           onGoHome={() => router.push('/(main)/servers')}
         />
       ) : null}
@@ -86,13 +88,14 @@ export default function ServerLayout() {
                 accessibilityLabel="Toggle channel sidebar"
               />
             ) : null,
-            headerRight: () => (
-              <IconButton
-                icon="cog"
-                onPress={() => router.push(`/(main)/servers/${serverId}/settings`)}
-                accessibilityLabel="Server settings"
-              />
-            ),
+            headerRight: () =>
+              isAdmin ? (
+                <IconButton
+                  icon="cog"
+                  onPress={() => router.push(`/(main)/servers/${serverId}/settings`)}
+                  accessibilityLabel="Server settings"
+                />
+              ) : null,
           }}
         >
           <Stack.Screen

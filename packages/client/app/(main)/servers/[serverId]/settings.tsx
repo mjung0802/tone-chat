@@ -11,7 +11,7 @@ import { useMembers } from '@/hooks/useMembers';
 import { useDeleteServer, useServer, useUpdateServer } from '@/hooks/useServers';
 import { useAuthStore } from '@/stores/authStore';
 import * as DocumentPicker from 'expo-document-picker';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import {
@@ -58,8 +58,14 @@ export default function ServerSettingsScreen() {
   const [isUploadingIcon, setIsUploadingIcon] = useState(false);
   const [iconError, setIconError] = useState('');
 
+  const isAdmin = members?.some((m) => m.userId === userId && m.roles.includes('admin')) ?? false;
+
   if (isLoading || !server) {
     return <LoadingSpinner />;
+  }
+
+  if (!isAdmin) {
+    return <Redirect href={`/(main)/servers/${sid}`} />;
   }
 
   if (!nameInitialized) {

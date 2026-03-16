@@ -89,7 +89,7 @@ export const MOCK_MEMBERS = [
     _id: 'member-001',
     serverId: 'server-001',
     userId: 'user-001',
-    roles: [],
+    roles: ['admin'],
     joinedAt: '2024-01-01T00:00:00.000Z',
     username: 'testuser',
     display_name: 'Test User',
