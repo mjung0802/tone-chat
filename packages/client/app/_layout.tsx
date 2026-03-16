@@ -6,13 +6,13 @@ import { PaperProvider, useTheme } from 'react-native-paper';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { lightTheme, darkTheme } from '../src/theme';
-import { useAuthStore } from '../src/stores/authStore';
-import { useUiStore } from '../src/stores/uiStore';
-import { configureAuth } from '../src/api/client';
-import { ErrorBoundary } from '../src/components/common/ErrorBoundary';
-import { LoadingSpinner } from '../src/components/common/LoadingSpinner';
-import { useSocketConnection } from '../src/hooks/useSocket';
+import { lightTheme, darkTheme } from '@/theme';
+import { useAuthStore } from '@/stores/authStore';
+import { useUiStore, hydrateTheme } from '@/stores/uiStore';
+import { configureAuth } from '@/api/client';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { useSocketConnection } from '@/hooks/useSocket';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +45,7 @@ function AppContent() {
 
   useEffect(() => {
     void hydrate();
+    void hydrateTheme();
   }, [hydrate]);
 
   useEffect(() => {

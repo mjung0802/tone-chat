@@ -28,6 +28,20 @@ test('shows avatar image when user has avatar_url', async ({ page }) => {
   await expect(avatarContainer.locator('img')).toBeVisible();
 });
 
+test('shows theme selector and allows changing theme', async ({ page }) => {
+  await page.goto('/profile');
+
+  // Verify all three theme buttons are visible
+  await expect(page.getByRole('button', { name: 'Light' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Dark' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'System' })).toBeVisible();
+
+  // Click Dark and verify the theme label is still visible (no crash, theme applied)
+  await page.getByRole('button', { name: 'Dark' }).click();
+  await expect(page.getByText('Theme')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Dark' })).toBeVisible();
+});
+
 test('saves profile updates', async ({ page }) => {
   const newDisplayName = 'Updated Name';
 

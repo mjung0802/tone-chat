@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Icon, TextInput, Button, Text, HelperText, Snackbar, Portal, useTheme } from 'react-native-paper';
+import { ActivityIndicator, Icon, SegmentedButtons, TextInput, Button, Text, HelperText, Snackbar, Portal, useTheme } from 'react-native-paper';
 import type { AppTheme } from '@/theme';
 import { useMe, useUpdateProfile } from '@/hooks/useUser';
 import { useLogout } from '@/hooks/useAuth';
 import { useUpload } from '@/hooks/useAttachments';
+import { useUiStore } from '@/stores/uiStore';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { UserAvatar } from '@/components/common/UserAvatar';
 import { ApiClientError } from '@/api/client';
@@ -16,6 +17,8 @@ export default function ProfileScreen() {
   const upload = useUpload();
   const logout = useLogout();
   const theme = useTheme<AppTheme>();
+  const themePreference = useUiStore((s) => s.themePreference);
+  const setThemePreference = useUiStore((s) => s.setThemePreference);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
@@ -156,6 +159,18 @@ export default function ProfileScreen() {
         style={styles.input}
       />
 
+      <Text variant="labelLarge" style={styles.themeLabel}>Theme</Text>
+      <SegmentedButtons
+        value={themePreference}
+        onValueChange={setThemePreference}
+        buttons={[
+          { value: 'light', label: 'Light', icon: 'white-balance-sunny' },
+          { value: 'dark', label: 'Dark', icon: 'moon-waning-crescent' },
+          { value: 'system', label: 'System', icon: 'cellphone' },
+        ]}
+        style={styles.themeButtons}
+      />
+
       <Button
         mode="contained"
         onPress={handleSave}
@@ -230,6 +245,15 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 12,
     width: '100%',
+  },
+  themeLabel: {
+    alignSelf: 'flex-start',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  themeButtons: {
+    width: '100%',
+    marginBottom: 4,
   },
   button: {
     marginTop: 8,

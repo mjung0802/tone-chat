@@ -1,7 +1,32 @@
 import { create } from 'zustand';
-import { Appearance } from 'react-native';
+import { Platform } from 'react-native';
 
 type ThemePreference = 'light' | 'dark' | 'system';
+
+const STORAGE_KEY = 'themePreference';
+
+function isValidThemePreference(value: string | null): value is ThemePreference {
+  return value === 'light' || value === 'dark' || value === 'system';
+}
+
+async function persistTheme(pref: ThemePreference): Promise<void> {
+  if (Platform.OS === 'web') {
+    localStorage.setItem(STORAGE_KEY, pref);
+  } else {
+    const SecureStore = await import('expo-secure-store');
+    await SecureStore.setItemAsync(STORAGE_KEY, pref);
+  }
+}
+
+async function loadTheme(): Promise<ThemePreference> {
+  if (Platform.OS === 'web') {
+    const value = localStorage.getItem(STORAGE_KEY);
+    return isValidThemePreference(value) ? value : 'system';
+  }
+  const SecureStore = await import('expo-secure-store');
+  const value = await SecureStore.getItemAsync(STORAGE_KEY);
+  return isValidThemePreference(value) ? value : 'system';
+}
 
 interface UiState {
   themePreference: ThemePreference;
@@ -9,7 +34,6 @@ interface UiState {
   setThemePreference: (pref: ThemePreference) => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
-  getEffectiveTheme: () => 'light' | 'dark';
 }
 
 export const useUiStore = create<UiState>((set, get) => ({
@@ -18,6 +42,7 @@ export const useUiStore = create<UiState>((set, get) => ({
 
   setThemePreference: (pref: ThemePreference) => {
     set({ themePreference: pref });
+    void persistTheme(pref);
   },
 
   toggleSidebar: () => {
@@ -27,13 +52,9 @@ export const useUiStore = create<UiState>((set, get) => ({
   setSidebarOpen: (open: boolean) => {
     set({ isSidebarOpen: open });
   },
-
-  getEffectiveTheme: () => {
-    const { themePreference } = get();
-    if (themePreference === 'system') {
-      const scheme = Appearance.getColorScheme();
-      return scheme === 'light' ? 'light' : 'dark';
-    }
-    return themePreference;
-  },
 }));
+
+export async function hydrateTheme(): Promise<void> {
+  const themePreference = await loadTheme();
+  useUiStore.setState({ themePreference });
+}
