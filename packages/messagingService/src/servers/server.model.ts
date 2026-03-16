@@ -6,6 +6,14 @@ export interface IServer extends Document {
   icon?: string;
   description?: string;
   visibility: 'public' | 'private';
+  customTones: {
+    key: string;
+    label: string;
+    emoji: string;
+    colorLight: string;
+    colorDark: string;
+    textStyle: 'normal' | 'italic' | 'medium';
+  }[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +25,18 @@ const serverSchema = new Schema<IServer>(
     icon: { type: String },
     description: { type: String },
     visibility: { type: String, enum: ['public', 'private'], default: 'private' },
+    customTones: {
+      type: [{
+        key: { type: String, required: true },
+        label: { type: String, required: true },
+        emoji: { type: String, required: true },
+        colorLight: { type: String, required: true },
+        colorDark: { type: String, required: true },
+        textStyle: { type: String, enum: ['normal', 'italic', 'medium'], default: 'normal' },
+        _id: false,
+      }],
+      default: [],
+    },
   },
   { timestamps: true },
 );
