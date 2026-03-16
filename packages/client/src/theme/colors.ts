@@ -23,6 +23,9 @@ export const lightColors = {
   errorContainer: '#FFDAD6',
   onErrorContainer: '#410002',
 
+  success: '#2E7D32',        // Green 800 — 5.4:1 on white
+  onSuccess: '#FFFFFF',
+
   background: '#FAFCFF',
   onBackground: '#1A1C1E',   // 15.4:1 on background
   surface: '#FAFCFF',
@@ -70,6 +73,9 @@ export const darkColors = {
   onError: '#690005',
   errorContainer: '#93000A',
   onErrorContainer: '#FFDAD6',
+
+  success: '#81C784',        // Green 300 — 8.5:1 on dark bg
+  onSuccess: '#1B5E20',
 
   background: '#1A1C1E',
   onBackground: '#E3E2E6',   // 13.4:1 on background

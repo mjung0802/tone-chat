@@ -10,6 +10,18 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Divider, Icon, IconButton, Portal, Text, useTheme } from 'react-native-paper';
 
+function ProfileHeaderButton() {
+  const router = useRouter();
+  return (
+    <IconButton
+      icon="account-circle"
+      onPress={() => router.push('/(main)/profile')}
+      accessibilityLabel="Edit profile"
+      accessibilityRole="button"
+    />
+  );
+}
+
 function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { data: servers } = useServers();
   const logout = useLogout();
@@ -85,7 +97,13 @@ export default function MainLayout() {
           drawerStyle: { backgroundColor: theme.colors.background },
         }}
       >
-        <Drawer.Screen name="servers/index" options={{ title: 'Servers' }} />
+        <Drawer.Screen
+          name="servers/index"
+          options={{
+            title: 'Servers',
+            headerRight: () => <ProfileHeaderButton />,
+          }}
+        />
         <Drawer.Screen name="servers/create" options={{ title: 'Create Server' }} />
         <Drawer.Screen
           name="servers/[serverId]"

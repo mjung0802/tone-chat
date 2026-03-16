@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Icon, TextInput, Button, Text, HelperText, useTheme } from 'react-native-paper';
+import { ActivityIndicator, Icon, TextInput, Button, Text, HelperText, Snackbar, Portal, useTheme } from 'react-native-paper';
+import type { AppTheme } from '@/theme';
 import { useMe, useUpdateProfile } from '@/hooks/useUser';
 import { useLogout } from '@/hooks/useAuth';
 import { useUpload } from '@/hooks/useAttachments';
@@ -14,9 +15,10 @@ export default function ProfileScreen() {
   const updateProfile = useUpdateProfile();
   const upload = useUpload();
   const logout = useLogout();
-  const theme = useTheme();
+  const theme = useTheme<AppTheme>();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const [displayName, setDisplayName] = useState('');
   const [pronouns, setPronouns] = useState('');
@@ -51,7 +53,7 @@ export default function ProfileScreen() {
     if (pronouns.trim()) data['pronouns'] = pronouns.trim();
     if (bio.trim()) data['bio'] = bio.trim();
     if (status.trim()) data['status'] = status.trim();
-    updateProfile.mutate(data);
+    updateProfile.mutate(data, { onSuccess: () => setShowSuccess(true) });
   };
 
   const displayLabel = user.display_name ?? user.username;
@@ -79,6 +81,7 @@ export default function ProfileScreen() {
   };
 
   return (
+    <>
     <ScrollView
       style={{ backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.container}
@@ -114,12 +117,6 @@ export default function ProfileScreen() {
       {errorMessage || avatarError ? (
         <HelperText type="error" visible accessibilityLiveRegion="polite">
           {errorMessage || avatarError}
-        </HelperText>
-      ) : null}
-
-      {updateProfile.isSuccess ? (
-        <HelperText type="info" visible accessibilityLiveRegion="polite">
-          Profile updated successfully
         </HelperText>
       ) : null}
 
@@ -180,6 +177,24 @@ export default function ProfileScreen() {
         Log Out
       </Button>
     </ScrollView>
+    <Portal>
+      <Snackbar
+        visible={showSuccess}
+        onDismiss={() => setShowSuccess(false)}
+        duration={5000}
+        icon="close"
+        onIconPress={() => setShowSuccess(false)}
+        iconAccessibilityLabel="Dismiss notification"
+        style={{ backgroundColor: theme.colors.success }}
+        wrapperStyle={styles.snackbarWrapper}
+      >
+        <View style={styles.snackbarContent}>
+          <Icon source="check-circle" size={20} color={theme.colors.onSuccess} />
+          <Text style={{ color: theme.colors.onSuccess }}>Profile updated successfully</Text>
+        </View>
+      </Snackbar>
+    </Portal>
+    </>
   );
 }
 
@@ -222,5 +237,15 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginTop: 24,
+  },
+  snackbarWrapper: {
+    top: 0,
+    bottom: undefined,
+    alignItems: 'flex-end' as const,
+  },
+  snackbarContent: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 8,
   },
 });
