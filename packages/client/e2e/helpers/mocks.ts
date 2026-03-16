@@ -308,3 +308,29 @@ export async function mockUnverifiedLoginRoute(page: Page): Promise<void> {
     }
   });
 }
+
+export async function mockUpdateServerRoute(page: Page, server = MOCK_SERVER): Promise<void> {
+  await page.route(`${API}/servers/*`, async (route) => {
+    if (route.request().method() === 'PATCH') {
+      const body = route.request().postDataJSON() as Record<string, string>;
+      const updatedServer = { ...server, ...body };
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ server: updatedServer }),
+      });
+    } else {
+      await route.fallback();
+    }
+  });
+}
+
+export async function mockInvitesRoutes(page: Page): Promise<void> {
+  await page.route(`${API}/servers/*/invites`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ invites: [] }),
+    });
+  });
+}

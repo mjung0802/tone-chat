@@ -162,6 +162,22 @@ describe('updateServer', () => {
     assert.equal(server.description, 'desc');
     assert.equal(server.save.mock.callCount(), 1);
   });
+
+  it('updates icon field and returns 200', async () => {
+    const server = { ownerId: 'u1', name: 'Test', icon: '', save: mock.fn(async () => {}) };
+    mockServerFindById.mock.mockImplementation(async () => server);
+
+    const res = makeRes();
+    await updateServer(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1' },
+      body: { icon: 'att-icon-001' },
+    }), res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(server.icon, 'att-icon-001');
+    assert.equal(server.save.mock.callCount(), 1);
+  });
 });
 
 describe('deleteServer', () => {

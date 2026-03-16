@@ -341,6 +341,27 @@ describe('BFF Servers', () => {
     });
     assert.equal(res3.status, 204);
   });
+
+  it('PATCH updates server icon through BFF', async () => {
+    const alice = await registerUser('alice', 'alice@test.com', 'password123');
+    const { serverId } = await createTestServer(alice.accessToken);
+
+    const res = await fetch(`${bffUrl}/api/v1/servers/${serverId}`, {
+      method: 'PATCH',
+      headers: authHeaders(alice.accessToken),
+      body: JSON.stringify({ icon: 'att-icon-001' }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json() as { server: { icon: string } };
+    assert.equal(body.server.icon, 'att-icon-001');
+
+    // Verify via GET
+    const getRes = await fetch(`${bffUrl}/api/v1/servers/${serverId}`, {
+      headers: authHeaders(alice.accessToken),
+    });
+    const getBody = await getRes.json() as { server: { icon: string } };
+    assert.equal(getBody.server.icon, 'att-icon-001');
+  });
 });
 
 // ─── Channels ───────────────────────────────────────────────

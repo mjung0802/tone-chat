@@ -121,6 +121,26 @@ describe('Server lifecycle', () => {
     assert.equal(res2.status, 403);
   });
 
+  it('PATCH updates server icon', async () => {
+    const { serverId } = await createTestServer('user-1');
+
+    const res = await fetch(`${baseUrl}/servers/${serverId}`, {
+      method: 'PATCH',
+      headers: headersFor('user-1'),
+      body: JSON.stringify({ icon: 'att-icon-001' }),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json() as { server: { icon: string } };
+    assert.equal(body.server.icon, 'att-icon-001');
+
+    // Verify persisted via GET
+    const getRes = await fetch(`${baseUrl}/servers/${serverId}`, {
+      headers: headersFor('user-1'),
+    });
+    const getBody = await getRes.json() as { server: { icon: string } };
+    assert.equal(getBody.server.icon, 'att-icon-001');
+  });
+
   it('DELETE is owner-only', async () => {
     const { serverId } = await createTestServer('user-1');
 

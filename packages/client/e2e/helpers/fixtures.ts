@@ -29,6 +29,7 @@ export const MOCK_SERVER = {
   _id: 'server-001',
   name: 'Test Server',
   ownerId: 'user-001',
+  icon: 'mock-icon-attachment-id',
   description: 'A test server',
   visibility: 'public' as const,
   createdAt: '2024-01-01T00:00:00.000Z',
@@ -119,6 +120,18 @@ export const MOCK_MESSAGE_WITH_REPLY = {
 
 // 1x1 red PNG as a data URI for avatar image tests
 const AVATAR_DATA_URI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
+
+export const MOCK_ATTACHMENT_ICON = {
+  id: 'mock-icon-attachment-id',
+  uploader_id: 'user-001',
+  filename: 'server-icon.jpg',
+  mime_type: 'image/jpeg',
+  size_bytes: 3000,
+  storage_key: 'uploads/server-icon.jpg',
+  status: 'ready' as const,
+  url: AVATAR_DATA_URI,
+  created_at: '2024-01-01T00:00:00.000Z',
+};
 
 export const MOCK_ATTACHMENT_AVATAR = {
   id: 'att-avatar-001',

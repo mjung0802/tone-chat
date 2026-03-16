@@ -1,5 +1,6 @@
 import React from 'react';
 import { Avatar, useTheme } from 'react-native-paper';
+import { useAttachment } from '@/hooks/useAttachments';
 
 interface ServerIconProps {
   name: string;
@@ -7,18 +8,8 @@ interface ServerIconProps {
   size?: number | undefined;
 }
 
-export function ServerIcon({ name, icon, size = 48 }: ServerIconProps) {
+function InitialsIcon({ name, size }: { name: string; size: number }) {
   const theme = useTheme();
-
-  if (icon) {
-    return (
-      <Avatar.Image
-        source={{ uri: icon }}
-        size={size}
-        accessibilityLabel={`${name} server icon`}
-      />
-    );
-  }
 
   const initials = name
     .split(' ')
@@ -36,4 +27,29 @@ export function ServerIcon({ name, icon, size = 48 }: ServerIconProps) {
       accessibilityLabel={`${name} server icon`}
     />
   );
+}
+
+function IconWithAttachment({ attachmentId, name, size }: { attachmentId: string; name: string; size: number }) {
+  const { data } = useAttachment(attachmentId);
+  const attachment = data?.attachment;
+
+  if (attachment?.status === 'ready' && attachment.url) {
+    return (
+      <Avatar.Image
+        source={{ uri: attachment.url }}
+        size={size}
+        accessibilityLabel={`${name} server icon`}
+      />
+    );
+  }
+
+  return <InitialsIcon name={name} size={size} />;
+}
+
+export function ServerIcon({ name, icon, size = 48 }: ServerIconProps) {
+  if (icon) {
+    return <IconWithAttachment attachmentId={icon} name={name} size={size} />;
+  }
+
+  return <InitialsIcon name={name} size={size} />;
 }
