@@ -36,7 +36,7 @@ interface UiState {
   setSidebarOpen: (open: boolean) => void;
 }
 
-export const useUiStore = create<UiState>((set, get) => ({
+export const useUiStore = create<UiState>((set) => ({
   themePreference: 'system',
   isSidebarOpen: true,
 

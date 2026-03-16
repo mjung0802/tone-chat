@@ -1,4 +1,4 @@
-import { useNotificationStore } from './notificationStore';
+import { useNotificationStore, hydrateNotificationPreference } from './notificationStore';
 import type { MentionNotification } from './notificationStore';
 
 const notification: MentionNotification = {
@@ -12,7 +12,9 @@ beforeEach(() => {
   useNotificationStore.setState({
     currentNotification: null,
     currentChannelId: null,
+    notificationPreference: 'quiet',
   });
+  localStorage.clear();
 });
 
 describe('notificationStore', () => {
@@ -40,5 +42,27 @@ describe('notificationStore', () => {
     useNotificationStore.getState().setCurrentChannelId('ch-5');
     useNotificationStore.getState().setCurrentChannelId(null);
     expect(useNotificationStore.getState().currentChannelId).toBeNull();
+  });
+
+  it('setNotificationPreference updates state', () => {
+    useNotificationStore.getState().setNotificationPreference('system');
+    expect(useNotificationStore.getState().notificationPreference).toBe('system');
+  });
+
+  it('setNotificationPreference persists to localStorage', () => {
+    useNotificationStore.getState().setNotificationPreference('system');
+    expect(localStorage.getItem('notificationPreference')).toBe('system');
+  });
+
+  it('hydrateNotificationPreference loads persisted value', async () => {
+    localStorage.setItem('notificationPreference', 'system');
+    await hydrateNotificationPreference();
+    expect(useNotificationStore.getState().notificationPreference).toBe('system');
+  });
+
+  it('hydrateNotificationPreference defaults to quiet for invalid value', async () => {
+    localStorage.setItem('notificationPreference', 'invalid');
+    await hydrateNotificationPreference();
+    expect(useNotificationStore.getState().notificationPreference).toBe('quiet');
   });
 });

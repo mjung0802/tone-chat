@@ -34,7 +34,8 @@ test('shows theme selector and allows changing theme', async ({ page }) => {
   // Verify all three theme buttons are visible
   await expect(page.getByRole('button', { name: 'Light' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Dark' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'System' })).toBeVisible();
+  // Use .first() since Notifications section also has a "System" button
+  await expect(page.getByRole('button', { name: 'System' }).first()).toBeVisible();
 
   // Click Dark and verify the theme label is still visible (no crash, theme applied)
   await page.getByRole('button', { name: 'Dark' }).click();
@@ -51,4 +52,34 @@ test('saves profile updates', async ({ page }) => {
   await page.getByLabel('Save profile changes').click();
 
   await expect(page.getByText('Profile updated successfully')).toBeVisible();
+});
+
+test('shows notification preference selector with In-App selected by default', async ({ page }) => {
+  await page.goto('/profile');
+
+  await expect(page.getByText('Notifications')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'In-App' })).toBeVisible();
+  // Use .last() to target Notifications section's System button (Theme section's System is first)
+  await expect(page.getByRole('button', { name: 'System' }).last()).toBeVisible();
+});
+
+test('clicking System triggers permission flow and persists preference', async ({ context, page }) => {
+  // Grant notification permission before clicking
+  await context.grantPermissions(['notifications']);
+
+  await page.goto('/profile');
+
+  // Use .last() to target the Notifications section's System button
+  await page.getByRole('button', { name: 'System' }).last().click();
+
+  // Wait for async permission request + persistence to complete
+  await expect(async () => {
+    const stored = await page.evaluate(() => localStorage.getItem('notificationPreference'));
+    expect(stored).toBe('system');
+  }).toPass({ timeout: 5000 });
+
+  // Reload and verify persistence
+  await page.reload();
+  const storedAfterReload = await page.evaluate(() => localStorage.getItem('notificationPreference'));
+  expect(storedAfterReload).toBe('system');
 });

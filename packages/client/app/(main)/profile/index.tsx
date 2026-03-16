@@ -6,6 +6,8 @@ import { useMe, useUpdateProfile } from '@/hooks/useUser';
 import { useLogout } from '@/hooks/useAuth';
 import { useUpload } from '@/hooks/useAttachments';
 import { useUiStore } from '@/stores/uiStore';
+import { useNotificationStore, type NotificationPreference } from '@/stores/notificationStore';
+import { requestNotificationPermission } from '@/utils/systemNotifications';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { UserAvatar } from '@/components/common/UserAvatar';
 import { ApiClientError } from '@/api/client';
@@ -19,8 +21,11 @@ export default function ProfileScreen() {
   const theme = useTheme<AppTheme>();
   const themePreference = useUiStore((s) => s.themePreference);
   const setThemePreference = useUiStore((s) => s.setThemePreference);
+  const notificationPreference = useNotificationStore((s) => s.notificationPreference);
+  const setNotificationPreference = useNotificationStore((s) => s.setNotificationPreference);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState('');
+  const [notifPermError, setNotifPermError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
 
   const [displayName, setDisplayName] = useState('');
@@ -60,6 +65,19 @@ export default function ProfileScreen() {
   };
 
   const displayLabel = user.display_name ?? user.username;
+
+  const handleNotifPrefChange = async (value: string) => {
+    const pref = value as NotificationPreference;
+    if (pref === 'system') {
+      const granted = await requestNotificationPermission();
+      if (!granted) {
+        setNotifPermError('Notification permission denied. Using in-app notifications.');
+        return;
+      }
+    }
+    setNotifPermError('');
+    setNotificationPreference(pref);
+  };
 
   const handleAvatarPress = async () => {
     const result = await DocumentPicker.getDocumentAsync({ type: ['image/*'] });
@@ -170,6 +188,22 @@ export default function ProfileScreen() {
         ]}
         style={styles.themeButtons}
       />
+
+      <Text variant="labelLarge" style={styles.themeLabel}>Notifications</Text>
+      <SegmentedButtons
+        value={notificationPreference}
+        onValueChange={handleNotifPrefChange}
+        buttons={[
+          { value: 'quiet', label: 'In-App', icon: 'bell-badge-outline' },
+          { value: 'system', label: 'System', icon: 'bell-ring-outline' },
+        ]}
+        style={styles.themeButtons}
+      />
+      {notifPermError ? (
+        <HelperText type="error" visible accessibilityLiveRegion="polite">
+          {notifPermError}
+        </HelperText>
+      ) : null}
 
       <Button
         mode="contained"

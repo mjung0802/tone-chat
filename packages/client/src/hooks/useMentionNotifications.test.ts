@@ -1,9 +1,12 @@
-import { renderHook } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react-native';
 import { useSocketStore } from '../stores/socketStore';
 import { useNotificationStore } from '../stores/notificationStore';
 import { createHookWrapper } from '../test-utils/renderWithProviders';
 import { useMentionNotifications } from './useMentionNotifications';
+import * as systemNotifications from '../utils/systemNotifications';
 import type { MentionEvent } from '../types/socket.types';
+
+jest.mock('../utils/systemNotifications');
 
 function createMockSocket() {
   return {
@@ -19,19 +22,23 @@ function createMockSocket() {
 
 function findHandler(mockSocket: ReturnType<typeof createMockSocket>, event: string) {
   const call = mockSocket.on.mock.calls.find(([e]: [string]) => e === event);
-  return call?.[1] as ((event: MentionEvent) => void) | undefined;
+  return call?.[1] as ((event: MentionEvent) => Promise<void>) | undefined;
 }
 
 describe('useMentionNotifications', () => {
   let mockSocket: ReturnType<typeof createMockSocket>;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     mockSocket = createMockSocket();
     useSocketStore.setState({ socket: mockSocket as never, isConnected: true });
     useNotificationStore.setState({
       currentNotification: null,
       currentChannelId: null,
+      notificationPreference: 'quiet',
     });
+    jest.mocked(systemNotifications.hasNotificationPermission).mockResolvedValue(false);
+    jest.mocked(systemNotifications.showSystemNotification).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -118,5 +125,70 @@ describe('useMentionNotifications', () => {
     });
 
     expect(mockSocket.on).not.toHaveBeenCalled();
+  });
+
+  it('uses in-app notification when preference is quiet', async () => {
+    useNotificationStore.setState({ notificationPreference: 'quiet' });
+
+    renderHook(() => useMentionNotifications(), {
+      wrapper: createHookWrapper(),
+    });
+
+    const handler = findHandler(mockSocket, 'mention');
+    const event: MentionEvent = {
+      messageId: 'msg-1',
+      channelId: 'ch-1',
+      serverId: 'srv-1',
+      authorId: 'user-2',
+    };
+    await act(async () => { await handler!(event); });
+
+    expect(useNotificationStore.getState().currentNotification).toEqual(event);
+    expect(systemNotifications.showSystemNotification).not.toHaveBeenCalled();
+  });
+
+  it('uses system notification when preference is system and permission granted', async () => {
+    useNotificationStore.setState({ notificationPreference: 'system' });
+    jest.mocked(systemNotifications.hasNotificationPermission).mockResolvedValue(true);
+
+    renderHook(() => useMentionNotifications(), {
+      wrapper: createHookWrapper(),
+    });
+
+    const handler = findHandler(mockSocket, 'mention');
+    const event: MentionEvent = {
+      messageId: 'msg-1',
+      channelId: 'ch-1',
+      serverId: 'srv-1',
+      authorId: 'user-2',
+    };
+    await act(async () => { await handler!(event); });
+
+    expect(systemNotifications.showSystemNotification).toHaveBeenCalledWith(
+      'Tone Chat',
+      expect.stringContaining('mentioned you'),
+    );
+    expect(useNotificationStore.getState().currentNotification).toBeNull();
+  });
+
+  it('falls back to in-app when preference is system but permission denied', async () => {
+    useNotificationStore.setState({ notificationPreference: 'system' });
+    jest.mocked(systemNotifications.hasNotificationPermission).mockResolvedValue(false);
+
+    renderHook(() => useMentionNotifications(), {
+      wrapper: createHookWrapper(),
+    });
+
+    const handler = findHandler(mockSocket, 'mention');
+    const event: MentionEvent = {
+      messageId: 'msg-1',
+      channelId: 'ch-1',
+      serverId: 'srv-1',
+      authorId: 'user-2',
+    };
+    await act(async () => { await handler!(event); });
+
+    expect(useNotificationStore.getState().currentNotification).toEqual(event);
+    expect(systemNotifications.showSystemNotification).not.toHaveBeenCalled();
   });
 });

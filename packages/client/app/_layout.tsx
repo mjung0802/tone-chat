@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { lightTheme, darkTheme } from '@/theme';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiStore, hydrateTheme } from '@/stores/uiStore';
+import { hydrateNotificationPreference } from '@/stores/notificationStore';
 import { configureAuth } from '@/api/client';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
@@ -46,6 +47,7 @@ function AppContent() {
   useEffect(() => {
     void hydrate();
     void hydrateTheme();
+    void hydrateNotificationPreference();
   }, [hydrate]);
 
   useEffect(() => {
