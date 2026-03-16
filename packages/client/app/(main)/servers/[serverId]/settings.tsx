@@ -124,62 +124,52 @@ export default function ServerSettingsScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       {/* Server Info */}
       <Text variant="titleLarge" style={styles.section}>Server Info</Text>
-      {isOwner ? (
-        <>
-          <Pressable
-            onPress={handleIconPress}
-            style={styles.iconContainer}
-            accessibilityRole="button"
-            accessibilityLabel="Change server icon"
-          >
-            <ServerIcon name={server.name} icon={server.icon} size={80} />
-            <View style={[styles.cameraOverlay, { backgroundColor: theme.colors.surface }]}>
-              {isUploadingIcon ? (
-                <ActivityIndicator size={16} />
-              ) : (
-                <Icon source="camera" size={16} color={theme.colors.onSurface} />
-              )}
-            </View>
-          </Pressable>
-          {iconError ? (
-            <HelperText type="error" visible accessibilityLiveRegion="polite">
-              {iconError}
-            </HelperText>
-          ) : null}
-          <TextInput
-            label="Server Name"
-            value={name}
-            onChangeText={setName}
-            accessibilityLabel="Server name"
-            style={styles.input}
-          />
-          <TextInput
-            label="Description"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            accessibilityLabel="Server description"
-            style={styles.input}
-          />
-          <Button
-            mode="contained"
-            onPress={handleSaveInfo}
-            loading={updateServer.isPending}
-            accessibilityLabel="Save server info"
-            style={styles.button}
-          >
-            Save
-          </Button>
-        </>
-      ) : (
-        <>
+      <>
+        <Pressable
+          onPress={handleIconPress}
+          style={styles.iconContainer}
+          accessibilityRole="button"
+          accessibilityLabel="Change server icon"
+        >
           <ServerIcon name={server.name} icon={server.icon} size={80} />
-          <Text variant="titleMedium">{server.name}</Text>
-          <Text variant="bodyMedium" style={styles.subdued}>
-            {server.description ?? 'No description'}
-          </Text>
-        </>
-      )}
+          <View style={[styles.cameraOverlay, { backgroundColor: theme.colors.surface }]}>
+            {isUploadingIcon ? (
+              <ActivityIndicator size={16} />
+            ) : (
+              <Icon source="camera" size={16} color={theme.colors.onSurface} />
+            )}
+          </View>
+        </Pressable>
+        {iconError ? (
+          <HelperText type="error" visible accessibilityLiveRegion="polite">
+            {iconError}
+          </HelperText>
+        ) : null}
+        <TextInput
+          label="Server Name"
+          value={name}
+          onChangeText={setName}
+          accessibilityLabel="Server name"
+          style={styles.input}
+        />
+        <TextInput
+          label="Description"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          accessibilityLabel="Server description"
+          style={styles.input}
+        />
+        <Button
+          mode="contained"
+          onPress={handleSaveInfo}
+          loading={updateServer.isPending}
+          accessibilityLabel="Save server info"
+          style={styles.button}
+        >
+          Save
+        </Button>
+      </>
 
       <Divider style={styles.divider} />
 
@@ -193,26 +183,24 @@ export default function ServerSettingsScreen() {
           accessibilityRole="text"
         />
       ))}
-      {isOwner ? (
-        <View style={styles.row}>
-          <TextInput
-            label="New channel name"
-            value={newChannelName}
-            onChangeText={setNewChannelName}
-            accessibilityLabel="New channel name"
-            style={[styles.input, { flex: 1 }]}
-          />
-          <Button
-            mode="outlined"
-            onPress={handleCreateChannel}
-            loading={createChannel.isPending}
-            disabled={!newChannelName.trim()}
-            accessibilityLabel="Create channel"
-          >
-            Add
-          </Button>
-        </View>
-      ) : null}
+      <View style={styles.row}>
+        <TextInput
+          label="New channel name"
+          value={newChannelName}
+          onChangeText={setNewChannelName}
+          accessibilityLabel="New channel name"
+          style={[styles.input, { flex: 1 }]}
+        />
+        <Button
+          mode="outlined"
+          onPress={handleCreateChannel}
+          loading={createChannel.isPending}
+          disabled={!newChannelName.trim()}
+          accessibilityLabel="Create channel"
+        >
+          Add
+        </Button>
+      </View>
 
       <Divider style={styles.divider} />
 
