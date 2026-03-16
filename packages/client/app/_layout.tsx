@@ -8,7 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { lightTheme, darkTheme } from '@/theme';
 import { useAuthStore } from '@/stores/authStore';
-import { useUiStore, hydrateTheme } from '@/stores/uiStore';
+import { useUiStore, hydrateTheme, hydrateToneDisplay } from '@/stores/uiStore';
 import { hydrateNotificationPreference } from '@/stores/notificationStore';
 import { configureAuth } from '@/api/client';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -47,6 +47,7 @@ function AppContent() {
   useEffect(() => {
     void hydrate();
     void hydrateTheme();
+    void hydrateToneDisplay();
     void hydrateNotificationPreference();
   }, [hydrate]);
 
