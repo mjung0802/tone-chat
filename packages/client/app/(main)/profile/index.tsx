@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
-import { TextInput, Button, Text, Avatar, HelperText, useTheme } from 'react-native-paper';
-import { useMe, useUpdateProfile } from '../../../src/hooks/useUser';
-import { useLogout } from '../../../src/hooks/useAuth';
-import { LoadingSpinner } from '../../../src/components/common/LoadingSpinner';
-import { ApiClientError } from '../../../src/api/client';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Icon, TextInput, Button, Text, HelperText, useTheme } from 'react-native-paper';
+import { useMe, useUpdateProfile } from '@/hooks/useUser';
+import { useLogout } from '@/hooks/useAuth';
+import { useUpload } from '@/hooks/useAttachments';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { UserAvatar } from '@/components/common/UserAvatar';
+import { ApiClientError } from '@/api/client';
+import * as DocumentPicker from 'expo-document-picker';
 
 export default function ProfileScreen() {
   const { data: user, isLoading } = useMe();
   const updateProfile = useUpdateProfile();
+  const upload = useUpload();
   const logout = useLogout();
   const theme = useTheme();
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
 
   const [displayName, setDisplayName] = useState('');
   const [pronouns, setPronouns] = useState('');
@@ -48,7 +54,29 @@ export default function ProfileScreen() {
     updateProfile.mutate(data);
   };
 
-  const initials = (user.display_name ?? user.username).slice(0, 1).toUpperCase();
+  const displayLabel = user.display_name ?? user.username;
+
+  const handleAvatarPress = async () => {
+    const result = await DocumentPicker.getDocumentAsync({ type: ['image/*'] });
+    if (result.canceled || result.assets.length === 0) return;
+    const asset = result.assets[0]!;
+    setIsUploadingAvatar(true);
+    setAvatarError('');
+    try {
+      const response = await fetch(asset.uri);
+      const blob = await response.blob();
+      const uploadResult = await upload.mutateAsync({
+        data: blob,
+        filename: asset.name,
+        contentType: asset.mimeType ?? 'image/jpeg',
+      });
+      updateProfile.mutate({ avatar_url: uploadResult.attachment.id });
+    } catch {
+      setAvatarError('Failed to upload avatar');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   return (
     <ScrollView
@@ -56,13 +84,25 @@ export default function ProfileScreen() {
       contentContainerStyle={styles.container}
       keyboardShouldPersistTaps="handled"
     >
-      <Avatar.Text
-        label={initials}
-        size={80}
-        style={[styles.avatar, { backgroundColor: theme.colors.primaryContainer }]}
-        labelStyle={{ color: theme.colors.onPrimaryContainer }}
-        accessibilityLabel={`Profile picture for ${user.username}`}
-      />
+      <Pressable
+        onPress={handleAvatarPress}
+        style={styles.avatarContainer}
+        accessibilityRole="button"
+        accessibilityLabel="Change profile picture"
+      >
+        <UserAvatar
+          avatarAttachmentId={user.avatar_url}
+          name={displayLabel}
+          size={80}
+        />
+        <View style={[styles.cameraOverlay, { backgroundColor: theme.colors.surface }]}>
+          {isUploadingAvatar ? (
+            <ActivityIndicator size={16} />
+          ) : (
+            <Icon source="camera" size={16} color={theme.colors.onSurface} />
+          )}
+        </View>
+      </Pressable>
 
       <Text variant="headlineSmall" style={styles.username}>
         {user.username}
@@ -71,9 +111,9 @@ export default function ProfileScreen() {
         {user.email}
       </Text>
 
-      {errorMessage ? (
+      {errorMessage || avatarError ? (
         <HelperText type="error" visible accessibilityLiveRegion="polite">
-          {errorMessage}
+          {errorMessage || avatarError}
         </HelperText>
       ) : null}
 
@@ -151,8 +191,20 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
   },
-  avatar: {
+  avatarContainer: {
+    position: 'relative',
     marginBottom: 12,
+  },
+  cameraOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
   },
   username: {
     marginBottom: 2,

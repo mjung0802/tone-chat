@@ -131,13 +131,15 @@ export default function ChannelScreen() {
     };
   }, []);
 
-  // Build author name map from members
-  const authorNames = useMemo(() => {
+  // Build author name + avatar maps from members
+  const { authorNames, authorAvatars } = useMemo(() => {
     const names: Record<string, string> = {};
+    const avatars: Record<string, string | null> = {};
     members?.forEach((m) => {
       names[m.userId] = m.nickname ?? m.display_name ?? m.username ?? m.userId;
+      avatars[m.userId] = m.avatar_url ?? null;
     });
-    return names;
+    return { authorNames: names, authorAvatars: avatars };
   }, [members]);
 
   const typingUserNames = Array.from(typingUsers.keys()).map(
@@ -198,6 +200,7 @@ export default function ChannelScreen() {
         messages={messages}
         currentUserId={userId}
         authorNames={authorNames}
+        authorAvatars={authorAvatars}
         onLoadMore={handleLoadMore}
         isLoadingMore={isFetchingNextPage}
         onImagePress={handleImagePress}

@@ -20,12 +20,12 @@ membersRouter.get('/', async (req: AuthRequest, res) => {
   const userIds = members.map((m) => m.userId as string);
   if (userIds.length > 0) {
     const BATCH_SIZE = 100;
-    const userMap = new Map<string, { id: string; username: string; display_name: string | null }>();
+    const userMap = new Map<string, { id: string; username: string; display_name: string | null; avatar_url: string | null }>();
     for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
       const batch = userIds.slice(i, i + BATCH_SIZE);
       const usersResult = await usersClient.getUsersBatch(req.userId!, batch);
       if (usersResult.status === 200) {
-        const { users } = usersResult.data as { users: Array<{ id: string; username: string; display_name: string | null }> };
+        const { users } = usersResult.data as { users: Array<{ id: string; username: string; display_name: string | null; avatar_url: string | null }> };
         for (const u of users) {
           userMap.set(u.id, u);
         }
@@ -36,6 +36,7 @@ membersRouter.get('/', async (req: AuthRequest, res) => {
       if (user) {
         member.username = user.username;
         member.display_name = user.display_name;
+        member.avatar_url = user.avatar_url;
       }
     }
   }

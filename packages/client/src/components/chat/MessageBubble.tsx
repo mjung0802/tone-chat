@@ -3,6 +3,7 @@ import { View, Pressable, Platform, StyleSheet } from 'react-native';
 import { Text, Icon, IconButton, useTheme } from 'react-native-paper';
 import { AttachmentBubble } from './AttachmentBubble';
 import { ReactionChips } from './ReactionChips';
+import { UserAvatar } from '../common/UserAvatar';
 import type { Message, Attachment } from '../../types/models';
 
 interface MessageBubbleProps {
@@ -18,6 +19,7 @@ interface MessageBubbleProps {
   onReply?: ((message: Message) => void) | undefined;
   onReplyPress?: ((messageId: string) => void) | undefined;
   highlighted?: boolean | undefined;
+  authorAvatarId?: string | null | undefined;
 }
 
 function formatTime(dateStr: string): string {
@@ -38,6 +40,7 @@ export const MessageBubble = memo(function MessageBubble({
   onReply,
   onReplyPress,
   highlighted,
+  authorAvatarId,
 }: MessageBubbleProps) {
   const theme = useTheme();
   const [hovered, setHovered] = useState(false);
@@ -72,10 +75,18 @@ export const MessageBubble = memo(function MessageBubble({
     <View
       onPointerEnter={Platform.OS === 'web' ? () => setHovered(true) : undefined}
       onPointerLeave={Platform.OS === 'web' ? () => setHovered(false) : undefined}
-      style={containerStyle}
+      style={[containerStyle, styles.messageRow]}
       accessibilityRole="text"
       accessibilityLabel={`${authorName ?? 'Unknown'} said: ${message.content}. ${formatTime(message.createdAt)}${message.editedAt ? ', edited' : ''}${attachmentLabel}`}
     >
+      {authorName ? (
+        <View style={styles.avatarColumn}>
+          <UserAvatar avatarAttachmentId={authorAvatarId} name={authorName} size={32} />
+        </View>
+      ) : (
+        <View style={styles.avatarSpacer} />
+      )}
+      <View style={styles.messageContent}>
       {authorName ? (
         <View style={styles.authorRow}>
           <Text
@@ -168,6 +179,7 @@ export const MessageBubble = memo(function MessageBubble({
           onAddReaction={() => onAddReaction?.(message._id)}
         />
       ) : null}
+      </View>
     </View>
   );
 });
@@ -178,6 +190,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 2,
     maxWidth: '80%',
+  },
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  avatarColumn: {
+    width: 40,
+    paddingTop: 6,
+  },
+  avatarSpacer: {
+    width: 40,
+  },
+  messageContent: {
+    flex: 1,
   },
   bubbleRow: {
     flexDirection: 'row',

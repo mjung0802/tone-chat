@@ -178,17 +178,17 @@ export async function mockMessagesRoutes(page: Page, messages = MOCK_MESSAGES): 
   );
 }
 
-export async function mockUsersRoutes(page: Page): Promise<void> {
+export async function mockUsersRoutes(page: Page, user = MOCK_USER): Promise<void> {
   await page.route(`${API}/users/me`, async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ user: MOCK_USER }),
+        body: JSON.stringify({ user }),
       });
     } else if (route.request().method() === 'PATCH') {
       const body = route.request().postDataJSON() as Record<string, string>;
-      const updatedUser = { ...MOCK_USER, ...body };
+      const updatedUser = { ...user, ...body };
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -197,6 +197,16 @@ export async function mockUsersRoutes(page: Page): Promise<void> {
     } else {
       await route.continue();
     }
+  });
+}
+
+export async function mockAttachmentRoute(page: Page, attachment: { id: string; [key: string]: unknown }): Promise<void> {
+  await page.route(`${API}/attachments/${attachment.id}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ attachment }),
+    });
   });
 }
 

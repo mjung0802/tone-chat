@@ -13,6 +13,7 @@ interface MessageListProps {
   messages: Message[];
   currentUserId: string | null;
   authorNames?: Record<string, string> | undefined;
+  authorAvatars?: Record<string, string | null> | undefined;
   onLoadMore?: (() => void) | undefined;
   isLoadingMore?: boolean | undefined;
   onMessageLongPress?: ((message: Message) => void) | undefined;
@@ -29,6 +30,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
     messages,
     currentUserId,
     authorNames,
+    authorAvatars,
     onLoadMore,
     isLoadingMore,
     onMessageLongPress,
@@ -66,9 +68,10 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
         onReply={onReply}
         onReplyPress={onReplyPress}
         highlighted={highlightedMessageId === item._id}
+        authorAvatarId={authorAvatars?.[item.authorId]}
       />
     ),
-    [currentUserId, authorNames, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId],
+    [currentUserId, authorNames, authorAvatars, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId],
   );
 
   const keyExtractor = useCallback((item: Message) => item._id, []);

@@ -66,7 +66,7 @@ function makeMember(id: string) {
 }
 
 function makeUser(id: string) {
-  return { id, username: `user_${id}`, display_name: `User ${id}` };
+  return { id, username: `user_${id}`, display_name: `User ${id}`, avatar_url: `att-avatar-${id}` };
 }
 
 describe('GET / (list members with user enrichment)', () => {
@@ -125,6 +125,7 @@ describe('GET / (list members with user enrichment)', () => {
     for (const m of result) {
       assert.equal(m.username, `user_${m.userId}`);
       assert.equal(m.display_name, `User ${m.userId}`);
+      assert.equal(m.avatar_url, `att-avatar-${m.userId}`);
     }
   });
 
@@ -171,6 +172,7 @@ describe('GET / (list members with user enrichment)', () => {
     for (const m of result) {
       assert.equal(m.username, `user_${m.userId}`);
       assert.equal(m.display_name, `User ${m.userId}`);
+      assert.equal(m.avatar_url, `att-avatar-${m.userId}`);
     }
   });
 

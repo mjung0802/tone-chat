@@ -473,7 +473,7 @@ describe('BFF Members', () => {
       headers: authHeaders(alice.accessToken),
     });
     assert.equal(res.status, 200);
-    const body = await res.json() as { members: Array<{ userId: string; username: string; display_name: string | null }> };
+    const body = await res.json() as { members: Array<{ userId: string; username: string; display_name: string | null; avatar_url: string | null }> };
     assert.equal(body.members.length, 2);
 
     const aliceMember = body.members.find(m => m.userId === alice.user.id);
@@ -482,6 +482,9 @@ describe('BFF Members', () => {
     assert.ok(bobMember);
     assert.equal(aliceMember.username, 'alice');
     assert.equal(bobMember.username, 'bob');
+    // avatar_url should be included in enrichment (null for users without avatars)
+    assert.equal(aliceMember.avatar_url, null);
+    assert.equal(bobMember.avatar_url, null);
   });
 
   it('joins public server and returns 409 on duplicate', async () => {

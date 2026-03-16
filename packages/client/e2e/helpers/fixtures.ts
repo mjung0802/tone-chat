@@ -18,7 +18,7 @@ export const MOCK_USER = {
   email_verified: true,
   display_name: 'Test User',
   pronouns: null,
-  avatar_url: null,
+  avatar_url: null as string | null,
   status: 'online',
   bio: null,
   created_at: '2024-01-01T00:00:00.000Z',
@@ -115,6 +115,21 @@ export const MOCK_MESSAGE_WITH_REPLY = {
     content: 'Hello from test',
   },
   createdAt: '2024-01-01T00:02:00.000Z',
+};
+
+// 1x1 red PNG as a data URI for avatar image tests
+const AVATAR_DATA_URI = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
+
+export const MOCK_ATTACHMENT_AVATAR = {
+  id: 'att-avatar-001',
+  uploader_id: 'user-001',
+  filename: 'avatar.jpg',
+  mime_type: 'image/jpeg',
+  size_bytes: 5000,
+  storage_key: 'uploads/avatar.jpg',
+  status: 'ready' as const,
+  url: AVATAR_DATA_URI,
+  created_at: '2024-01-01T00:00:00.000Z',
 };
 
 export const MOCK_MESSAGE_WITH_MENTION = {

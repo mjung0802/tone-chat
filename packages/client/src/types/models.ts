@@ -57,6 +57,7 @@ export interface ServerMember {
   joinedAt: string;
   username?: string | undefined;
   display_name?: string | null | undefined;
+  avatar_url?: string | null | undefined;
 }
 
 export interface Invite {

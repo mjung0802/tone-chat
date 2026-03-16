@@ -1,5 +1,6 @@
 import React from 'react';
-import { List, Avatar, Chip } from 'react-native-paper';
+import { List, Chip } from 'react-native-paper';
+import { UserAvatar } from '../common/UserAvatar';
 import type { ServerMember } from '../../types/models';
 
 interface MemberListItemProps {
@@ -26,8 +27,9 @@ export function MemberListItem({ member, displayName, onPress }: MemberListItemP
       title={name}
       description={isAdmin ? 'Admin' : ''}
       left={() => (
-        <Avatar.Text
-          label={name.slice(0, 1).toUpperCase()}
+        <UserAvatar
+          avatarAttachmentId={member.avatar_url}
+          name={name}
           size={36}
         />
       )}

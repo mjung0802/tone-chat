@@ -14,6 +14,16 @@ jest.mock('./AttachmentBubble', () => {
   };
 });
 
+jest.mock('../common/UserAvatar', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Text } = require('react-native');
+  return {
+    UserAvatar: ({ avatarAttachmentId, name, size }: { avatarAttachmentId?: string | null; name: string; size?: number }) => {
+      return <Text testID="user-avatar">{`UserAvatar:${name}:${avatarAttachmentId ?? 'none'}:${size ?? 32}`}</Text>;
+    },
+  };
+});
+
 jest.mock('./ReactionChips', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Pressable, Text, View } = require('react-native');
@@ -307,5 +317,30 @@ describe('MessageBubble', () => {
     );
     fireEvent.press(getByTestId('mock-add'));
     expect(onAddReaction).toHaveBeenCalledWith('msg-99');
+  });
+
+  it('renders UserAvatar when authorAvatarId is provided', () => {
+    const msg = makeMessage();
+    const { getByTestId, getByText } = renderWithProviders(
+      <MessageBubble
+        message={msg}
+        isOwn={false}
+        authorName="Alice"
+        authorAvatarId="att-1"
+      />,
+    );
+
+    expect(getByTestId('user-avatar')).toBeTruthy();
+    expect(getByText('UserAvatar:Alice:att-1:32')).toBeTruthy();
+  });
+
+  it('renders spacer when no authorName (continuation message)', () => {
+    const msg = makeMessage();
+    const { queryByTestId } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} />,
+    );
+
+    // No UserAvatar should be rendered for continuation messages
+    expect(queryByTestId('user-avatar')).toBeNull();
   });
 });

@@ -13,6 +13,7 @@ import {
   MOCK_MEMBERS_FULL,
   MOCK_MESSAGE_WITH_REPLY,
   MOCK_MESSAGE_WITH_MENTION,
+  MOCK_ATTACHMENT_AVATAR,
 } from './helpers/fixtures';
 
 const CHANNEL_URL = '/servers/server-001/channels/channel-001';
@@ -354,4 +355,33 @@ test('displays a message with mention highlight', async ({ page }) => {
 
   // The mentioned message content should be visible
   await expect(page.getByText(MOCK_MESSAGE_WITH_MENTION.content)).toBeVisible();
+});
+
+// --- Avatar Tests ---
+
+test('shows avatar next to messages when member has avatar_url', async ({ page }) => {
+  const API = 'http://localhost:4000/api/v1';
+
+  // Members with avatar_url
+  const membersWithAvatar = MOCK_MEMBERS_FULL.map((m) =>
+    m.userId === 'user-001' ? { ...m, avatar_url: MOCK_ATTACHMENT_AVATAR.id } : m,
+  );
+
+  await mockMessagesRoutes(page);
+  await mockMembersRoutes(page, membersWithAvatar);
+
+  // Mock the attachment endpoint for the avatar
+  await page.route(`${API}/attachments/${MOCK_ATTACHMENT_AVATAR.id}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ attachment: MOCK_ATTACHMENT_AVATAR }),
+    });
+  });
+
+  await page.goto(CHANNEL_URL);
+
+  // Avatar images should appear in the message list
+  const avatarImages = page.getByLabel('Test User\'s avatar').locator('img');
+  await expect(avatarImages.first()).toBeVisible();
 });
