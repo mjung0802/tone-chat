@@ -6,6 +6,36 @@ import { ReactionChips } from './ReactionChips';
 import { UserAvatar } from '../common/UserAvatar';
 import type { Message, Attachment } from '../../types/models';
 
+const MENTION_REGEX = /@\w+/g;
+
+function renderContentWithMentions(
+  content: string,
+  mentionColor: string,
+): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = MENTION_REGEX.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+    parts.push(
+      <Text key={match.index} style={{ color: mentionColor, fontWeight: 'bold' }}>
+        {match[0]}
+      </Text>,
+    );
+    lastIndex = MENTION_REGEX.lastIndex;
+  }
+  MENTION_REGEX.lastIndex = 0;
+
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  return parts;
+}
+
 interface MessageBubbleProps {
   message: Message;
   isOwn: boolean;
@@ -127,7 +157,9 @@ export const MessageBubble = memo(function MessageBubble({
             </Pressable>
           ) : null}
           {message.content ? (
-            <Text style={{ color: textColor }}>{message.content}</Text>
+            <Text style={{ color: textColor }}>
+              {renderContentWithMentions(message.content, theme.colors.primary)}
+            </Text>
           ) : null}
           {hasAttachments ? (
             <View style={styles.attachments}>

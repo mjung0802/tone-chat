@@ -334,6 +334,44 @@ describe('MessageBubble', () => {
     expect(getByText('UserAvatar:Alice:att-1:32')).toBeTruthy();
   });
 
+  it('renders @mention text with bold styling', () => {
+    const msg = makeMessage({ content: 'Hey @alice check this' });
+    const { getByText } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Bob" />,
+    );
+
+    expect(getByText('@alice')).toBeTruthy();
+    expect(getByText(/Hey.*check this/)).toBeTruthy();
+  });
+
+  it('renders multiple @mentions highlighted', () => {
+    const msg = makeMessage({ content: '@alice and @bob' });
+    const { getByText } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Carol" />,
+    );
+
+    expect(getByText('@alice')).toBeTruthy();
+    expect(getByText('@bob')).toBeTruthy();
+  });
+
+  it('renders plain message without mention parsing artifacts', () => {
+    const msg = makeMessage({ content: 'No mentions here' });
+    const { getByText } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+    );
+
+    expect(getByText('No mentions here')).toBeTruthy();
+  });
+
+  it('renders message that is only a mention', () => {
+    const msg = makeMessage({ content: '@alice' });
+    const { getByText } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Bob" />,
+    );
+
+    expect(getByText('@alice')).toBeTruthy();
+  });
+
   it('renders spacer when no authorName (continuation message)', () => {
     const msg = makeMessage();
     const { queryByTestId } = renderWithProviders(
