@@ -144,6 +144,7 @@ export async function mockMessagesRoutes(page: Page, messages = MOCK_MESSAGES): 
           content?: string;
           replyToId?: string;
           mentions?: string[];
+          tone?: string;
         };
         const newMessage: Record<string, unknown> = {
           _id: `msg-new-${Date.now()}`,
@@ -165,6 +166,9 @@ export async function mockMessagesRoutes(page: Page, messages = MOCK_MESSAGES): 
         }
         if (body.mentions) {
           newMessage.mentions = body.mentions;
+        }
+        if (body.tone) {
+          newMessage.tone = body.tone;
         }
         await route.fulfill({
           status: 201,
@@ -333,4 +337,57 @@ export async function mockInvitesRoutes(page: Page): Promise<void> {
       body: JSON.stringify({ invites: [] }),
     });
   });
+}
+
+export async function mockTonesRoutes(
+  page: Page,
+  customTones: Array<{ key: string; label: string; emoji: string; colorLight: string; colorDark: string; textStyle: string }> = [],
+): Promise<void> {
+  const currentTones = [...customTones];
+
+  // DELETE must be registered before GET to avoid the wildcard GET catching delete requests
+  await page.route(
+    /http:\/\/localhost:4000\/api\/v1\/servers\/[^/]+\/tones\/[^/]+$/,
+    async (route) => {
+      if (route.request().method() === 'DELETE') {
+        const url = route.request().url();
+        const toneKey = url.split('/tones/')[1]!;
+        const idx = currentTones.findIndex((t) => t.key === toneKey);
+        if (idx !== -1) currentTones.splice(idx, 1);
+        await route.fulfill({ status: 204, body: '' });
+      } else {
+        await route.fallback();
+      }
+    },
+  );
+
+  await page.route(
+    /http:\/\/localhost:4000\/api\/v1\/servers\/[^/]+\/tones(\?.*)?$/,
+    async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ customTones: currentTones }),
+        });
+      } else if (route.request().method() === 'POST') {
+        const body = route.request().postDataJSON() as {
+          key: string;
+          label: string;
+          emoji: string;
+          colorLight: string;
+          colorDark: string;
+          textStyle: string;
+        };
+        currentTones.push(body);
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({ customTone: body }),
+        });
+      } else {
+        await route.continue();
+      }
+    },
+  );
 }

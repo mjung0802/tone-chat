@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { TextInput, Button, SegmentedButtons, HelperText } from 'react-native-paper';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
+import { TextInput, Button, SegmentedButtons, HelperText, useTheme } from 'react-native-paper';
 import type { AddCustomToneRequest } from '../../types/api.types';
+import { EmojiPicker } from '../chat/EmojiPicker';
 
 interface CustomToneFormProps {
   onSubmit: (data: AddCustomToneRequest) => void;
@@ -19,6 +20,8 @@ export function CustomToneForm({ onSubmit, isLoading }: CustomToneFormProps) {
   const [colorDark, setColorDark] = useState('#');
   const [textStyle, setTextStyle] = useState<'normal' | 'italic' | 'medium'>('normal');
   const [error, setError] = useState('');
+  const [emojiPickerVisible, setEmojiPickerVisible] = useState(false);
+  const theme = useTheme();
 
   const handleSubmit = () => {
     setError('');
@@ -30,8 +33,8 @@ export function CustomToneForm({ onSubmit, isLoading }: CustomToneFormProps) {
       setError('Label must be 1-50 characters');
       return;
     }
-    if (!emoji.trim() || emoji.length > 10) {
-      setError('Emoji must be 1-10 characters');
+    if (!emoji.trim()) {
+      setError('Emoji must be selected');
       return;
     }
     if (!HEX_PATTERN.test(colorLight)) {
@@ -60,24 +63,26 @@ export function CustomToneForm({ onSubmit, isLoading }: CustomToneFormProps) {
       ) : null}
       <View style={styles.row}>
         <TextInput
-          label="Key"
+          label="Command (e.g. j)"
           value={key}
           onChangeText={(v) => setKey(v.toLowerCase())}
           maxLength={10}
           accessibilityLabel="Tone key"
           style={[styles.input, { flex: 1 }]}
         />
-        <TextInput
-          label="Emoji"
-          value={emoji}
-          onChangeText={setEmoji}
-          maxLength={10}
-          accessibilityLabel="Tone emoji"
-          style={[styles.input, { width: 80 }]}
-        />
+        <Pressable
+          onPress={() => setEmojiPickerVisible(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Pick tone emoji"
+          style={[styles.emojiButton, { borderColor: theme.colors.outline }]}
+        >
+          <Text style={[styles.emojiButtonText, !emoji ? { opacity: 0.4 } : undefined]}>
+            {emoji || '😀'}
+          </Text>
+        </Pressable>
       </View>
       <TextInput
-        label="Label"
+        label="Description (e.g. joking)"
         value={label}
         onChangeText={setLabel}
         maxLength={50}
@@ -86,7 +91,7 @@ export function CustomToneForm({ onSubmit, isLoading }: CustomToneFormProps) {
       />
       <View style={styles.row}>
         <TextInput
-          label="Light color"
+          label="Light mode color"
           value={colorLight}
           onChangeText={setColorLight}
           maxLength={7}
@@ -94,7 +99,7 @@ export function CustomToneForm({ onSubmit, isLoading }: CustomToneFormProps) {
           style={[styles.input, { flex: 1 }]}
         />
         <TextInput
-          label="Dark color"
+          label="Dark mode color"
           value={colorDark}
           onChangeText={setColorDark}
           maxLength={7}
@@ -121,6 +126,11 @@ export function CustomToneForm({ onSubmit, isLoading }: CustomToneFormProps) {
       >
         Add Tone
       </Button>
+      <EmojiPicker
+        visible={emojiPickerVisible}
+        onSelect={(e) => { setEmoji(e); setEmojiPickerVisible(false); }}
+        onDismiss={() => setEmojiPickerVisible(false)}
+      />
     </View>
   );
 }
@@ -138,5 +148,17 @@ const styles = StyleSheet.create({
   },
   segmented: {
     marginBottom: 8,
+  },
+  emojiButton: {
+    width: 56,
+    height: 56,
+    borderWidth: 1,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  emojiButtonText: {
+    fontSize: 28,
   },
 });
