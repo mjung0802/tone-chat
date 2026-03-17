@@ -6,11 +6,12 @@ import { AppError } from '../shared/middleware/errorHandler.js';
 export async function createMessage(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
   const { serverId, channelId } = req.params;
-  const { content, attachmentIds, replyToId, mentions: rawMentions } = req.body as {
+  const { content, attachmentIds, replyToId, mentions: rawMentions, tone: rawTone } = req.body as {
     content: string;
     attachmentIds?: string[];
     replyToId?: unknown;
     mentions?: unknown;
+    tone?: unknown;
   };
 
   if (!content && (!attachmentIds || attachmentIds.length === 0)) {
@@ -36,6 +37,16 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
       return;
     }
     mentions = rawMentions as string[];
+  }
+
+  // Validate tone
+  let tone: string | undefined;
+  if (rawTone !== undefined) {
+    if (typeof rawTone !== 'string' || rawTone.length === 0 || rawTone.length > 50) {
+      res.status(400).json({ error: { code: 'INVALID_TONE', message: 'tone must be a string (1-50 chars)', status: 400 } });
+      return;
+    }
+    tone = rawTone;
   }
 
   // Process replyTo
@@ -75,6 +86,7 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
     attachmentIds: attachmentIds ?? [],
     mentions,
     ...(replyTo ? { replyTo } : {}),
+    ...(tone ? { tone } : {}),
   });
 
   res.status(201).json({ message });

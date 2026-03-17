@@ -28,3 +28,18 @@ serversRouter.delete('/:serverId', async (req: AuthRequest, res) => {
   const result = await client.deleteServer(req.userId!, req.params['serverId'] as string);
   res.status(result.status).end();
 });
+
+serversRouter.get('/:serverId/tones', async (req: AuthRequest, res) => {
+  const result = await client.listCustomTones(req.userId!, req.params['serverId'] as string);
+  res.status(result.status).json(result.data);
+});
+
+serversRouter.post('/:serverId/tones', async (req: AuthRequest, res) => {
+  const result = await client.addCustomTone(req.userId!, req.params['serverId'] as string, req.body as Record<string, unknown>);
+  res.status(result.status).json(result.data);
+});
+
+serversRouter.delete('/:serverId/tones/:toneKey', async (req: AuthRequest, res) => {
+  const result = await client.removeCustomTone(req.userId!, req.params['serverId'] as string, req.params['toneKey'] as string);
+  res.status(result.status).end();
+});

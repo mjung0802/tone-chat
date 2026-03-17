@@ -3,7 +3,7 @@ import { FlatList, StyleSheet, type ListRenderItemInfo } from 'react-native';
 import { MessageBubble } from './MessageBubble';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { EmptyState } from '../common/EmptyState';
-import type { Message, Attachment } from '../../types/models';
+import type { Message, Attachment, CustomToneDefinition } from '../../types/models';
 
 export interface MessageListHandle {
   scrollToMessage: (messageId: string) => boolean;
@@ -23,6 +23,7 @@ interface MessageListProps {
   onReply?: ((message: Message) => void) | undefined;
   onReplyPress?: ((messageId: string) => void) | undefined;
   highlightedMessageId?: string | null | undefined;
+  customTones?: CustomToneDefinition[] | undefined;
 }
 
 export const MessageList = forwardRef<MessageListHandle, MessageListProps>(function MessageList(props, ref) {
@@ -40,6 +41,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
     onReply,
     onReplyPress,
     highlightedMessageId,
+    customTones,
   } = props;
 
   const flatListRef = useRef<FlatList>(null);
@@ -69,9 +71,10 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
         onReplyPress={onReplyPress}
         highlighted={highlightedMessageId === item._id}
         authorAvatarId={authorAvatars?.[item.authorId]}
+        customTones={customTones}
       />
     ),
-    [currentUserId, authorNames, authorAvatars, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId],
+    [currentUserId, authorNames, authorAvatars, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId, customTones],
   );
 
   const keyExtractor = useCallback((item: Message) => item._id, []);

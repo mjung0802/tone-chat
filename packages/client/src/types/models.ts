@@ -19,6 +19,7 @@ export interface Server {
   icon?: string;
   description?: string;
   visibility: 'public' | 'private';
+  customTones?: CustomToneDefinition[] | undefined;
   createdAt: string;
   updatedAt: string;
 }
@@ -45,7 +46,17 @@ export interface Message {
   reactions?: { emoji: string; userIds: string[] }[] | undefined;
   replyTo?: { messageId: string; authorId: string; authorName: string; content: string } | undefined;
   mentions?: string[] | undefined;
+  tone?: string | undefined;
   createdAt: string;
+}
+
+export interface CustomToneDefinition {
+  key: string;
+  label: string;
+  emoji: string;
+  colorLight: string;
+  colorDark: string;
+  textStyle: 'normal' | 'italic' | 'medium';
 }
 
 export interface ServerMember {

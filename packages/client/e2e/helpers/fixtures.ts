@@ -145,6 +145,15 @@ export const MOCK_ATTACHMENT_AVATAR = {
   created_at: '2024-01-01T00:00:00.000Z',
 };
 
+export const MOCK_CUSTOM_TONE = {
+  key: 'silly',
+  label: 'Silly',
+  emoji: '🤪',
+  colorLight: '#ff6b6b',
+  colorDark: '#ff8c8c',
+  textStyle: 'italic' as const,
+};
+
 export const MOCK_MESSAGE_WITH_MENTION = {
   _id: 'msg-mention-001',
   channelId: 'channel-001',

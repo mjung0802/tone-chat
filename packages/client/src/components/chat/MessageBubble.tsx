@@ -1,10 +1,12 @@
 import React, { memo, useState } from 'react';
-import { View, Pressable, Platform, StyleSheet } from 'react-native';
+import { View, Pressable, Platform, StyleSheet, useColorScheme } from 'react-native';
 import { Text, Icon, IconButton, useTheme } from 'react-native-paper';
 import { AttachmentBubble } from './AttachmentBubble';
 import { ReactionChips } from './ReactionChips';
 import { UserAvatar } from '../common/UserAvatar';
-import type { Message, Attachment } from '../../types/models';
+import type { Message, Attachment, CustomToneDefinition } from '../../types/models';
+import { resolveTone } from '../../tone/toneRegistry';
+import { useUiStore } from '../../stores/uiStore';
 
 const MENTION_REGEX = /@\w+/g;
 
@@ -50,6 +52,7 @@ interface MessageBubbleProps {
   onReplyPress?: ((messageId: string) => void) | undefined;
   highlighted?: boolean | undefined;
   authorAvatarId?: string | null | undefined;
+  customTones?: CustomToneDefinition[] | undefined;
 }
 
 function formatTime(dateStr: string): string {
@@ -71,9 +74,15 @@ export const MessageBubble = memo(function MessageBubble({
   onReplyPress,
   highlighted,
   authorAvatarId,
+  customTones,
 }: MessageBubbleProps) {
   const theme = useTheme();
   const [hovered, setHovered] = useState(false);
+  const toneDisplay = useUiStore((s) => s.toneDisplay);
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const toneDef = message.tone ? resolveTone(message.tone, customTones) : undefined;
+  const toneColor = toneDef ? (isDark ? toneDef.color.dark : toneDef.color.light) : undefined;
 
   const isMentioned = message.mentions?.includes(currentUserId ?? '') ?? false;
 
@@ -88,6 +97,25 @@ export const MessageBubble = memo(function MessageBubble({
   const textColor = isOwn
     ? theme.colors.onPrimaryContainer
     : theme.colors.onSurfaceVariant;
+
+  const toneBubbleStyle = (toneDef && toneColor && toneDisplay === 'full') ? {
+    borderWidth: 1.5,
+    borderColor: toneColor,
+    ...(Platform.OS === 'web' ? { boxShadow: `0 0 12px ${toneColor}66, 0 0 28px ${toneColor}1A` } : {
+      shadowColor: toneColor,
+      shadowRadius: 8,
+      shadowOpacity: 0.35,
+      shadowOffset: { width: 0, height: 0 },
+      elevation: 4,
+    }),
+  } : undefined;
+
+  const effectiveTextColor = (toneDef && toneColor && toneDisplay === 'full') ? toneColor : textColor;
+
+  const toneTextStyle = toneDef && toneDisplay === 'full' ? {
+    ...(toneDef.textStyle === 'italic' ? { fontStyle: 'italic' as const } : {}),
+    ...(toneDef.textStyle === 'medium' ? { fontWeight: '500' as const } : {}),
+  } : {};
 
   const hasAttachments = message.attachmentIds.length > 0;
   const attachmentLabel = hasAttachments
@@ -107,7 +135,7 @@ export const MessageBubble = memo(function MessageBubble({
       onPointerLeave={Platform.OS === 'web' ? () => setHovered(false) : undefined}
       style={[containerStyle, styles.messageRow]}
       accessibilityRole="text"
-      accessibilityLabel={`${authorName ?? 'Unknown'} said: ${message.content}. ${formatTime(message.createdAt)}${message.editedAt ? ', edited' : ''}${attachmentLabel}`}
+      accessibilityLabel={`${authorName ?? 'Unknown'} said: ${message.content}. ${formatTime(message.createdAt)}${message.editedAt ? ', edited' : ''}${attachmentLabel}${toneDef ? `, tone: ${toneDef.label}` : ''}`}
     >
       {authorName ? (
         <View style={styles.avatarColumn}>
@@ -137,7 +165,7 @@ export const MessageBubble = memo(function MessageBubble({
       ) : null}
       <View style={styles.bubbleRow}>
         <View
-          style={[styles.bubbleWrapper, bubbleStyle]}
+          style={[styles.bubbleWrapper, bubbleStyle, toneBubbleStyle]}
           onTouchEnd={onLongPress ? () => onLongPress(message) : undefined}
         >
           {message.replyTo ? (
@@ -156,21 +184,40 @@ export const MessageBubble = memo(function MessageBubble({
               </Text>
             </Pressable>
           ) : null}
-          {message.content ? (
-            <Text style={{ color: textColor }}>
-              {renderContentWithMentions(message.content, theme.colors.primary)}
+          {(() => {
+            const contentBlock = (
+              <>
+                {message.content ? (
+                  <Text style={[{ color: effectiveTextColor }, toneTextStyle]}>
+                    {renderContentWithMentions(message.content, theme.colors.primary)}
+                  </Text>
+                ) : null}
+                {hasAttachments ? (
+                  <View style={styles.attachments}>
+                    {message.attachmentIds.map((id) => (
+                      <AttachmentBubble key={id} attachmentId={id} onImagePress={onImagePress} />
+                    ))}
+                  </View>
+                ) : null}
+              </>
+            );
+
+            return toneDef && toneDisplay === 'full' ? (
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                <Text style={{ fontSize: 18 }}>{toneDef.emoji}</Text>
+                <View style={{ flex: 1 }}>{contentBlock}</View>
+              </View>
+            ) : contentBlock;
+          })()}
+          {toneDef ? (
+            <Text style={{
+              color: toneColor,
+              fontSize: 11,
+              marginTop: 2,
+              ...(toneDisplay === 'reduced' ? { opacity: 0.7 } : {}),
+            }}>
+              {toneDisplay === 'full' ? toneDef.label : `/${toneDef.key}`}
             </Text>
-          ) : null}
-          {hasAttachments ? (
-            <View style={styles.attachments}>
-              {message.attachmentIds.map((id) => (
-                <AttachmentBubble
-                  key={id}
-                  attachmentId={id}
-                  onImagePress={onImagePress}
-                />
-              ))}
-            </View>
           ) : null}
         </View>
         {(onAddReaction || onReply) ? (

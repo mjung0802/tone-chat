@@ -2,7 +2,7 @@ import type { Server, Socket } from 'socket.io';
 import * as messagesClient from './messages.client.js';
 import { emitMentionsFromResult } from './mentions.helper.js';
 
-function isValidSendMessage(data: unknown): data is { serverId: string; channelId: string; content: string; attachmentIds?: string[]; replyToId?: string; mentions?: string[] } {
+function isValidSendMessage(data: unknown): data is { serverId: string; channelId: string; content: string; attachmentIds?: string[]; replyToId?: string; mentions?: string[]; tone?: string } {
   if (typeof data !== 'object' || data === null) return false;
   const d = data as Record<string, unknown>;
   if (typeof d['serverId'] !== 'string' || typeof d['channelId'] !== 'string') return false;
@@ -19,6 +19,9 @@ function isValidSendMessage(data: unknown): data is { serverId: string; channelI
     if (!Array.isArray(d['mentions'])) return false;
     if (d['mentions'].length > 20) return false;
     if (!d['mentions'].every((m: unknown) => typeof m === 'string')) return false;
+  }
+  if (d['tone'] !== undefined) {
+    if (typeof d['tone'] !== 'string' || d['tone'].length === 0 || d['tone'].length > 50) return false;
   }
   return true;
 }
@@ -48,6 +51,7 @@ export function registerMessageHandlers(io: Server, socket: Socket, userId: stri
     };
     if (data.replyToId) body['replyToId'] = data.replyToId;
     if (data.mentions) body['mentions'] = data.mentions;
+    if (data.tone) body['tone'] = data.tone;
 
     const result = await messagesClient.createMessage(userId, data.serverId, data.channelId, body);
 

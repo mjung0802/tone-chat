@@ -4,15 +4,17 @@ import { TextInput, Icon, IconButton, Text, useTheme } from 'react-native-paper'
 import { AttachmentPicker } from './AttachmentPicker';
 import { AttachmentPreview, type PendingAttachment } from './AttachmentPreview';
 import { EmojiPicker } from './EmojiPicker';
+import { TonePicker } from './TonePicker';
 import { MentionAutocomplete } from './MentionAutocomplete';
 import { useUpload } from '../../hooks/useAttachments';
+import { parseToneTag, resolveTone } from '../../tone/toneRegistry';
 import type { DocumentPickerAsset } from 'expo-document-picker';
-import type { ServerMember } from '../../types/models';
+import type { ServerMember, CustomToneDefinition } from '../../types/models';
 
 const MAX_ATTACHMENTS = 6;
 
 interface MessageInputProps {
-  onSend: (content: string, attachmentIds: string[], options?: { replyToId?: string; mentions?: string[] }) => void;
+  onSend: (content: string, attachmentIds: string[], options?: { replyToId?: string; mentions?: string[]; tone?: string }) => void;
   onTyping?: (() => void) | undefined;
   disabled?: boolean | undefined;
   replyTarget?: {
@@ -24,12 +26,15 @@ interface MessageInputProps {
   onCancelReply?: (() => void) | undefined;
   members?: ServerMember[] | undefined;
   currentUserId?: string | undefined;
+  customTones?: CustomToneDefinition[] | undefined;
 }
 
-export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancelReply, members, currentUserId }: MessageInputProps) {
+export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancelReply, members, currentUserId, customTones }: MessageInputProps) {
   const [text, setText] = useState('');
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [emojiPickerVisible, setEmojiPickerVisible] = useState(false);
+  const [selectedTone, setSelectedTone] = useState<string | null>(null);
+  const [tonePickerVisible, setTonePickerVisible] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [pendingMentions, setPendingMentions] = useState<Set<string>>(new Set());
   const theme = useTheme();
@@ -47,20 +52,28 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
 
     if (!trimmed && ids.length === 0) return;
 
-    const options: { replyToId?: string; mentions?: string[] } = {};
+    // Parse inline tone tag if no tone explicitly selected
+    const { cleanContent, toneKey } = parseToneTag(trimmed);
+    const finalTone = selectedTone ?? toneKey;
+    const finalContent = finalTone ? (cleanContent || trimmed) : trimmed;
+
+    const options: { replyToId?: string; mentions?: string[]; tone?: string } = {};
     if (replyTarget) {
       options.replyToId = replyTarget.messageId;
     }
-
     if (pendingMentions.size > 0) {
       options.mentions = Array.from(pendingMentions);
     }
+    if (finalTone) {
+      options.tone = finalTone;
+    }
 
-    onSend(trimmed, ids, options);
+    onSend(finalContent, ids, options);
     setText('');
     setPendingAttachments([]);
     setPendingMentions(new Set());
-  }, [text, pendingAttachments, onSend, replyTarget, pendingMentions]);
+    setSelectedTone(null);
+  }, [text, pendingAttachments, onSend, replyTarget, pendingMentions, selectedTone]);
 
   const handleChange = useCallback(
     (value: string) => {
@@ -171,6 +184,14 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
           />
         </View>
       ) : null}
+      {selectedTone ? (
+        <View style={styles.tonePreview}>
+          <Text variant="labelSmall" style={{ color: theme.colors.primary }}>
+            {resolveTone(selectedTone, customTones)?.emoji} {resolveTone(selectedTone, customTones)?.label ?? selectedTone}
+          </Text>
+          <IconButton icon="close" size={14} onPress={() => setSelectedTone(null)} accessibilityLabel="Remove tone" />
+        </View>
+      ) : null}
       <View style={styles.container}>
         <AttachmentPicker
           onPick={handlePick}
@@ -197,6 +218,14 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
           }}
         />
         <IconButton
+          icon="music-note"
+          onPress={() => setTonePickerVisible(true)}
+          disabled={disabled ?? false}
+          accessibilityLabel="Select tone"
+          size={24}
+          style={styles.emojiButton}
+        />
+        <IconButton
           icon="emoticon-outline"
           onPress={() => setEmojiPickerVisible(true)}
           disabled={disabled ?? false}
@@ -219,6 +248,12 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
         visible={emojiPickerVisible}
         onSelect={handleEmojiSelect}
         onDismiss={() => setEmojiPickerVisible(false)}
+      />
+      <TonePicker
+        visible={tonePickerVisible}
+        onSelect={(key) => { setSelectedTone(key); setTonePickerVisible(false); }}
+        onDismiss={() => setTonePickerVisible(false)}
+        customTones={customTones}
       />
     </View>
   );
@@ -258,5 +293,12 @@ const styles = StyleSheet.create({
   },
   replyPreviewText: {
     flex: 1,
+  },
+  tonePreview: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 12,
+    paddingVertical: 2,
+    gap: 4,
   },
 });

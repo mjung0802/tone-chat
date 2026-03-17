@@ -6,6 +6,7 @@ import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useChannel } from '@/hooks/useChannels';
 import { useMembers } from '@/hooks/useMembers';
+import { useCustomTones } from '@/hooks/useTones';
 import { useMessages, useSendMessage } from '@/hooks/useMessages';
 import { useChannelSocket, useTypingEmit } from '@/hooks/useSocket';
 import { useAuthStore } from '@/stores/authStore';
@@ -44,6 +45,7 @@ export default function ChannelScreen() {
     isFetchingNextPage,
   } = useMessages(sid, cid);
   const { data: members } = useMembers(sid);
+  const { data: customTones } = useCustomTones(sid);
   const sendMessage = useSendMessage(sid, cid);
   const emitTyping = useTypingEmit(sid, cid);
 
@@ -168,12 +170,13 @@ export default function ChannelScreen() {
   }, []);
 
   const handleSend = useCallback(
-    (content: string, attachmentIds: string[], options?: { replyToId?: string; mentions?: string[] }) => {
+    (content: string, attachmentIds: string[], options?: { replyToId?: string; mentions?: string[]; tone?: string }) => {
       sendMessage.mutate({
         content,
         attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
         replyToId: options?.replyToId,
         mentions: options?.mentions,
+        tone: options?.tone,
       });
       setReplyTarget(null);
     },
@@ -209,6 +212,7 @@ export default function ChannelScreen() {
         onReply={handleReply}
         onReplyPress={handleReplyPress}
         highlightedMessageId={highlightMessageId}
+        customTones={customTones}
       />
       <TypingIndicator userNames={typingUserNames} />
       <MessageInput
@@ -219,6 +223,7 @@ export default function ChannelScreen() {
         currentUserId={userId ?? undefined}
         replyTarget={replyTarget ?? undefined}
         onCancelReply={handleCancelReply}
+        customTones={customTones}
       />
       <AttachmentViewer
         visible={viewerVisible}

@@ -7,6 +7,8 @@ import { ServerIcon } from '@/components/servers/ServerIcon';
 import { useUpload } from '@/hooks/useAttachments';
 import { useChannels, useCreateChannel } from '@/hooks/useChannels';
 import { useCreateInvite, useInvites, useRevokeInvite } from '@/hooks/useInvites';
+import { useCustomTones, useAddCustomTone, useRemoveCustomTone } from '@/hooks/useTones';
+import { CustomToneForm } from '@/components/servers/CustomToneForm';
 import { useMembers } from '@/hooks/useMembers';
 import { useDeleteServer, useServer, useUpdateServer } from '@/hooks/useServers';
 import { useAuthStore } from '@/stores/authStore';
@@ -20,6 +22,7 @@ import {
   Divider,
   HelperText,
   Icon,
+  IconButton,
   List,
   Text,
   TextInput,
@@ -48,6 +51,9 @@ export default function ServerSettingsScreen() {
   const createChannel = useCreateChannel(sid);
   const createInvite = useCreateInvite(sid);
   const revokeInvite = useRevokeInvite(sid);
+  const { data: customTones } = useCustomTones(sid);
+  const addCustomTone = useAddCustomTone(sid);
+  const removeCustomTone = useRemoveCustomTone(sid);
   const upload = useUpload();
 
   const [name, setName] = useState('');
@@ -224,6 +230,31 @@ export default function ServerSettingsScreen() {
       <CreateInviteForm
         onSubmit={(data) => createInvite.mutate(data)}
         isLoading={createInvite.isPending}
+      />
+
+      <Divider style={styles.divider} />
+
+      {/* Custom Tones */}
+      <Text variant="titleLarge" style={styles.section}>Custom Tones</Text>
+      {customTones?.map((tone) => (
+        <List.Item
+          key={tone.key}
+          title={`${tone.emoji} /${tone.key}`}
+          description={tone.label}
+          right={() => (
+            <IconButton
+              icon="delete"
+              size={20}
+              onPress={() => removeCustomTone.mutate(tone.key)}
+              accessibilityLabel={`Remove ${tone.label} tone`}
+            />
+          )}
+          accessibilityRole="text"
+        />
+      ))}
+      <CustomToneForm
+        onSubmit={(data) => addCustomTone.mutate(data)}
+        isLoading={addCustomTone.isPending}
       />
 
       {/* Danger Zone */}

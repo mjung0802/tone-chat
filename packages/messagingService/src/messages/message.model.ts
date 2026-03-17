@@ -16,6 +16,7 @@ export interface IMessage extends Document {
     content: string;
   };
   mentions: string[];
+  tone?: string;
 }
 
 const messageSchema = new Schema<IMessage>(
@@ -40,6 +41,7 @@ const messageSchema = new Schema<IMessage>(
       _id: false,
     },
     mentions: { type: [String], default: [] },
+    tone: { type: String },
   },
   { timestamps: true },
 );

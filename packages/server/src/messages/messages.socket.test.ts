@@ -130,6 +130,44 @@ describe('registerMessageHandlers', () => {
       await handlers['send_message']!({ serverId: 's1', channelId: 'c1', content: 'hello', mentions: 'not-array' });
       assert.equal(mockCreateMessage.mock.callCount(), 0);
     });
+
+    it('passes tone to createMessage body when provided', async () => {
+      const msgData = { serverId: 's1', channelId: 'c1', content: 'hello', tone: 'j' };
+      mockCreateMessage.mock.mockImplementation(async () => ({ status: 201, data: { message: { _id: 'm1' } } }));
+      mockEmitMentionsFromResult.mock.mockImplementation(async () => {});
+
+      const ioEmit = mock.fn();
+      io.to = mock.fn(() => ({ emit: ioEmit }));
+
+      await handlers['send_message']!(msgData);
+
+      const body = mockCreateMessage.mock.calls[0]!.arguments[3] as Record<string, unknown>;
+      assert.equal(body.tone, 'j');
+    });
+
+    it('rejects non-string tone', async () => {
+      await handlers['send_message']!({ serverId: 's1', channelId: 'c1', content: 'hello', tone: { $gt: '' } });
+      assert.equal(mockCreateMessage.mock.callCount(), 0);
+    });
+
+    it('rejects tone exceeding 50 chars', async () => {
+      await handlers['send_message']!({ serverId: 's1', channelId: 'c1', content: 'hello', tone: 'a'.repeat(51) });
+      assert.equal(mockCreateMessage.mock.callCount(), 0);
+    });
+
+    it('accepts message without tone', async () => {
+      const msgData = { serverId: 's1', channelId: 'c1', content: 'hello' };
+      mockCreateMessage.mock.mockImplementation(async () => ({ status: 201, data: { message: { _id: 'm1' } } }));
+      mockEmitMentionsFromResult.mock.mockImplementation(async () => {});
+
+      const ioEmit = mock.fn();
+      io.to = mock.fn(() => ({ emit: ioEmit }));
+
+      await handlers['send_message']!(msgData);
+
+      const body = mockCreateMessage.mock.calls[0]!.arguments[3] as Record<string, unknown>;
+      assert.equal(body.tone, undefined);
+    });
   });
 
   describe('typing', () => {

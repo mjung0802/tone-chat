@@ -21,6 +21,8 @@ export default function ProfileScreen() {
   const theme = useTheme<AppTheme>();
   const themePreference = useUiStore((s) => s.themePreference);
   const setThemePreference = useUiStore((s) => s.setThemePreference);
+  const toneDisplay = useUiStore((s) => s.toneDisplay);
+  const setToneDisplay = useUiStore((s) => s.setToneDisplay);
   const notificationPreference = useNotificationStore((s) => s.notificationPreference);
   const setNotificationPreference = useNotificationStore((s) => s.setNotificationPreference);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -204,6 +206,17 @@ export default function ProfileScreen() {
           {notifPermError}
         </HelperText>
       ) : null}
+
+      <Text variant="labelLarge" style={styles.themeLabel}>Tone Display</Text>
+      <SegmentedButtons
+        value={toneDisplay}
+        onValueChange={(value) => setToneDisplay(value as 'full' | 'reduced')}
+        buttons={[
+          { value: 'full', label: 'Full', icon: 'palette' },
+          { value: 'reduced', label: 'Reduced', icon: 'tag-text-outline' },
+        ]}
+        style={styles.themeButtons}
+      />
 
       <Button
         mode="contained"
