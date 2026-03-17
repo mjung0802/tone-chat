@@ -6,16 +6,18 @@ import type { ServerMember } from '../../types/models';
 interface MemberListItemProps {
   member: ServerMember;
   displayName?: string | undefined;
+  isOwner?: boolean | undefined;
   onPress?: ((member: ServerMember) => void) | undefined;
 }
 
-export function MemberListItem({ member, displayName, onPress }: MemberListItemProps) {
+export function MemberListItem({ member, displayName, isOwner, onPress }: MemberListItemProps) {
   const name = member.nickname ?? displayName ?? member.userId;
   const isAdmin = member.roles.includes('admin');
+  const badgeLabel = isOwner ? 'Owner' : isAdmin ? 'Admin' : '';
 
   const optionalProps: Record<string, unknown> = {};
-  if (isAdmin) {
-    optionalProps['right'] = () => <Chip compact>Admin</Chip>;
+  if (badgeLabel) {
+    optionalProps['right'] = () => <Chip compact>{badgeLabel}</Chip>;
   }
   if (onPress) {
     const handler = onPress;
@@ -25,7 +27,7 @@ export function MemberListItem({ member, displayName, onPress }: MemberListItemP
   return (
     <List.Item
       title={name}
-      description={isAdmin ? 'Admin' : ''}
+      description={badgeLabel}
       left={() => (
         <UserAvatar
           avatarAttachmentId={member.avatar_url}
@@ -35,7 +37,7 @@ export function MemberListItem({ member, displayName, onPress }: MemberListItemP
       )}
       {...optionalProps}
       accessibilityRole="text"
-      accessibilityLabel={`${name}${isAdmin ? ', admin' : ''}`}
+      accessibilityLabel={`${name}${badgeLabel ? `, ${badgeLabel.toLowerCase()}` : ''}`}
       style={{ minHeight: 48 }}
     />
   );

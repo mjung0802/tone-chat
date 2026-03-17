@@ -7,14 +7,16 @@ import type { ServerMember } from '../../types/models';
 interface MemberListProps {
   members: ServerMember[];
   displayNames?: Record<string, string> | undefined;
+  ownerId?: string | undefined;
   onMemberPress?: ((member: ServerMember) => void) | undefined;
 }
 
-export function MemberList({ members, displayNames, onMemberPress }: MemberListProps) {
+export function MemberList({ members, displayNames, ownerId, onMemberPress }: MemberListProps) {
   const renderItem = ({ item }: ListRenderItemInfo<ServerMember>) => (
     <MemberListItem
       member={item}
       displayName={displayNames?.[item.userId]}
+      isOwner={item.userId === ownerId}
       onPress={onMemberPress}
     />
   );

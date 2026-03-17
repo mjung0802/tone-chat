@@ -46,6 +46,12 @@ export default function ServerSettingsScreen() {
     displayNames[m.userId] = m.display_name ?? m.username ?? m.userId;
   });
 
+  const sortedMembers = [...(members ?? [])].sort((a, b) => {
+    const aRank = a.userId === server?.ownerId ? 0 : a.roles.includes('admin') ? 1 : 2;
+    const bRank = b.userId === server?.ownerId ? 0 : b.roles.includes('admin') ? 1 : 2;
+    return aRank - bRank;
+  });
+
   const updateServer = useUpdateServer(sid);
   const deleteServer = useDeleteServer(sid);
   const createChannel = useCreateChannel(sid);
@@ -214,7 +220,7 @@ export default function ServerSettingsScreen() {
       <Text variant="titleLarge" style={styles.section}>
         Members ({members?.length ?? 0})
       </Text>
-      <MemberList members={members ?? []} displayNames={displayNames} />
+      <MemberList members={sortedMembers} displayNames={displayNames} ownerId={server.ownerId} />
 
       <Divider style={styles.divider} />
 
