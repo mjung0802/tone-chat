@@ -53,9 +53,18 @@ export function TonePicker({ visible, onSelect, onDismiss, customTones }: TonePi
 
 const styles = StyleSheet.create({
   container: {
+    position: 'absolute' as const,
+    bottom: '100%',
+    left: 0,
+    right: 0,
+    zIndex: 10,
     paddingVertical: 4,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 12,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
   },
   header: {
     flexDirection: 'row',
