@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
 
-type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>> & { member?: unknown; server?: unknown };
 type TestResponse = Response & { statusCode: number; _json: unknown };
 
 function assertErrorCode(error: unknown, code: string): true {
@@ -33,10 +33,15 @@ mock.module('../servers/server.model.js', {
   namedExports: { Server: { findById: mockServerFindById } },
 });
 
-const { joinServer, listMembers, getMember, updateMember, removeMember } = await import('./members.controller.js');
+const mockBanFindOne = mock.fn<AnyFn>();
+mock.module('../bans/serverBan.model.js', {
+  namedExports: { ServerBan: { findOne: mockBanFindOne } },
+});
+
+const { joinServer, listMembers, getMember, updateMember, removeMember, muteMember, unmuteMember, promoteMember, demoteMember } = await import('./members.controller.js');
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
+  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as unknown as Request;
 }
 function makeRes(): TestResponse {
   const res = { statusCode: 200, _json: undefined } as TestResponse;
@@ -51,6 +56,7 @@ describe('joinServer', () => {
     mockServerFindById.mock.resetCalls();
     mockMemberFindOne.mock.resetCalls();
     mockMemberCreate.mock.resetCalls();
+    mockBanFindOne.mock.resetCalls();
   });
 
   it('throws SERVER_NOT_FOUND when server is null', async () => {
@@ -69,8 +75,18 @@ describe('joinServer', () => {
     );
   });
 
+  it('rejects banned users', async () => {
+    mockServerFindById.mock.mockImplementation(async () => ({ visibility: 'public' }));
+    mockBanFindOne.mock.mockImplementation(async () => ({ userId: 'u1' }));
+    await assert.rejects(
+      () => joinServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
+      (error) => assertErrorCode(error, 'BANNED'),
+    );
+  });
+
   it('throws ALREADY_MEMBER when existing', async () => {
     mockServerFindById.mock.mockImplementation(async () => ({ visibility: 'public' }));
+    mockBanFindOne.mock.mockImplementation(async () => null);
     mockMemberFindOne.mock.mockImplementation(async () => ({ userId: 'u1' }));
     await assert.rejects(
       () => joinServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
@@ -80,6 +96,7 @@ describe('joinServer', () => {
 
   it('creates member and returns 201', async () => {
     mockServerFindById.mock.mockImplementation(async () => ({ visibility: 'public' }));
+    mockBanFindOne.mock.mockImplementation(async () => null);
     mockMemberFindOne.mock.mockImplementation(async () => null);
     const member = { serverId: 's1', userId: 'u1' };
     mockMemberCreate.mock.mockImplementation(async () => member);
@@ -127,36 +144,30 @@ describe('getMember', () => {
 describe('updateMember', () => {
   beforeEach(() => mockMemberFindOne.mock.resetCalls());
 
-  it('throws FORBIDDEN when requester is not admin', async () => {
-    mockMemberFindOne.mock.mockImplementation(async () => ({ roles: [] }));
+  it('throws MEMBER_NOT_FOUND when target not found', async () => {
+    mockMemberFindOne.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => updateMember(makeReq({
         headers: { 'x-user-id': 'u1' },
         params: { serverId: 's1', userId: 'u2' },
         body: { nickname: 'nick' },
       }), makeRes()),
-      (error) => assertErrorCode(error, 'FORBIDDEN'),
+      (error) => assertErrorCode(error, 'MEMBER_NOT_FOUND'),
     );
   });
 
-  it('updates nickname and roles; returns 200', async () => {
-    let callCount = 0;
-    const target = { nickname: '', roles: [] as string[], save: mock.fn(async () => {}) };
-    mockMemberFindOne.mock.mockImplementation(async () => {
-      callCount++;
-      if (callCount === 1) return { roles: ['admin'] }; // requester
-      return target; // target member
-    });
+  it('updates nickname and returns 200', async () => {
+    const target = { nickname: '', role: 'member', save: mock.fn(async () => {}) };
+    mockMemberFindOne.mock.mockImplementation(async () => target);
 
     const res = makeRes();
     await updateMember(makeReq({
       headers: { 'x-user-id': 'u1' },
       params: { serverId: 's1', userId: 'u2' },
-      body: { nickname: 'nick', roles: ['mod'] },
+      body: { nickname: 'nick' },
     }), res);
 
     assert.equal(target.nickname, 'nick');
-    assert.deepEqual(target.roles, ['mod']);
     assert.equal(target.save.mock.callCount(), 1);
     assert.equal(res.statusCode, 200);
   });
@@ -164,11 +175,13 @@ describe('updateMember', () => {
 
 describe('removeMember', () => {
   beforeEach(() => {
+    mockServerFindById.mock.resetCalls();
     mockMemberFindOne.mock.resetCalls();
     mockMemberFindOneAndDelete.mock.resetCalls();
   });
 
-  it('allows self-leave without admin check', async () => {
+  it('allows self-leave (non-owner)', async () => {
+    mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'other-user' }));
     mockMemberFindOneAndDelete.mock.mockImplementation(async () => ({ userId: 'u1' }));
     const res = makeRes();
     await removeMember(makeReq({
@@ -176,13 +189,27 @@ describe('removeMember', () => {
       params: { serverId: 's1', userId: 'u1' },
     }), res);
     assert.equal(res.statusCode, 204);
-    // findOne should NOT have been called (self-leave path)
-    assert.equal(mockMemberFindOne.mock.callCount(), 0);
   });
 
-  it('admin can kick another member', async () => {
-    mockMemberFindOne.mock.mockImplementation(async () => ({ roles: ['admin'] }));
-    mockMemberFindOneAndDelete.mock.mockImplementation(async () => ({ userId: 'u2' }));
+  it('prevents owner from self-leaving', async () => {
+    mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'u1' }));
+    await assert.rejects(
+      () => removeMember(makeReq({
+        headers: { 'x-user-id': 'u1' },
+        params: { serverId: 's1', userId: 'u1' },
+      }), makeRes()),
+      (error) => assertErrorCode(error, 'OWNER_CANNOT_LEAVE'),
+    );
+  });
+
+  it('mod can kick a member', async () => {
+    mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'owner' }));
+    let findOneCount = 0;
+    mockMemberFindOne.mock.mockImplementation(async () => {
+      findOneCount++;
+      if (findOneCount === 1) return { role: 'mod', userId: 'u1' }; // requester
+      return { role: 'member', userId: 'u2', deleteOne: mock.fn(async () => {}) }; // target
+    });
 
     const res = makeRes();
     await removeMember(makeReq({
@@ -192,14 +219,237 @@ describe('removeMember', () => {
     assert.equal(res.statusCode, 204);
   });
 
-  it('throws FORBIDDEN when non-admin tries to kick', async () => {
-    mockMemberFindOne.mock.mockImplementation(async () => ({ roles: [] }));
+  it('mod cannot kick admin', async () => {
+    mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'owner' }));
+    let findOneCount = 0;
+    mockMemberFindOne.mock.mockImplementation(async () => {
+      findOneCount++;
+      if (findOneCount === 1) return { role: 'mod', userId: 'u1' }; // requester
+      return { role: 'admin', userId: 'u2' }; // target
+    });
+
     await assert.rejects(
       () => removeMember(makeReq({
         headers: { 'x-user-id': 'u1' },
         params: { serverId: 's1', userId: 'u2' },
       }), makeRes()),
       (error) => assertErrorCode(error, 'FORBIDDEN'),
+    );
+  });
+
+  it('regular member cannot kick', async () => {
+    mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'owner' }));
+    mockMemberFindOne.mock.mockImplementation(async () => ({ role: 'member', userId: 'u1' }));
+
+    await assert.rejects(
+      () => removeMember(makeReq({
+        headers: { 'x-user-id': 'u1' },
+        params: { serverId: 's1', userId: 'u2' },
+      }), makeRes()),
+      (error) => assertErrorCode(error, 'FORBIDDEN'),
+    );
+  });
+});
+
+describe('muteMember', () => {
+  beforeEach(() => mockMemberFindOne.mock.resetCalls());
+
+  it('rejects invalid duration', async () => {
+    await assert.rejects(
+      () => muteMember(makeReq({
+        headers: { 'x-user-id': 'u1' },
+        params: { serverId: 's1', userId: 'u2' },
+        body: { duration: 999 },
+        member: { role: 'mod', userId: 'u1' },
+        server: { ownerId: 'owner' },
+      }), makeRes()),
+      (error) => assertErrorCode(error, 'INVALID_DURATION'),
+    );
+  });
+
+  it('mutes target with valid duration', async () => {
+    const target = { role: 'member', userId: 'u2', mutedUntil: null, save: mock.fn(async () => {}) };
+    mockMemberFindOne.mock.mockImplementation(async () => target);
+
+    const res = makeRes();
+    await muteMember(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1', userId: 'u2' },
+      body: { duration: 60 },
+      member: { role: 'mod', userId: 'u1' },
+      server: { ownerId: 'owner' },
+    }), res);
+
+    assert.equal(res.statusCode, 200);
+    assert.ok(target.mutedUntil);
+    assert.equal(target.save.mock.callCount(), 1);
+  });
+
+  it('rejects muting a higher-role member', async () => {
+    const target = { role: 'admin', userId: 'u2' };
+    mockMemberFindOne.mock.mockImplementation(async () => target);
+
+    await assert.rejects(
+      () => muteMember(makeReq({
+        headers: { 'x-user-id': 'u1' },
+        params: { serverId: 's1', userId: 'u2' },
+        body: { duration: 60 },
+        member: { role: 'mod', userId: 'u1' },
+        server: { ownerId: 'owner' },
+      }), makeRes()),
+      (error) => assertErrorCode(error, 'FORBIDDEN'),
+    );
+  });
+});
+
+describe('unmuteMember', () => {
+  beforeEach(() => mockMemberFindOne.mock.resetCalls());
+
+  it('unmutes target', async () => {
+    const target = { role: 'member', userId: 'u2', mutedUntil: new Date(), save: mock.fn(async () => {}) };
+    mockMemberFindOne.mock.mockImplementation(async () => target);
+
+    const res = makeRes();
+    await unmuteMember(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1', userId: 'u2' },
+      member: { role: 'mod', userId: 'u1' },
+      server: { ownerId: 'owner' },
+    }), res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(target.mutedUntil, null);
+  });
+});
+
+describe('promoteMember', () => {
+  beforeEach(() => mockMemberFindOne.mock.resetCalls());
+
+  it('admin promotes member to mod', async () => {
+    const target = { role: 'member', userId: 'u2', save: mock.fn(async () => {}) };
+    mockMemberFindOne.mock.mockImplementation(async () => target);
+
+    const res = makeRes();
+    await promoteMember(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1', userId: 'u2' },
+      member: { role: 'admin', userId: 'u1' },
+      server: { ownerId: 'owner' },
+    }), res);
+
+    assert.equal(target.role, 'mod');
+    assert.equal(res.statusCode, 200);
+  });
+
+  it('owner promotes mod to admin', async () => {
+    const target = { role: 'mod', userId: 'u2', save: mock.fn(async () => {}) };
+    mockMemberFindOne.mock.mockImplementation(async () => target);
+
+    const res = makeRes();
+    await promoteMember(makeReq({
+      headers: { 'x-user-id': 'owner' },
+      params: { serverId: 's1', userId: 'u2' },
+      member: { role: 'admin', userId: 'owner' },
+      server: { ownerId: 'owner' },
+    }), res);
+
+    assert.equal(target.role, 'admin');
+    assert.equal(res.statusCode, 200);
+  });
+
+  it('non-owner admin cannot promote mod to admin', async () => {
+    const target = { role: 'mod', userId: 'u2' };
+    mockMemberFindOne.mock.mockImplementation(async () => target);
+
+    await assert.rejects(
+      () => promoteMember(makeReq({
+        headers: { 'x-user-id': 'u1' },
+        params: { serverId: 's1', userId: 'u2' },
+        member: { role: 'admin', userId: 'u1' },
+        server: { ownerId: 'owner' },
+      }), makeRes()),
+      (error) => assertErrorCode(error, 'FORBIDDEN'),
+    );
+  });
+
+  it('cannot promote beyond admin', async () => {
+    const target = { role: 'admin', userId: 'u2' };
+    mockMemberFindOne.mock.mockImplementation(async () => target);
+
+    await assert.rejects(
+      () => promoteMember(makeReq({
+        headers: { 'x-user-id': 'owner' },
+        params: { serverId: 's1', userId: 'u2' },
+        member: { role: 'admin', userId: 'owner' },
+        server: { ownerId: 'owner' },
+      }), makeRes()),
+      (error) => assertErrorCode(error, 'CANNOT_PROMOTE'),
+    );
+  });
+});
+
+describe('demoteMember', () => {
+  beforeEach(() => mockMemberFindOne.mock.resetCalls());
+
+  it('owner demotes admin to mod', async () => {
+    const target = { role: 'admin', userId: 'u2', save: mock.fn(async () => {}) };
+    mockMemberFindOne.mock.mockImplementation(async () => target);
+
+    const res = makeRes();
+    await demoteMember(makeReq({
+      headers: { 'x-user-id': 'owner' },
+      params: { serverId: 's1', userId: 'u2' },
+      member: { role: 'admin', userId: 'owner' },
+      server: { ownerId: 'owner' },
+    }), res);
+
+    assert.equal(target.role, 'mod');
+    assert.equal(res.statusCode, 200);
+  });
+
+  it('admin demotes mod to member', async () => {
+    const target = { role: 'mod', userId: 'u2', save: mock.fn(async () => {}) };
+    mockMemberFindOne.mock.mockImplementation(async () => target);
+
+    const res = makeRes();
+    await demoteMember(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1', userId: 'u2' },
+      member: { role: 'admin', userId: 'u1' },
+      server: { ownerId: 'owner' },
+    }), res);
+
+    assert.equal(target.role, 'member');
+    assert.equal(res.statusCode, 200);
+  });
+
+  it('cannot demote owner', async () => {
+    const target = { role: 'admin', userId: 'owner' };
+    mockMemberFindOne.mock.mockImplementation(async () => target);
+
+    await assert.rejects(
+      () => demoteMember(makeReq({
+        headers: { 'x-user-id': 'owner' },
+        params: { serverId: 's1', userId: 'owner' },
+        member: { role: 'admin', userId: 'owner' },
+        server: { ownerId: 'owner' },
+      }), makeRes()),
+      (error) => assertErrorCode(error, 'CANNOT_DEMOTE'),
+    );
+  });
+
+  it('cannot demote below member', async () => {
+    const target = { role: 'member', userId: 'u2' };
+    mockMemberFindOne.mock.mockImplementation(async () => target);
+
+    await assert.rejects(
+      () => demoteMember(makeReq({
+        headers: { 'x-user-id': 'u1' },
+        params: { serverId: 's1', userId: 'u2' },
+        member: { role: 'admin', userId: 'u1' },
+        server: { ownerId: 'owner' },
+      }), makeRes()),
+      (error) => assertErrorCode(error, 'CANNOT_DEMOTE'),
     );
   });
 });

@@ -61,7 +61,7 @@ export function makeMember(overrides: Partial<ServerMember> = {}): ServerMember 
     _id: 'member-1',
     serverId: 'server-1',
     userId: 'user-123',
-    roles: [],
+    role: 'member',
     joinedAt: '2025-01-01T00:00:00.000Z',
     username: 'testuser',
     display_name: 'Test User',

@@ -29,6 +29,11 @@ serversRouter.delete('/:serverId', async (req: AuthRequest, res) => {
   res.status(result.status).end();
 });
 
+serversRouter.post('/:serverId/transfer', async (req: AuthRequest, res) => {
+  const result = await client.transferOwnership(req.userId!, req.params['serverId'] as string, req.body as Record<string, unknown>);
+  res.status(result.status).json(result.data);
+});
+
 serversRouter.get('/:serverId/tones', async (req: AuthRequest, res) => {
   const result = await client.listCustomTones(req.userId!, req.params['serverId'] as string);
   res.status(result.status).json(result.data);

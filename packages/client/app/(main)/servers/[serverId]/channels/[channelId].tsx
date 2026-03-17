@@ -12,11 +12,12 @@ import { useChannelSocket, useTypingEmit } from '@/hooks/useSocket';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useSocketStore } from '@/stores/socketStore';
-import type { Attachment, Message } from '@/types/models';
+import type { Attachment, Message, ServerMember } from '@/types/models';
 import type { TypingEvent } from '@/types/socket.types';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { Banner } from 'react-native-paper';
 
 const TYPING_TIMEOUT = 3000;
 
@@ -193,6 +194,11 @@ export default function ChannelScreen() {
     return <LoadingSpinner message="Loading messages..." />;
   }
 
+  // Check if current user is muted
+  const currentMember = members?.find((m: ServerMember) => m.userId === userId);
+  const isMuted = currentMember?.mutedUntil ? new Date(currentMember.mutedUntil) > new Date() : false;
+  const mutedUntilStr = currentMember?.mutedUntil ? new Date(currentMember.mutedUntil).toLocaleString() : '';
+
   // Messages come chronological from API, but FlatList is inverted so reverse
   const messages = [...(messagesData?.messages ?? [])].reverse();
 
@@ -215,10 +221,15 @@ export default function ChannelScreen() {
         customTones={customTones}
       />
       <TypingIndicator userNames={typingUserNames} />
+      {isMuted ? (
+        <Banner visible icon="volume-off" actions={[]}>
+          {`You are muted until ${mutedUntilStr}`}
+        </Banner>
+      ) : null}
       <MessageInput
         onSend={handleSend}
         onTyping={emitTyping}
-        disabled={sendMessage.isPending}
+        disabled={sendMessage.isPending || isMuted}
         members={members}
         currentUserId={userId ?? undefined}
         replyTarget={replyTarget ?? undefined}

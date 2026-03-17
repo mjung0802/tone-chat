@@ -27,6 +27,7 @@ export function ConfirmDialog({
       <Dialog
         visible={visible}
         onDismiss={onCancel}
+        style={{ maxWidth: 400, alignSelf: 'center', width: '100%' }}
       >
         <Dialog.Title>{title}</Dialog.Title>
         <Dialog.Content>

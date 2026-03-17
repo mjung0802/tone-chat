@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as serversApi from '../api/servers.api';
-import type { CreateServerRequest, UpdateServerRequest } from '../types/api.types';
+import type { CreateServerRequest, UpdateServerRequest, TransferOwnershipRequest } from '../types/api.types';
 
 export function useServers() {
   return useQuery({
@@ -50,6 +50,18 @@ export function useDeleteServer(serverId: string) {
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: ['servers', serverId] });
       void queryClient.invalidateQueries({ queryKey: ['servers'] });
+    },
+  });
+}
+
+export function useTransferOwnership(serverId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: TransferOwnershipRequest) => serversApi.transferOwnership(serverId, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['servers', serverId] });
+      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
     },
   });
 }

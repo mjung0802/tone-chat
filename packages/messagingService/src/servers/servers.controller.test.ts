@@ -82,7 +82,7 @@ describe('createServer', () => {
     assert.equal(mockChannelCreate.mock.callCount(), 1);
     assert.equal((mockChannelCreate.mock.calls[0]!.arguments[0] as { name: string }).name, 'general');
     assert.equal(mockMemberCreate.mock.callCount(), 1);
-    assert.deepEqual((mockMemberCreate.mock.calls[0]!.arguments[0] as { roles: string[] }).roles, ['admin']);
+    assert.equal((mockMemberCreate.mock.calls[0]!.arguments[0] as { role: string }).role, 'admin');
   });
 });
 

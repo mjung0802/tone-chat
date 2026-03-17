@@ -22,3 +22,23 @@ export function updateMember(userId: string, serverId: string, targetUserId: str
 export function removeMember(userId: string, serverId: string, targetUserId: string) {
   return serviceRequest(base(), `/servers/${serverId}/members/${targetUserId}`, { method: 'DELETE', userId });
 }
+
+export function muteMember(userId: string, serverId: string, targetUserId: string, body: Record<string, unknown>) {
+  return serviceRequest(base(), `/servers/${serverId}/members/${targetUserId}/mute`, { method: 'POST', userId, body });
+}
+
+export function unmuteMember(userId: string, serverId: string, targetUserId: string) {
+  return serviceRequest(base(), `/servers/${serverId}/members/${targetUserId}/mute`, { method: 'DELETE', userId });
+}
+
+export function promoteMember(userId: string, serverId: string, targetUserId: string) {
+  return serviceRequest(base(), `/servers/${serverId}/members/${targetUserId}/promote`, { method: 'POST', userId });
+}
+
+export function demoteMember(userId: string, serverId: string, targetUserId: string) {
+  return serviceRequest(base(), `/servers/${serverId}/members/${targetUserId}/demote`, { method: 'POST', userId });
+}
+
+export function banMember(userId: string, serverId: string, targetUserId: string, body: Record<string, unknown>) {
+  return serviceRequest(base(), `/servers/${serverId}/members/${targetUserId}/ban`, { method: 'POST', userId, body });
+}

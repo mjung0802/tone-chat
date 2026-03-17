@@ -12,6 +12,7 @@ import { messagesRouter } from './messages/messages.routes.js';
 import { membersRouter } from './members/members.routes.js';
 import { attachmentsRouter } from './attachments/attachments.routes.js';
 import { serverInvitesRouter, joinRouter } from './invites/invites.routes.js';
+import { bansRouter } from './bans/bans.routes.js';
 
 export const app = express();
 
@@ -37,6 +38,7 @@ app.use('/api/v1/servers/:serverId/channels', requireAuth, channelsRouter);
 app.use('/api/v1/servers/:serverId/channels/:channelId/messages', requireAuth, messagesRouter);
 app.use('/api/v1/servers/:serverId/members', requireAuth, membersRouter);
 app.use('/api/v1/servers/:serverId/invites', requireAuth, serverInvitesRouter);
+app.use('/api/v1/servers/:serverId/bans', requireAuth, bansRouter);
 app.use('/api/v1/invites', requireAuth, joinRouter);
 app.use('/api/v1/attachments', requireAuth, attachmentsRouter);
 

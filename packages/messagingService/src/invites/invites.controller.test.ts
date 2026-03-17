@@ -31,6 +31,11 @@ mock.module('../members/serverMember.model.js', {
   },
 });
 
+const mockBanFindOne = mock.fn<AnyFn>();
+mock.module('../bans/serverBan.model.js', {
+  namedExports: { ServerBan: { findOne: mockBanFindOne } },
+});
+
 const { createInvite, listInvites, revokeInvite, joinViaInvite } = await import('./invites.controller.js');
 
 type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
@@ -120,7 +125,7 @@ describe('revokeInvite', () => {
 
   it('throws FORBIDDEN when non-admin non-owner', async () => {
     mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'other' }));
-    mockMemberFindOne.mock.mockImplementation(async () => ({ roles: [] }));
+    mockMemberFindOne.mock.mockImplementation(async () => ({ role: 'member' }));
     await assert.rejects(
       () => revokeInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1', code: 'abc' } }), makeRes()),
       (error) => assertErrorCode(error, 'FORBIDDEN'),
@@ -129,7 +134,7 @@ describe('revokeInvite', () => {
 
   it('owner can revoke; returns 200', async () => {
     mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'u1' }));
-    mockMemberFindOne.mock.mockImplementation(async () => ({ roles: [] }));
+    mockMemberFindOne.mock.mockImplementation(async () => ({ role: 'member' }));
     const invite = { code: 'abc', revoked: true };
     mockInviteFindOneAndUpdate.mock.mockImplementation(async () => invite);
 
@@ -146,6 +151,8 @@ describe('joinViaInvite', () => {
     mockMemberFindOne.mock.resetCalls();
     mockMemberCreate.mock.resetCalls();
     mockServerFindById.mock.resetCalls();
+    mockBanFindOne.mock.resetCalls();
+    mockBanFindOne.mock.mockImplementation(async () => null);
   });
 
   it('throws INVITE_NOT_FOUND when invite is null', async () => {

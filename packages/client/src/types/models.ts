@@ -64,11 +64,22 @@ export interface ServerMember {
   serverId: string;
   userId: string;
   nickname?: string | undefined;
-  roles: string[];
+  role: string;
+  mutedUntil?: string | null | undefined;
   joinedAt: string;
   username?: string | undefined;
   display_name?: string | null | undefined;
   avatar_url?: string | null | undefined;
+}
+
+export interface ServerBan {
+  serverId: string;
+  userId: string;
+  reason?: string | undefined;
+  bannedBy: string;
+  bannedAt: string;
+  username?: string | undefined;
+  display_name?: string | null | undefined;
 }
 
 export interface Invite {

@@ -14,6 +14,13 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
     tone?: unknown;
   };
 
+  // Check if user is muted
+  const senderMember = await ServerMember.findOne({ serverId, userId });
+  if (senderMember?.mutedUntil && senderMember.mutedUntil > new Date()) {
+    res.status(403).json({ error: { code: 'MUTED', message: 'You are muted in this server', status: 403, mutedUntil: senderMember.mutedUntil.toISOString() } });
+    return;
+  }
+
   if (!content && (!attachmentIds || attachmentIds.length === 0)) {
     res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'content or attachments required', status: 400 } });
     return;

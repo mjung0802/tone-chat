@@ -1,4 +1,4 @@
-import type { User, Server, Channel, Message, ServerMember, Invite, Attachment, CustomToneDefinition } from './models';
+import type { User, Server, Channel, Message, ServerMember, ServerBan, Invite, Attachment, CustomToneDefinition } from './models';
 
 export interface ApiError {
   error: {
@@ -81,7 +81,18 @@ export interface ToggleReactionRequest {
 
 export interface UpdateMemberRequest {
   nickname?: string | undefined;
-  roles?: string[] | undefined;
+}
+
+export interface MuteMemberRequest {
+  duration: number;
+}
+
+export interface BanMemberRequest {
+  reason?: string | undefined;
+}
+
+export interface TransferOwnershipRequest {
+  userId: string;
 }
 
 export interface CreateInviteRequest {
@@ -136,4 +147,5 @@ export interface MembersResponse { members: ServerMember[] }
 export interface InviteResponse { invite: Invite }
 export interface InvitesResponse { invites: Invite[] }
 export interface AttachmentResponse { attachment: Attachment }
+export interface BansResponse { bans: ServerBan[] }
 export interface JoinInviteResponse { member: ServerMember; server: Server }

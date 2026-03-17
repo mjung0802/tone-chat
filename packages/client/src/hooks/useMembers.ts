@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as membersApi from '../api/members.api';
-import type { UpdateMemberRequest } from '../types/api.types';
+import type { UpdateMemberRequest, MuteMemberRequest, BanMemberRequest } from '../types/api.types';
 
 export function useMembers(serverId: string) {
   return useQuery({
@@ -48,6 +48,74 @@ export function useRemoveMember(serverId: string, userId: string) {
 
   return useMutation({
     mutationFn: () => membersApi.removeMember(serverId, userId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
+    },
+  });
+}
+
+export function useKickMember(serverId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => membersApi.removeMember(serverId, userId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
+    },
+  });
+}
+
+export function useMuteMember(serverId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, data }: { userId: string; data: MuteMemberRequest }) =>
+      membersApi.muteMember(serverId, userId, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
+    },
+  });
+}
+
+export function useUnmuteMember(serverId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => membersApi.unmuteMember(serverId, userId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
+    },
+  });
+}
+
+export function usePromoteMember(serverId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => membersApi.promoteMember(serverId, userId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
+    },
+  });
+}
+
+export function useDemoteMember(serverId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => membersApi.demoteMember(serverId, userId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
+    },
+  });
+}
+
+export function useBanMember(serverId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, data }: { userId: string; data: BanMemberRequest }) =>
+      membersApi.banMember(serverId, userId, data),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
     },

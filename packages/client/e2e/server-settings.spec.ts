@@ -11,8 +11,9 @@ import {
 import { MOCK_ATTACHMENT_ICON, MOCK_MEMBERS, MOCK_SERVER } from './helpers/fixtures';
 
 const NON_ADMIN_MEMBERS = [
-  { ...MOCK_MEMBERS[0]!, roles: [] },
+  { ...MOCK_MEMBERS[0]!, role: 'member' },
 ];
+const NON_ADMIN_SERVER = { ...MOCK_SERVER, ownerId: 'other-user' };
 
 test.beforeEach(async ({ page }) => {
   await mockSocketIO(page);
@@ -43,7 +44,7 @@ test('server icon is visible on settings page', async ({ page }) => {
 });
 
 test('non-admin is redirected away from settings page', async ({ page }) => {
-  await mockServersRoutes(page);
+  await mockServersRoutes(page, [NON_ADMIN_SERVER]);
   await mockMembersRoutes(page, NON_ADMIN_MEMBERS);
   await page.goto(`/servers/${MOCK_SERVER._id}/settings`);
 
@@ -61,7 +62,7 @@ test('admin can see settings gear icon', async ({ page }) => {
 });
 
 test('non-admin cannot see settings gear icon', async ({ page }) => {
-  await mockServersRoutes(page);
+  await mockServersRoutes(page, [NON_ADMIN_SERVER]);
   await mockMembersRoutes(page, NON_ADMIN_MEMBERS);
   await page.goto(`/servers/${MOCK_SERVER._id}`);
 

@@ -82,7 +82,7 @@ describe('Server lifecycle', () => {
     // Verify admin membership
     const member = await ServerMember.findOne({ serverId: body.server._id, userId: 'user-1' });
     assert.ok(member);
-    assert.ok(member.roles.includes('admin'));
+    assert.equal(member.role, 'admin');
   });
 
   it('GET lists servers the user is a member of', async () => {
