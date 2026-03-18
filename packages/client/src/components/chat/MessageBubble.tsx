@@ -53,6 +53,10 @@ interface MessageBubbleProps {
   highlighted?: boolean | undefined;
   authorAvatarId?: string | null | undefined;
   customTones?: CustomToneDefinition[] | undefined;
+  onMute?: (() => void) | undefined;
+  onUnmute?: (() => void) | undefined;
+  onKick?: (() => void) | undefined;
+  onBan?: (() => void) | undefined;
 }
 
 function formatTime(dateStr: string): string {
@@ -75,6 +79,10 @@ export const MessageBubble = memo(function MessageBubble({
   highlighted,
   authorAvatarId,
   customTones,
+  onMute,
+  onUnmute,
+  onKick,
+  onBan,
 }: MessageBubbleProps) {
   const theme = useTheme();
   const [hovered, setHovered] = useState(false);
@@ -220,7 +228,7 @@ export const MessageBubble = memo(function MessageBubble({
             </Text>
           ) : null}
         </View>
-        {(onAddReaction || onReply) ? (
+        {(onAddReaction || onReply || onMute || onUnmute || onKick || onBan) ? (
           <View style={styles.hoverButtonPlaceholder}>
             {hovered ? (
               <View style={styles.hoverButtonRow}>
@@ -242,6 +250,42 @@ export const MessageBubble = memo(function MessageBubble({
                     accessibilityLabel="Add reaction"
                     style={[styles.hoverReactionButton, { backgroundColor: theme.colors.surface }]}
                     testID="hover-reaction-button"
+                  />
+                ) : null}
+                {onMute ? (
+                  <IconButton
+                    icon="volume-off"
+                    size={18}
+                    onPress={onMute}
+                    accessibilityLabel="Mute user"
+                    style={[styles.hoverReactionButton, { backgroundColor: theme.colors.surface }]}
+                  />
+                ) : null}
+                {onUnmute ? (
+                  <IconButton
+                    icon="volume-high"
+                    size={18}
+                    onPress={onUnmute}
+                    accessibilityLabel="Unmute user"
+                    style={[styles.hoverReactionButton, { backgroundColor: theme.colors.surface }]}
+                  />
+                ) : null}
+                {onKick ? (
+                  <IconButton
+                    icon="account-remove"
+                    size={18}
+                    onPress={onKick}
+                    accessibilityLabel="Kick user"
+                    style={[styles.hoverReactionButton, { backgroundColor: theme.colors.surface }]}
+                  />
+                ) : null}
+                {onBan ? (
+                  <IconButton
+                    icon="cancel"
+                    size={18}
+                    onPress={onBan}
+                    accessibilityLabel="Ban user"
+                    style={[styles.hoverReactionButton, { backgroundColor: theme.colors.surface }]}
                   />
                 ) : null}
               </View>
@@ -313,7 +357,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   hoverButtonPlaceholder: {
-    width: 72,
+    width: 180,
     height: 34,
   },
   hoverButtonRow: {
