@@ -2,7 +2,9 @@ import type { Request, Response } from 'express';
 import { Invite } from './invite.model.js';
 import { Server } from '../servers/server.model.js';
 import { ServerMember } from '../members/serverMember.model.js';
+import { ServerBan } from '../bans/serverBan.model.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
+import { getRoleLevel, type Role } from '../shared/roles.js';
 
 export async function createInvite(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
@@ -43,7 +45,9 @@ export async function revokeInvite(req: Request, res: Response): Promise<void> {
   }
 
   const member = await ServerMember.findOne({ serverId, userId });
-  if (server.ownerId !== userId && !member?.roles.includes('admin')) {
+  const isOwner = server.ownerId === userId;
+  const memberLevel = getRoleLevel((member?.role ?? 'member') as Role, isOwner);
+  if (memberLevel < getRoleLevel('admin', false)) {
     throw new AppError('FORBIDDEN', 'Only admins can revoke invites', 403);
   }
 
@@ -79,6 +83,11 @@ export async function joinViaInvite(req: Request, res: Response): Promise<void> 
 
   if (invite.maxUses && invite.uses >= invite.maxUses) {
     throw new AppError('INVITE_EXHAUSTED', 'This invite has reached its maximum uses', 410);
+  }
+
+  const ban = await ServerBan.findOne({ serverId: invite.serverId, userId });
+  if (ban) {
+    throw new AppError('BANNED', 'You are banned from this server', 403);
   }
 
   const existing = await ServerMember.findOne({ serverId: invite.serverId, userId });

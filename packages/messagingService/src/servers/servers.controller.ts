@@ -19,7 +19,7 @@ export async function createServer(req: Request, res: Response): Promise<void> {
   await Channel.create({ serverId: server._id, name: 'general', type: 'text', position: 0 });
 
   // Add owner as member with admin role
-  await ServerMember.create({ serverId: server._id, userId, roles: ['admin'] });
+  await ServerMember.create({ serverId: server._id, userId, role: 'admin' });
 
   res.status(201).json({ server });
 }
@@ -61,6 +61,44 @@ export async function updateServer(req: Request, res: Response): Promise<void> {
   if (visibility !== undefined) server.visibility = visibility as 'public' | 'private';
 
   await server.save();
+  res.json({ server });
+}
+
+export async function transferOwnership(req: Request, res: Response): Promise<void> {
+  const userId = req.headers['x-user-id'] as string;
+  const server = await Server.findById(req.params['serverId']);
+
+  if (!server) {
+    throw new AppError('SERVER_NOT_FOUND', 'Server not found', 404);
+  }
+  if (server.ownerId !== userId) {
+    throw new AppError('FORBIDDEN', 'Only the server owner can transfer ownership', 403);
+  }
+
+  const { userId: newOwnerId } = req.body as { userId: string };
+  if (!newOwnerId || typeof newOwnerId !== 'string') {
+    throw new AppError('MISSING_FIELDS', 'userId is required', 400);
+  }
+
+  const newOwnerMember = await ServerMember.findOne({ serverId: server._id, userId: newOwnerId });
+  if (!newOwnerMember) {
+    throw new AppError('MEMBER_NOT_FOUND', 'Target user is not a member of this server', 404);
+  }
+  if (newOwnerMember.role !== 'admin') {
+    throw new AppError('NOT_ADMIN', 'Target user must be an admin to receive ownership', 400);
+  }
+
+  // Transfer ownership
+  server.ownerId = newOwnerId;
+  await server.save();
+
+  // Demote old owner to admin
+  const oldOwnerMember = await ServerMember.findOne({ serverId: server._id, userId });
+  if (oldOwnerMember) {
+    oldOwnerMember.role = 'admin';
+    await oldOwnerMember.save();
+  }
+
   res.json({ server });
 }
 

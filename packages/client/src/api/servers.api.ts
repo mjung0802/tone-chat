@@ -4,6 +4,7 @@ import type {
   ServersResponse,
   CreateServerRequest,
   UpdateServerRequest,
+  TransferOwnershipRequest,
 } from '../types/api.types';
 
 export function getServers() {
@@ -24,4 +25,8 @@ export function updateServer(serverId: string, data: UpdateServerRequest) {
 
 export function deleteServer(serverId: string) {
   return del(`/servers/${serverId}`);
+}
+
+export function transferOwnership(serverId: string, data: TransferOwnershipRequest) {
+  return post<ServerResponse>(`/servers/${serverId}/transfer`, data);
 }

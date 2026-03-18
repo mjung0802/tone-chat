@@ -24,7 +24,7 @@ export default function ServerLayout() {
 
   const isWide = width >= 768;
   const showSidebar = isWide || isSidebarOpen;
-  const isAdmin = members?.some((m) => m.userId === userId && m.roles.includes('admin')) ?? false;
+  const isAdmin = members?.some((m) => m.userId === userId && (m.role === 'admin' || server?.ownerId === m.userId)) ?? false;
   const theme = useTheme();
 
   const [createDialogVisible, setCreateDialogVisible] = useState(false);

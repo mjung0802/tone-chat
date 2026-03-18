@@ -4,19 +4,23 @@ import { MessageInput } from '@/components/chat/MessageInput';
 import { MessageList, type MessageListHandle } from '@/components/chat/MessageList';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { MemberActionDialogs, type DialogType } from '@/components/members/MemberActionDialogs';
 import { useChannel } from '@/hooks/useChannels';
-import { useMembers } from '@/hooks/useMembers';
+import { useMembers, useMuteMember, useUnmuteMember, useKickMember, useBanMember } from '@/hooks/useMembers';
+import { useServer } from '@/hooks/useServers';
 import { useCustomTones } from '@/hooks/useTones';
 import { useMessages, useSendMessage } from '@/hooks/useMessages';
 import { useChannelSocket, useTypingEmit } from '@/hooks/useSocket';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useSocketStore } from '@/stores/socketStore';
-import type { Attachment, Message } from '@/types/models';
+import type { Attachment, Message, ServerMember } from '@/types/models';
+import { getAvailableActions, isMemberMuted, type Role } from '@/utils/roles';
 import type { TypingEvent } from '@/types/socket.types';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { Banner } from 'react-native-paper';
 
 const TYPING_TIMEOUT = 3000;
 
@@ -37,6 +41,7 @@ export default function ChannelScreen() {
   }, [cid, setCurrentChannelId]);
 
   useChannel(sid, cid);
+  const { data: server } = useServer(sid);
   const {
     data: messagesData,
     isLoading,
@@ -48,6 +53,10 @@ export default function ChannelScreen() {
   const { data: customTones } = useCustomTones(sid);
   const sendMessage = useSendMessage(sid, cid);
   const emitTyping = useTypingEmit(sid, cid);
+  const muteMember = useMuteMember(sid);
+  const unmuteMember = useUnmuteMember(sid);
+  const kickMember = useKickMember(sid);
+  const banMember = useBanMember(sid);
 
   // Typing state
   const [typingUsers, setTypingUsers] = useState<Map<string, number>>(new Map());
@@ -64,6 +73,10 @@ export default function ChannelScreen() {
 
   // Reaction state
   const [reactionTargetMessageId, setReactionTargetMessageId] = useState<string | null>(null);
+
+  // Mod action dialog state
+  const [dialogMember, setDialogMember] = useState<ServerMember | null>(null);
+  const [dialogType, setDialogType] = useState<DialogType | null>(null);
   const socket = useSocketStore((s) => s.socket);
 
   const handleImagePress = useCallback((attachment: Attachment) => {
@@ -144,6 +157,30 @@ export default function ChannelScreen() {
     return { authorNames: names, authorAvatars: avatars };
   }, [members]);
 
+  const currentMember = members?.find((m: ServerMember) => m.userId === userId);
+  const actorRole = (currentMember?.role ?? 'member') as Role;
+  const actorIsOwner = server?.ownerId === userId;
+
+  const modActionsMap = useMemo(() => {
+    if (!members) return {};
+    const map: Record<string, { onMute?: (() => void) | undefined; onUnmute?: (() => void) | undefined; onKick?: (() => void) | undefined; onBan?: (() => void) | undefined }> = {};
+    for (const target of members) {
+      if (target.userId === userId) continue;
+      const targetRole = (target.role ?? 'member') as Role;
+      const targetIsOwner = server?.ownerId === target.userId;
+      const actions = getAvailableActions(actorRole, actorIsOwner, targetRole, targetIsOwner);
+      if (!actions.canMute && !actions.canKick && !actions.canBan) continue;
+      const isMuted = isMemberMuted(target.mutedUntil);
+      map[target.userId] = {
+        onMute:   actions.canMute && !isMuted ? () => { setDialogMember(target); setDialogType('mute'); } : undefined,
+        onUnmute: actions.canMute && isMuted  ? () => { unmuteMember.mutate(target.userId); } : undefined,
+        onKick:   actions.canKick ? () => { setDialogMember(target); setDialogType('kick'); } : undefined,
+        onBan:    actions.canBan  ? () => { setDialogMember(target); setDialogType('ban');  } : undefined,
+      };
+    }
+    return map;
+  }, [members, userId, actorRole, actorIsOwner, server?.ownerId, unmuteMember]);
+
   const typingUserNames = Array.from(typingUsers.keys()).map(
     (id) => authorNames[id] ?? 'Someone',
   );
@@ -193,6 +230,10 @@ export default function ChannelScreen() {
     return <LoadingSpinner message="Loading messages..." />;
   }
 
+  // Check if current user is muted
+  const isMuted = isMemberMuted(currentMember?.mutedUntil);
+  const mutedUntilStr = currentMember?.mutedUntil ? new Date(currentMember.mutedUntil).toLocaleString() : '';
+
   // Messages come chronological from API, but FlatList is inverted so reverse
   const messages = [...(messagesData?.messages ?? [])].reverse();
 
@@ -213,12 +254,18 @@ export default function ChannelScreen() {
         onReplyPress={handleReplyPress}
         highlightedMessageId={highlightMessageId}
         customTones={customTones}
+        modActionsMap={modActionsMap}
       />
       <TypingIndicator userNames={typingUserNames} />
+      {isMuted ? (
+        <Banner visible icon="volume-off" actions={[]}>
+          {`You are muted until ${mutedUntilStr}`}
+        </Banner>
+      ) : null}
       <MessageInput
         onSend={handleSend}
         onTyping={emitTyping}
-        disabled={sendMessage.isPending}
+        disabled={sendMessage.isPending || isMuted}
         members={members}
         currentUserId={userId ?? undefined}
         replyTarget={replyTarget ?? undefined}
@@ -234,6 +281,14 @@ export default function ChannelScreen() {
         visible={reactionTargetMessageId !== null}
         onSelect={handleReactionEmojiSelect}
         onDismiss={() => setReactionTargetMessageId(null)}
+      />
+      <MemberActionDialogs
+        member={dialogMember}
+        dialogType={dialogType}
+        onDismiss={() => { setDialogType(null); setDialogMember(null); }}
+        onMute={(targetUserId, duration) => muteMember.mutate({ userId: targetUserId, data: { duration } })}
+        onKick={(targetUserId) => kickMember.mutate(targetUserId)}
+        onBan={(targetUserId, reason) => banMember.mutate({ userId: targetUserId, data: { reason } })}
       />
     </View>
   );

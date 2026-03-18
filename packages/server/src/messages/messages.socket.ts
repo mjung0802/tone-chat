@@ -60,6 +60,13 @@ export function registerMessageHandlers(io: Server, socket: Socket, userId: stri
       io.to(room).emit('new_message', result.data);
 
       await emitMentionsFromResult(io, userId, data.serverId, data.channelId, result.data);
+    } else {
+      const errorData = result.data as { error?: { code?: string; message?: string; mutedUntil?: string } } | null;
+      socket.emit('message_error', {
+        code: errorData?.error?.code ?? 'SEND_FAILED',
+        message: errorData?.error?.message ?? 'Failed to send message',
+        ...(errorData?.error?.mutedUntil ? { mutedUntil: errorData.error.mutedUntil } : {}),
+      });
     }
   });
 

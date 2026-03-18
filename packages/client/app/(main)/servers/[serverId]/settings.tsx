@@ -2,16 +2,19 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { CreateInviteForm } from '@/components/invites/CreateInviteForm';
 import { InviteCard } from '@/components/invites/InviteCard';
+import { MemberActionDialogs, type DialogType } from '@/components/members/MemberActionDialogs';
 import { MemberList } from '@/components/members/MemberList';
 import { ServerIcon } from '@/components/servers/ServerIcon';
 import { useUpload } from '@/hooks/useAttachments';
+import { useBans, useUnban } from '@/hooks/useBans';
 import { useChannels, useCreateChannel } from '@/hooks/useChannels';
 import { useCreateInvite, useInvites, useRevokeInvite } from '@/hooks/useInvites';
 import { useCustomTones, useAddCustomTone, useRemoveCustomTone } from '@/hooks/useTones';
 import { CustomToneForm } from '@/components/servers/CustomToneForm';
-import { useMembers } from '@/hooks/useMembers';
-import { useDeleteServer, useServer, useUpdateServer } from '@/hooks/useServers';
+import { useMembers, useMuteMember, useUnmuteMember, usePromoteMember, useDemoteMember, useBanMember, useKickMember } from '@/hooks/useMembers';
+import { useDeleteServer, useServer, useUpdateServer, useTransferOwnership } from '@/hooks/useServers';
 import { useAuthStore } from '@/stores/authStore';
+import { getRoleLevel, type Role } from '@/utils/roles';
 import * as DocumentPicker from 'expo-document-picker';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -28,6 +31,7 @@ import {
   TextInput,
   useTheme,
 } from 'react-native-paper';
+import type { ServerMember } from '@/types/models';
 
 export default function ServerSettingsScreen() {
   const { serverId } = useLocalSearchParams<{ serverId: string }>();
@@ -40,17 +44,22 @@ export default function ServerSettingsScreen() {
   const { data: channels } = useChannels(sid);
   const { data: members } = useMembers(sid);
   const { data: invites } = useInvites(sid);
+  const { data: bans } = useBans(sid);
 
   const displayNames: Record<string, string> = {};
   members?.forEach((m) => {
     displayNames[m.userId] = m.display_name ?? m.username ?? m.userId;
   });
 
-  const sortedMembers = [...(members ?? [])].sort((a, b) => {
-    const aRank = a.userId === server?.ownerId ? 0 : a.roles.includes('admin') ? 1 : 2;
-    const bRank = b.userId === server?.ownerId ? 0 : b.roles.includes('admin') ? 1 : 2;
-    return aRank - bRank;
-  });
+  function sortRank(member: ServerMember, ownerId: string | undefined): number {
+    if (member.userId === ownerId) return 0;
+    const level = getRoleLevel((member.role ?? 'member') as Role, false);
+    return level === 2 ? 1 : level === 1 ? 2 : 3;
+  }
+
+  const sortedMembers = [...(members ?? [])].sort((a, b) =>
+    sortRank(a, server?.ownerId) - sortRank(b, server?.ownerId)
+  );
 
   const updateServer = useUpdateServer(sid);
   const deleteServer = useDeleteServer(sid);
@@ -61,6 +70,14 @@ export default function ServerSettingsScreen() {
   const addCustomTone = useAddCustomTone(sid);
   const removeCustomTone = useRemoveCustomTone(sid);
   const upload = useUpload();
+  const muteMember = useMuteMember(sid);
+  const unmuteMember = useUnmuteMember(sid);
+  const promoteMember = usePromoteMember(sid);
+  const demoteMember = useDemoteMember(sid);
+  const banMember = useBanMember(sid);
+  const transferOwnership = useTransferOwnership(sid);
+  const kickMember = useKickMember(sid);
+  const unban = useUnban(sid);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -70,7 +87,12 @@ export default function ServerSettingsScreen() {
   const [isUploadingIcon, setIsUploadingIcon] = useState(false);
   const [iconError, setIconError] = useState('');
 
-  const isAdmin = members?.some((m) => m.userId === userId && m.roles.includes('admin')) ?? false;
+  // Member action dialog state
+  const [dialogMember, setDialogMember] = useState<ServerMember | null>(null);
+  const [dialogType, setDialogType] = useState<DialogType>(null);
+
+  const currentMember = members?.find((m) => m.userId === userId);
+  const isAdmin = currentMember ? (getRoleLevel((currentMember.role ?? 'member') as Role, false) >= getRoleLevel('admin', false) || server?.ownerId === userId) : false;
 
   if (isLoading || !server) {
     return <LoadingSpinner />;
@@ -87,6 +109,7 @@ export default function ServerSettingsScreen() {
   }
 
   const isOwner = server.ownerId === userId;
+  const actorRole = (currentMember?.role ?? 'member') as Role;
 
   const handleIconPress = async () => {
     const result = await DocumentPicker.getDocumentAsync({ type: ['image/*'] });
@@ -130,6 +153,16 @@ export default function ServerSettingsScreen() {
     createChannel.mutate({ name: newChannelName.trim() }, {
       onSuccess: () => setNewChannelName(''),
     });
+  };
+
+  const openDialog = (member: ServerMember, type: DialogType) => {
+    setDialogMember(member);
+    setDialogType(type);
+  };
+
+  const closeDialog = () => {
+    setDialogMember(null);
+    setDialogType(null);
   };
 
   return (
@@ -220,7 +253,32 @@ export default function ServerSettingsScreen() {
       <Text variant="titleLarge" style={styles.section}>
         Members ({members?.length ?? 0})
       </Text>
-      <MemberList members={sortedMembers} displayNames={displayNames} ownerId={server.ownerId} />
+      <MemberList
+        members={sortedMembers}
+        displayNames={displayNames}
+        ownerId={server.ownerId}
+        actorRole={actorRole}
+        actorIsOwner={isOwner}
+        onMute={(m) => openDialog(m, 'mute')}
+        onUnmute={(m) => unmuteMember.mutate(m.userId)}
+        onKick={(m) => openDialog(m, 'kick')}
+        onBan={(m) => openDialog(m, 'ban')}
+        onPromote={(m) => openDialog(m, 'promote')}
+        onDemote={(m) => openDialog(m, 'demote')}
+        onTransferOwnership={(m) => openDialog(m, 'transfer')}
+      />
+
+      <MemberActionDialogs
+        member={dialogMember}
+        dialogType={dialogType}
+        onDismiss={closeDialog}
+        onMute={(uid, duration) => muteMember.mutate({ userId: uid, data: { duration } })}
+        onKick={(uid) => kickMember.mutate(uid)}
+        onBan={(uid, reason) => banMember.mutate({ userId: uid, data: { reason } })}
+        onPromote={(uid) => promoteMember.mutate(uid)}
+        onDemote={(uid) => demoteMember.mutate(uid)}
+        onTransferOwnership={(uid) => transferOwnership.mutate({ userId: uid })}
+      />
 
       <Divider style={styles.divider} />
 
@@ -262,6 +320,34 @@ export default function ServerSettingsScreen() {
         onSubmit={(data) => addCustomTone.mutate(data)}
         isLoading={addCustomTone.isPending}
       />
+
+      {/* Bans (admin+ only) */}
+      {bans && bans.length > 0 ? (
+        <>
+          <Divider style={styles.divider} />
+          <Text variant="titleLarge" style={styles.section}>
+            Banned Users ({bans.length})
+          </Text>
+          {bans.map((ban) => (
+            <List.Item
+              key={ban.userId}
+              title={ban.username ?? ban.display_name ?? ban.userId}
+              description={ban.reason ? `Reason: ${ban.reason}` : 'No reason given'}
+              right={() => (
+                <Button
+                  mode="outlined"
+                  compact
+                  onPress={() => unban.mutate(ban.userId)}
+                  accessibilityLabel={`Unban ${ban.username ?? ban.userId}`}
+                >
+                  Unban
+                </Button>
+              )}
+              accessibilityRole="text"
+            />
+          ))}
+        </>
+      ) : null}
 
       {/* Danger Zone */}
       {isOwner ? (

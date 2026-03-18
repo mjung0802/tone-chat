@@ -53,7 +53,7 @@ describe('requireMember', () => {
   });
 
   it('calls next and attaches member when user is a member', async () => {
-    const member = { serverId: 's1', userId: 'u1', roles: [] };
+    const member = { serverId: 's1', userId: 'u1', role: 'member' };
     mockFindOne.mock.mockImplementation(async () => member);
     const req = makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } });
     const res = makeRes();

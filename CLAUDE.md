@@ -91,7 +91,7 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
 
 - **client** (`packages/client`): React Native (Expo 55 + Expo Router v5) app targeting web, iOS, and Android. Connects to the BFF via HTTP and Socket.IO.
 - **server** (`packages/server`): BFF — JWT auth, routes all client requests to backend services, manages all Socket.IO connections (room-based channels). The only service exposed to clients.
-- **messagingService** (`packages/messagingService`): MongoDB (Mongoose). Manages servers, channels, messages, and server-scoped members. Collections: `servers`, `channels`, `messages`, `serverMembers`.
+- **messagingService** (`packages/messagingService`): MongoDB (Mongoose). Manages servers, channels, messages, and server-scoped members. Collections: `servers`, `channels`, `messages`, `serverMembers` (fields: `role: 'admin'|'mod'|'member'`, `mutedUntil: Date|null`), `serverBans`.
 - **usersService** (`packages/usersService`): PostgreSQL (postgres.js). Global user accounts, auth (bcrypt + JWT), token refresh/rotation. Tables: `users`, `refresh_tokens`.
 - **attachmentsService** (`packages/attachmentsService`): MinIO for file storage (S3-compatible, swappable to AWS S3). PostgreSQL for metadata. Async uploads so attachments don't block messages. `GET /attachments/:id` regenerates a presigned URL (15min TTL) on each request for `ready` attachments.
 
@@ -122,6 +122,19 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
 
 ### API Routes (BFF)
 All routes prefixed `/api/v1`. Auth routes → usersService. Server/channel/message/member routes → messagingService. Attachment routes → attachmentsService.
+
+### Role Hierarchy & Moderation
+- Four-tier hierarchy: `member` (0) → `mod` (1) → `admin` (2) → `owner` (3, implicit via `server.ownerId`).
+- Role utilities: `getRoleLevel()` and `isAbove()` in `packages/messagingService/src/shared/roles.ts` (backend) / `packages/client/src/utils/roles.ts` (client).
+- Moderation routes (messagingService, all under `/servers/:serverId/members/:userId`):
+  - `POST /mute` / `DELETE /mute` — requires mod+; durations: 60/1440/10080 min
+  - `POST /promote` / `POST /demote` — member↔mod requires admin+; mod↔admin requires owner only
+  - `DELETE /:userId` (kick) — requires mod+ **and** actor above target in hierarchy
+  - `POST /ban` — requires mod+ and above target; creates `ServerBan` record and removes member
+  - `GET /bans` / `DELETE /bans/:userId` — requires admin+
+- Mute enforcement: `send_message` socket event checks `mutedUntil > now()` and returns `MUTED` error.
+- Ban enforcement: `joinServer` checks `ServerBan` before allowing a user to join.
+- Client: `getAvailableActions()` in `packages/client/src/utils/roles.ts` determines which action buttons render for a given actor/target pair.
 
 ## TypeScript
 
@@ -161,7 +174,7 @@ All backend packages use strict TypeScript with `nodenext` module resolution, `n
 
 Follow these rules for ongoing development:
 
-- **Access control**: Every new route in messagingService must use `requireMember` (or `requireAdmin`) middleware from `src/shared/middleware/`. No route should be accessible without membership verification.
+- **Access control**: Every new route in messagingService must use `requireMember` (for read access) or `requireRole(minimumRole)` (for privileged actions) from `src/shared/middleware/`. `requireRole` chains `requireMember` internally and also sets `req.member` and `req.server`. No route should be accessible without membership verification. Always validate actor is above target with `isAbove()` before applying moderation actions.
 - **SQL safety**: Never use `sql.unsafe()`. Use postgres.js tagged templates (`sql\`...\``) for queries and `sql(obj, ...columns)` for dynamic updates. Allowlist updateable fields explicitly.
 - **NoSQL safety**: Always validate query parameter types (e.g., confirm a value is a `string`, not an object) before passing them into MongoDB filters.
 - **Input validation**: Validate all Socket.IO event payloads with type guards before processing. Use multer `fileFilter` for upload MIME-type restrictions. Sanitize filenames with `path.basename` and strip control characters.

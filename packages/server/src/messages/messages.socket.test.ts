@@ -19,6 +19,7 @@ describe('registerMessageHandlers', () => {
   type TestSocket = {
     on: (event: string, handler: SocketHandler) => void;
     to: ReturnType<typeof mock.fn>;
+    emit: ReturnType<typeof mock.fn>;
     _toEmit?: ReturnType<typeof mock.fn>;
   };
   type TestIo = {
@@ -38,6 +39,7 @@ describe('registerMessageHandlers', () => {
     socket = {
       on: (event: string, handler: SocketHandler) => { handlers[event] = handler; },
       to: mock.fn(() => ({ emit: mockToEmit })),
+      emit: mock.fn(),
     };
     socket._toEmit = mockToEmit;
     io = {
@@ -65,14 +67,16 @@ describe('registerMessageHandlers', () => {
       assert.deepEqual(ioEmit.mock.calls[0]!.arguments[1], responseData);
     });
 
-    it('does not emit on non-201 status', async () => {
-      mockCreateMessage.mock.mockImplementation(async () => ({ status: 400, data: { error: 'bad' } }));
+    it('does not emit new_message on non-201 status, but emits message_error', async () => {
+      mockCreateMessage.mock.mockImplementation(async () => ({ status: 400, data: { error: { code: 'BAD', message: 'bad' } } }));
 
       const ioEmit = mock.fn();
       io.to = mock.fn(() => ({ emit: ioEmit }));
 
-      await handlers['send_message']!({ serverId: 's1', channelId: 'c1', content: '' });
+      await handlers['send_message']!({ serverId: 's1', channelId: 'c1', content: 'test' });
       assert.equal(ioEmit.mock.callCount(), 0);
+      assert.equal(socket.emit.mock.callCount(), 1);
+      assert.equal(socket.emit.mock.calls[0]!.arguments[0], 'message_error');
     });
 
     it('passes replyToId and mentions to createMessage', async () => {
@@ -111,7 +115,7 @@ describe('registerMessageHandlers', () => {
     });
 
     it('does not call emitMentionsFromResult on non-201', async () => {
-      mockCreateMessage.mock.mockImplementation(async () => ({ status: 400, data: { error: 'bad' } }));
+      mockCreateMessage.mock.mockImplementation(async () => ({ status: 403, data: { error: { code: 'MUTED', message: 'muted', mutedUntil: '2099-01-01' } } }));
 
       const ioEmit = mock.fn();
       io.to = mock.fn(() => ({ emit: ioEmit }));
@@ -119,6 +123,11 @@ describe('registerMessageHandlers', () => {
       await handlers['send_message']!({ serverId: 's1', channelId: 'c1', content: 'hello' });
 
       assert.equal(mockEmitMentionsFromResult.mock.callCount(), 0);
+      // Should emit message_error with mutedUntil
+      assert.equal(socket.emit.mock.callCount(), 1);
+      const errorPayload = socket.emit.mock.calls[0]!.arguments[1] as { code: string; mutedUntil?: string };
+      assert.equal(errorPayload.code, 'MUTED');
+      assert.equal(errorPayload.mutedUntil, '2099-01-01');
     });
 
     it('validates replyToId is a non-empty string', async () => {

@@ -57,3 +57,28 @@ membersRouter.delete('/:userId', async (req: AuthRequest, res) => {
   const result = await client.removeMember(req.userId!, req.params['serverId'] as string, req.params['userId'] as string);
   res.status(result.status).end();
 });
+
+membersRouter.post('/:userId/mute', async (req: AuthRequest, res) => {
+  const result = await client.muteMember(req.userId!, req.params['serverId'] as string, req.params['userId'] as string, req.body as Record<string, unknown>);
+  res.status(result.status).json(result.data);
+});
+
+membersRouter.delete('/:userId/mute', async (req: AuthRequest, res) => {
+  const result = await client.unmuteMember(req.userId!, req.params['serverId'] as string, req.params['userId'] as string);
+  res.status(result.status).json(result.data);
+});
+
+membersRouter.post('/:userId/promote', async (req: AuthRequest, res) => {
+  const result = await client.promoteMember(req.userId!, req.params['serverId'] as string, req.params['userId'] as string);
+  res.status(result.status).json(result.data);
+});
+
+membersRouter.post('/:userId/demote', async (req: AuthRequest, res) => {
+  const result = await client.demoteMember(req.userId!, req.params['serverId'] as string, req.params['userId'] as string);
+  res.status(result.status).json(result.data);
+});
+
+membersRouter.post('/:userId/ban', async (req: AuthRequest, res) => {
+  const result = await client.banMember(req.userId!, req.params['serverId'] as string, req.params['userId'] as string, req.body as Record<string, unknown>);
+  res.status(result.status).json(result.data);
+});

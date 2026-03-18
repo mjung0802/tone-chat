@@ -59,7 +59,7 @@ src/
     useServers.ts             # Server CRUD
     useChannels.ts            # Channel CRUD
     useMessages.ts            # useInfiniteQuery (cursor pagination), optimistic sends
-    useMembers.ts             # Member queries/mutations
+    useMembers.ts             # Member queries/mutations; moderation mutations: useMuteMember, useUnmuteMember, useKickMember, useBanMember, usePromoteMember, useDemoteMember
     useInvites.ts             # Invite CRUD + join-via-code
     useAttachments.ts         # Upload mutation + attachment query (staleTime: Infinity)
     useSocket.ts              # Socket.IO room lifecycle, cache injection, typing
@@ -68,7 +68,7 @@ src/
     chat/                     # MessageBubble, MessageInput, MessageList, TypingIndicator, AttachmentPicker, AttachmentPreview, AttachmentBubble, AttachmentViewer, EmojiPicker, emojiData, MentionAutocomplete
     servers/                  # ServerIcon, ServerListItem, CreateServerForm
     channels/                 # ChannelListItem, ChannelSidebar
-    members/                  # MemberListItem, MemberList
+    members/                  # MemberListItem, MemberList, MemberActionDialogs
     invites/                  # InviteCard, CreateInviteForm
     common/                   # LoadingSpinner, ErrorBoundary, EmptyState, ConfirmDialog, AccessiblePressable
   theme/
@@ -76,9 +76,11 @@ src/
     typography.ts             # Min 16px body, supports font scaling to 200%
     index.ts                  # Paper theme objects
   types/
-    models.ts                 # User, Server, Channel, Message, ServerMember, Invite, Attachment
+    models.ts                 # User, Server, Channel, Message, ServerMember, ServerBan, Invite, Attachment
     api.types.ts              # Request/response shapes matching BFF routes
     socket.types.ts           # Socket.IO event payloads
+  utils/
+    roles.ts                  # Role hierarchy: getRoleLevel(), isAbove(), getAvailableActions()
 ```
 
 ## TypeScript Rules
@@ -147,6 +149,23 @@ Upload and display of file attachments on messages. Files are sent to `attachmen
 - **`AttachmentBubble`** — inline in `MessageBubble`, fetches attachment metadata via `useAttachment(id)`. Renders image (pressable → `AttachmentViewer`) or file card (pressable → `Linking.openURL`). Shows "Attachment unavailable" for errors/non-ready status.
 - **`AttachmentViewer`** — fullscreen modal with pinch-to-zoom for image attachments. Opened from `MessageBubble` → `onImagePress` → `ChannelScreen` state.
 - **`MessageInput`** orchestrates the flow: pick → upload (via `useUpload().mutateAsync`) → collect IDs → pass to `onSend(content, attachmentIds)`. Max 6 attachments per message. Also hosts the emoji picker button.
+
+## Role Hierarchy & Moderation
+
+Role logic lives in `src/utils/roles.ts`. The `owner` role is implicit (determined by `server.ownerId`, not stored on the member).
+
+- **`getRoleLevel(role, isOwner)`** — maps `member`→0, `mod`→1, `admin`→2, `owner`→3
+- **`isAbove(actorRole, actorIsOwner, targetRole, targetIsOwner)`** — true if actor outranks target
+- **`getAvailableActions(actorRole, actorIsOwner, targetRole, targetIsOwner): AvailableActions`** — returns 6 boolean flags: `canMute`, `canKick`, `canBan`, `canPromote`, `canDemote`, `canTransferOwnership`
+
+UI components (`src/components/members/`):
+- **`MemberListItem`** — renders role badge, muted chip, and inline action `IconButton`s based on `getAvailableActions()`
+- **`MemberActionDialogs`** — centralized dialog state machine (`dialogType`) for mute (duration picker), kick/ban (confirmation + optional reason), promote/demote/transfer confirmation dialogs
+
+Moderation is surfaced in `app/(main)/servers/[serverId]/settings.tsx`:
+- Members section uses `MemberList` + `MemberActionDialogs`, driven by `dialogMember` + `dialogType` local state
+- Bans section lists active bans with unban button; uses `useBans` / `useUnban` hooks
+- Access guard: only `admin`/`owner` can reach the settings screen (redirects others via `getRoleLevel()` check)
 
 ## Accessibility (WCAG 2.1 AA)
 
@@ -243,6 +262,6 @@ All routes prefixed `/api/v1`. Auth routes are public; all others require `Autho
 | Servers | `/servers` | CRUD, `GET` returns user's memberships |
 | Channels | `/servers/:sid/channels` | CRUD, sorted by position |
 | Messages | `/servers/:sid/channels/:cid/messages` | `GET` (cursor: `?before=`), `POST`, `PATCH /:mid` |
-| Members | `/servers/:sid/members` | `POST` (join), `GET`, `PATCH /:uid`, `DELETE /:uid` |
+| Members | `/servers/:sid/members` | `POST` (join), `GET`, `PATCH /:uid`, `DELETE /:uid` (kick); moderation: `POST /:uid/mute`, `DELETE /:uid/mute`, `POST /:uid/promote`, `POST /:uid/demote`, `POST /:uid/ban`, `GET /bans`, `DELETE /bans/:uid` |
 | Invites | `/servers/:sid/invites` | `POST`, `GET`, `DELETE /:code`; `POST /invites/:code/join` (top-level) |
 | Attachments | `/attachments` | `POST /upload?filename=` (raw binary), `GET /:id` |

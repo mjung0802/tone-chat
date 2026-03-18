@@ -24,6 +24,7 @@ interface MessageListProps {
   onReplyPress?: ((messageId: string) => void) | undefined;
   highlightedMessageId?: string | null | undefined;
   customTones?: CustomToneDefinition[] | undefined;
+  modActionsMap?: Record<string, { onMute?: (() => void) | undefined; onUnmute?: (() => void) | undefined; onKick?: (() => void) | undefined; onBan?: (() => void) | undefined }> | undefined;
 }
 
 export const MessageList = forwardRef<MessageListHandle, MessageListProps>(function MessageList(props, ref) {
@@ -42,6 +43,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
     onReplyPress,
     highlightedMessageId,
     customTones,
+    modActionsMap,
   } = props;
 
   const flatListRef = useRef<FlatList>(null);
@@ -72,9 +74,13 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
         highlighted={highlightedMessageId === item._id}
         authorAvatarId={authorAvatars?.[item.authorId]}
         customTones={customTones}
+        onMute={modActionsMap?.[item.authorId]?.onMute}
+        onUnmute={modActionsMap?.[item.authorId]?.onUnmute}
+        onKick={modActionsMap?.[item.authorId]?.onKick}
+        onBan={modActionsMap?.[item.authorId]?.onBan}
       />
     ),
-    [currentUserId, authorNames, authorAvatars, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId, customTones],
+    [currentUserId, authorNames, authorAvatars, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId, customTones, modActionsMap],
   );
 
   const keyExtractor = useCallback((item: Message) => item._id, []);

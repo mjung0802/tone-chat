@@ -34,3 +34,7 @@ export function addCustomTone(userId: string, serverId: string, body: Record<str
 export function removeCustomTone(userId: string, serverId: string, toneKey: string) {
   return serviceRequest(base(), `/servers/${serverId}/tones/${toneKey}`, { method: 'DELETE', userId });
 }
+
+export function transferOwnership(userId: string, serverId: string, body: Record<string, unknown>) {
+  return serviceRequest(base(), `/servers/${serverId}/transfer`, { method: 'POST', userId, body });
+}
