@@ -15,7 +15,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useSocketStore } from '@/stores/socketStore';
 import type { Attachment, Message, ServerMember } from '@/types/models';
-import { getAvailableActions, type Role } from '@/utils/roles';
+import { getAvailableActions, isMemberMuted, type Role } from '@/utils/roles';
 import type { TypingEvent } from '@/types/socket.types';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -170,7 +170,7 @@ export default function ChannelScreen() {
       const targetIsOwner = server?.ownerId === target.userId;
       const actions = getAvailableActions(actorRole, actorIsOwner, targetRole, targetIsOwner);
       if (!actions.canMute && !actions.canKick && !actions.canBan) continue;
-      const isMuted = target.mutedUntil ? new Date(target.mutedUntil) > new Date() : false;
+      const isMuted = isMemberMuted(target.mutedUntil);
       map[target.userId] = {
         onMute:   actions.canMute && !isMuted ? () => { setDialogMember(target); setDialogType('mute'); } : undefined,
         onUnmute: actions.canMute && isMuted  ? () => { unmuteMember.mutate(target.userId); } : undefined,
@@ -231,7 +231,7 @@ export default function ChannelScreen() {
   }
 
   // Check if current user is muted
-  const isMuted = currentMember?.mutedUntil ? new Date(currentMember.mutedUntil) > new Date() : false;
+  const isMuted = isMemberMuted(currentMember?.mutedUntil);
   const mutedUntilStr = currentMember?.mutedUntil ? new Date(currentMember.mutedUntil).toLocaleString() : '';
 
   // Messages come chronological from API, but FlatList is inverted so reverse

@@ -68,7 +68,7 @@ src/
     chat/                     # MessageBubble, MessageInput, MessageList, TypingIndicator, AttachmentPicker, AttachmentPreview, AttachmentBubble, AttachmentViewer, EmojiPicker, emojiData, MentionAutocomplete
     servers/                  # ServerIcon, ServerListItem, CreateServerForm
     channels/                 # ChannelListItem, ChannelSidebar
-    members/                  # MemberListItem, MemberList, MemberActionMenu, MemberActionDialogs
+    members/                  # MemberListItem, MemberList, MemberActionDialogs
     invites/                  # InviteCard, CreateInviteForm
     common/                   # LoadingSpinner, ErrorBoundary, EmptyState, ConfirmDialog, AccessiblePressable
   theme/

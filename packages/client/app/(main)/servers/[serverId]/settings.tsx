@@ -51,13 +51,15 @@ export default function ServerSettingsScreen() {
     displayNames[m.userId] = m.display_name ?? m.username ?? m.userId;
   });
 
-  const sortedMembers = [...(members ?? [])].sort((a, b) => {
-    const aIsOwner = a.userId === server?.ownerId;
-    const bIsOwner = b.userId === server?.ownerId;
-    const aRank = aIsOwner ? 0 : getRoleLevel((a.role ?? 'member') as Role, false) === 2 ? 1 : getRoleLevel((a.role ?? 'member') as Role, false) === 1 ? 2 : 3;
-    const bRank = bIsOwner ? 0 : getRoleLevel((b.role ?? 'member') as Role, false) === 2 ? 1 : getRoleLevel((b.role ?? 'member') as Role, false) === 1 ? 2 : 3;
-    return aRank - bRank;
-  });
+  function sortRank(member: ServerMember, ownerId: string | undefined): number {
+    if (member.userId === ownerId) return 0;
+    const level = getRoleLevel((member.role ?? 'member') as Role, false);
+    return level === 2 ? 1 : level === 1 ? 2 : 3;
+  }
+
+  const sortedMembers = [...(members ?? [])].sort((a, b) =>
+    sortRank(a, server?.ownerId) - sortRank(b, server?.ownerId)
+  );
 
   const updateServer = useUpdateServer(sid);
   const deleteServer = useDeleteServer(sid);
@@ -74,6 +76,7 @@ export default function ServerSettingsScreen() {
   const demoteMember = useDemoteMember(sid);
   const banMember = useBanMember(sid);
   const transferOwnership = useTransferOwnership(sid);
+  const kickMember = useKickMember(sid);
   const unban = useUnban(sid);
 
   const [name, setName] = useState('');
@@ -161,8 +164,6 @@ export default function ServerSettingsScreen() {
     setDialogMember(null);
     setDialogType(null);
   };
-
-  const kickMember = useKickMember(sid);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
