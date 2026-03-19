@@ -111,6 +111,18 @@ export default function ChannelScreen() {
     [reactionTargetMessageId, handleToggleReaction],
   );
 
+  const clearTypingUser = useCallback((uid: string) => {
+    const existing = typingTimersRef.current.get(uid);
+    if (existing) clearTimeout(existing);
+    typingTimersRef.current.delete(uid);
+    setTypingUsers((prev) => {
+      if (!prev.has(uid)) return prev;
+      const next = new Map(prev);
+      next.delete(uid);
+      return next;
+    });
+  }, []);
+
   const handleTyping = useCallback(
     (event: TypingEvent) => {
       if (event.userId === userId) return;
@@ -125,19 +137,18 @@ export default function ChannelScreen() {
       const existing = typingTimersRef.current.get(event.userId);
       if (existing) clearTimeout(existing);
       const timer = setTimeout(() => {
-        setTypingUsers((prev) => {
-          const next = new Map(prev);
-          next.delete(event.userId);
-          return next;
-        });
-        typingTimersRef.current.delete(event.userId);
+        clearTypingUser(event.userId);
       }, TYPING_TIMEOUT);
       typingTimersRef.current.set(event.userId, timer);
     },
-    [userId],
+    [userId, clearTypingUser],
   );
 
-  useChannelSocket(sid, cid, handleTyping);
+  const handleNewMessage = useCallback((authorId: string) => {
+    clearTypingUser(authorId);
+  }, [clearTypingUser]);
+
+  useChannelSocket(sid, cid, handleTyping, handleNewMessage);
 
   // Clean up timers
   useEffect(() => {

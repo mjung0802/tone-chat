@@ -7,32 +7,32 @@ interface TypingIndicatorProps {
 }
 
 export function TypingIndicator({ userNames }: TypingIndicatorProps) {
-  if (userNames.length === 0) return null;
+  const theme = useTheme();
 
-  let text: string;
+  let text: string | null = null;
   if (userNames.length === 1) {
     text = `${userNames[0]} is typing...`;
   } else if (userNames.length === 2) {
     text = `${userNames[0]} and ${userNames[1]} are typing...`;
-  } else {
+  } else if (userNames.length > 2) {
     text = 'Several people are typing...';
   }
-
-  const theme = useTheme();
 
   return (
     <View
       style={styles.container}
       accessibilityRole="text"
       accessibilityLiveRegion="polite"
-      accessibilityLabel={text}
+      accessibilityLabel={text ?? undefined}
     >
-      <Text
-        variant="labelSmall"
-        style={{ color: theme.colors.onSurfaceVariant, opacity: 0.7 }}
-      >
-        {text}
-      </Text>
+      {text ? (
+        <Text
+          variant="labelSmall"
+          style={{ color: theme.colors.onSurfaceVariant, opacity: 0.7 }}
+        >
+          {text}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -40,7 +40,6 @@ export function TypingIndicator({ userNames }: TypingIndicatorProps) {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
-    paddingVertical: 4,
-    minHeight: 20,
+    minHeight: 16,
   },
 });

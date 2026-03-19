@@ -245,6 +245,26 @@ describe('useChannelSocket', () => {
     expect(data!.pages[0]!.messages[0]!._id).toBe('msg-1');
   });
 
+  it('new_message handler calls onNewMessage with authorId', () => {
+    const onNewMessage = jest.fn();
+    const existing = makeMessage({ _id: 'msg-1' });
+    queryClient.setQueryData<CacheData>(
+      ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+      { pages: [{ messages: [existing] }], pageParams: [undefined] },
+    );
+
+    renderHook(
+      () => useChannelSocket('server-1', 'channel-1', undefined, onNewMessage),
+      { wrapper: createHookWrapper(queryClient) },
+    );
+
+    const handler = findHandler(mockSocket, 'new_message');
+    const newMsg = makeMessage({ _id: 'msg-2', authorId: 'user-42', content: 'Hello' });
+    act(() => handler!({ message: newMsg }));
+
+    expect(onNewMessage).toHaveBeenCalledWith('user-42');
+  });
+
   it('cleans up all event listeners on unmount', () => {
     const { unmount } = renderHook(() => useChannelSocket('server-1', 'channel-1'), {
       wrapper: createHookWrapper(queryClient),

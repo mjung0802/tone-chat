@@ -38,6 +38,7 @@ export function useChannelSocket(
   serverId: string | undefined,
   channelId: string | undefined,
   onTyping?: (event: TypingEvent) => void,
+  onNewMessage?: ((authorId: string) => void) | undefined,
 ) {
   const socket = useSocketStore((s) => s.socket);
   const queryClient = useQueryClient();
@@ -49,6 +50,7 @@ export function useChannelSocket(
 
     const handleNewMessage = (data: { message: Message }) => {
       injectMessage(queryClient, data.message);
+      onNewMessage?.(data.message.authorId);
       AccessibilityInfo.announceForAccessibility('New message received');
     };
 
@@ -72,7 +74,7 @@ export function useChannelSocket(
       socket.off('typing', handleTyping);
       socket.off('reaction_updated', handleReactionUpdated);
     };
-  }, [socket, serverId, channelId, queryClient, onTyping]);
+  }, [socket, serverId, channelId, queryClient, onTyping, onNewMessage]);
 }
 
 export function useTypingEmit(serverId: string | undefined, channelId: string | undefined) {
