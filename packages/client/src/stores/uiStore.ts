@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { Platform } from 'react-native';
+import type { ThemeId } from '@/theme';
+import { THEME_IDS } from '@/theme/presets';
 
 type ThemePreference = 'light' | 'dark' | 'system';
 type ToneDisplay = 'full' | 'reduced';
@@ -42,12 +44,20 @@ const toneDisplayPersister = createPersister<ToneDisplay>(
   'full',
 );
 
+const colorThemePersister = createPersister<ThemeId>(
+  'colorTheme',
+  (v): v is ThemeId => THEME_IDS.includes(v as ThemeId),
+  'default',
+);
+
 interface UiState {
   themePreference: ThemePreference;
   toneDisplay: ToneDisplay;
+  colorTheme: ThemeId;
   isSidebarOpen: boolean;
   setThemePreference: (pref: ThemePreference) => void;
   setToneDisplay: (pref: ToneDisplay) => void;
+  setColorTheme: (id: ThemeId) => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
 }
@@ -55,6 +65,7 @@ interface UiState {
 export const useUiStore = create<UiState>((set) => ({
   themePreference: 'system',
   toneDisplay: 'full',
+  colorTheme: 'default',
   isSidebarOpen: true,
 
   setThemePreference: (pref: ThemePreference) => {
@@ -65,6 +76,11 @@ export const useUiStore = create<UiState>((set) => ({
   setToneDisplay: (pref: ToneDisplay) => {
     set({ toneDisplay: pref });
     void toneDisplayPersister.persist(pref);
+  },
+
+  setColorTheme: (id: ThemeId) => {
+    set({ colorTheme: id });
+    void colorThemePersister.persist(id);
   },
 
   toggleSidebar: () => {
@@ -84,4 +100,18 @@ export async function hydrateTheme(): Promise<void> {
 export async function hydrateToneDisplay(): Promise<void> {
   const toneDisplay = await toneDisplayPersister.load();
   useUiStore.setState({ toneDisplay });
+}
+
+export async function hydrateColorTheme(): Promise<void> {
+  const colorTheme = await colorThemePersister.load();
+  useUiStore.setState({ colorTheme });
+}
+
+export async function hydrateUiStore(): Promise<void> {
+  const [themePreference, toneDisplay, colorTheme] = await Promise.all([
+    themePersister.load(),
+    toneDisplayPersister.load(),
+    colorThemePersister.load(),
+  ]);
+  useUiStore.setState({ themePreference, toneDisplay, colorTheme });
 }

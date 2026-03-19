@@ -53,6 +53,8 @@ export const lightColors = {
   backdrop: 'rgba(44, 49, 55, 0.4)',
 };
 
+export type ColorPalette = typeof lightColors;
+
 export const darkColors = {
   primary: '#A0CAFD',        // 8.4:1 on dark bg
   onPrimary: '#003258',

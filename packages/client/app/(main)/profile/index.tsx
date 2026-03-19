@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Icon, SegmentedButtons, TextInput, Button, Text, HelperText, Snackbar, Portal, useTheme } from 'react-native-paper';
 import type { AppTheme } from '@/theme';
+import { themePresets, THEME_IDS, type ThemeId } from '@/theme/presets';
 import { useMe, useUpdateProfile } from '@/hooks/useUser';
 import { useLogout } from '@/hooks/useAuth';
 import { useUpload } from '@/hooks/useAttachments';
@@ -21,6 +22,8 @@ export default function ProfileScreen() {
   const theme = useTheme<AppTheme>();
   const themePreference = useUiStore((s) => s.themePreference);
   const setThemePreference = useUiStore((s) => s.setThemePreference);
+  const colorTheme = useUiStore((s) => s.colorTheme);
+  const setColorTheme = useUiStore((s) => s.setColorTheme);
   const toneDisplay = useUiStore((s) => s.toneDisplay);
   const setToneDisplay = useUiStore((s) => s.setToneDisplay);
   const notificationPreference = useNotificationStore((s) => s.notificationPreference);
@@ -179,6 +182,35 @@ export default function ProfileScreen() {
         style={styles.input}
       />
 
+      <Text variant="labelLarge" style={styles.themeLabel}>Color Theme</Text>
+      <View style={styles.swatchRow}>
+        {THEME_IDS.map((id: ThemeId) => {
+          const preset = themePresets[id];
+          const isSelected = id === colorTheme;
+          return (
+            <Pressable
+              key={id}
+              onPress={() => setColorTheme(id)}
+              accessibilityRole="button"
+              accessibilityLabel={`${preset.label} color theme`}
+              accessibilityState={{ selected: isSelected }}
+              style={styles.swatchItem}
+            >
+              <View
+                style={[
+                  styles.swatch,
+                  { backgroundColor: preset.accent },
+                  isSelected
+                    ? { borderColor: theme.colors.primary, borderWidth: 3 }
+                    : { borderColor: theme.colors.outlineVariant, borderWidth: 1 },
+                ]}
+              />
+              <Text variant="labelSmall" style={styles.swatchLabel}>{preset.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       <Text variant="labelLarge" style={styles.themeLabel}>Theme</Text>
       <SegmentedButtons
         value={themePreference}
@@ -292,6 +324,25 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 12,
     width: '100%',
+  },
+  swatchRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    width: '100%',
+    marginBottom: 4,
+  },
+  swatchItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  swatch: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  swatchLabel: {
+    textAlign: 'center',
   },
   themeLabel: {
     alignSelf: 'flex-start',

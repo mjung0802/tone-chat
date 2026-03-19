@@ -39,7 +39,7 @@ test('shows theme selector and allows changing theme', async ({ page }) => {
 
   // Click Dark and verify the theme label is still visible (no crash, theme applied)
   await page.getByRole('button', { name: 'Dark' }).click();
-  await expect(page.getByText('Theme')).toBeVisible();
+  await expect(page.getByText('Theme', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Dark' })).toBeVisible();
 });
 
@@ -82,4 +82,26 @@ test('clicking System triggers permission flow and persists preference', async (
   await page.reload();
   const storedAfterReload = await page.evaluate(() => localStorage.getItem('notificationPreference'));
   expect(storedAfterReload).toBe('system');
+});
+
+test('clicking a color theme swatch persists to localStorage', async ({ page }) => {
+  await page.goto('/profile');
+
+  await page.getByRole('button', { name: 'Softboy color theme' }).click();
+
+  await expect(async () => {
+    const stored = await page.evaluate(() => localStorage.getItem('colorTheme'));
+    expect(stored).toBe('softboy');
+  }).toPass({ timeout: 5000 });
+});
+
+test('default color theme swatch is selected initially', async ({ page }) => {
+  await page.goto('/profile');
+
+  const defaultSwatch = page.getByRole('button', { name: 'Default color theme' });
+  await expect(defaultSwatch).toBeVisible();
+
+  // Verify default is the active theme (no colorTheme in localStorage means default)
+  const stored = await page.evaluate(() => localStorage.getItem('colorTheme'));
+  expect(stored).toBeNull();
 });

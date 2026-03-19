@@ -1,29 +1,17 @@
 import { MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
-import { lightColors, darkColors } from './colors';
 import { fonts } from './typography';
+import { themePresets, type ThemeId } from './presets';
 
-export const lightTheme = {
-  ...MD3LightTheme,
-  colors: {
-    ...MD3LightTheme.colors,
-    ...lightColors,
-  },
-  fonts: {
-    ...MD3LightTheme.fonts,
-    ...fonts,
-  },
-};
+export type { ThemeId } from './presets';
 
-export const darkTheme = {
-  ...MD3DarkTheme,
-  colors: {
-    ...MD3DarkTheme.colors,
-    ...darkColors,
-  },
-  fonts: {
-    ...MD3DarkTheme.fonts,
-    ...fonts,
-  },
-};
+export function buildTheme(themeId: ThemeId, mode: 'light' | 'dark') {
+  const preset = themePresets[themeId];
+  const base = mode === 'dark' ? MD3DarkTheme : MD3LightTheme;
+  const colors = mode === 'dark' ? preset.dark : preset.light;
+  return { ...base, colors: { ...base.colors, ...colors }, fonts: { ...base.fonts, ...fonts } };
+}
 
+// Backward-compatible exports
+export const lightTheme = buildTheme('default', 'light');
+export const darkTheme = buildTheme('default', 'dark');
 export type AppTheme = typeof lightTheme;

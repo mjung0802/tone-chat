@@ -6,9 +6,9 @@ import { PaperProvider, useTheme } from 'react-native-paper';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { lightTheme, darkTheme } from '@/theme';
+import { buildTheme } from '@/theme';
 import { useAuthStore } from '@/stores/authStore';
-import { useUiStore, hydrateTheme, hydrateToneDisplay } from '@/stores/uiStore';
+import { useUiStore, hydrateUiStore } from '@/stores/uiStore';
 import { hydrateNotificationPreference } from '@/stores/notificationStore';
 import { configureAuth } from '@/api/client';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -46,8 +46,7 @@ function AppContent() {
 
   useEffect(() => {
     void hydrate();
-    void hydrateTheme();
-    void hydrateToneDisplay();
+    void hydrateUiStore();
     void hydrateNotificationPreference();
   }, [hydrate]);
 
@@ -82,10 +81,12 @@ function AppContent() {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const themePreference = useUiStore((s) => s.themePreference);
+  const colorTheme = useUiStore((s) => s.colorTheme);
 
   const effectiveScheme =
     themePreference === 'system' ? colorScheme : themePreference;
-  const theme = effectiveScheme === 'dark' ? darkTheme : lightTheme;
+  const mode = effectiveScheme === 'dark' ? 'dark' : 'light';
+  const theme = buildTheme(colorTheme, mode);
   const rnTheme = effectiveScheme === 'dark' ? DarkTheme : DefaultTheme;
 
   return (
