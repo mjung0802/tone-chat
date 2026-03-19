@@ -1,11 +1,38 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useState } from 'react';
+import { Platform, View } from 'react-native';
 import { Chip, IconButton, List, Tooltip } from 'react-native-paper';
 import { UserAvatar } from '../common/UserAvatar';
 import { getAvailableActions, isMemberMuted, type Role } from '../../utils/roles';
 import type { ServerMember } from '../../types/models';
 
 type ActionCallback = ((member: ServerMember) => void) | undefined;
+
+interface ActionButtonProps {
+  visible: boolean | null | undefined;
+  icon: string;
+  label: string;
+  onPress?: ActionCallback;
+  member: ServerMember;
+}
+
+function ActionButton({ visible, icon, label, onPress, member }: ActionButtonProps) {
+  if (!visible) return null;
+  return (
+    <Tooltip title={label}>
+      <IconButton icon={icon} size={20} style={noMargin} onPress={() => onPress?.(member)} accessibilityLabel={label} />
+    </Tooltip>
+  );
+}
+
+function getBadgeLabel(role: string | undefined, isOwner: boolean | undefined): string {
+  if (isOwner) return 'Owner';
+  if (role === 'admin') return 'Admin';
+  if (role === 'mod') return 'Mod';
+  return '';
+}
+
+const noMargin = { margin: 0 } as const;
+const rowCenter = { flexDirection: 'row', alignItems: 'center' } as const;
 
 interface MemberListItemProps {
   member: ServerMember;
@@ -38,8 +65,11 @@ export function MemberListItem({
   onDemote,
   onTransferOwnership,
 }: MemberListItemProps) {
+  const [hovered, setHovered] = useState(false);
+  const showActions = Platform.OS !== 'web' || hovered;
+
   const name = member.nickname ?? displayName ?? member.userId;
-  const badgeLabel = isOwner ? 'Owner' : member.role === 'admin' ? 'Admin' : member.role === 'mod' ? 'Mod' : '';
+  const badgeLabel = getBadgeLabel(member.role, isOwner);
   const isMuted = isMemberMuted(member.mutedUntil);
 
   const targetRole = (member.role ?? 'member') as Role;
@@ -59,44 +89,18 @@ export function MemberListItem({
   const optionalProps: Record<string, unknown> = {};
   if (badgeLabel || isMuted || hasActions) {
     optionalProps['right'] = () => (
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <View style={rowCenter}>
         {isMuted ? <Chip compact style={{ marginRight: 4 }}>Muted</Chip> : null}
+        <View style={{ ...rowCenter, opacity: showActions ? 1 : 0, pointerEvents: showActions ? 'auto' : 'none' }}>
+          <ActionButton visible={actions?.canMute && !isMuted} icon="volume-off" label="Mute" onPress={onMute} member={member} />
+          <ActionButton visible={actions?.canMute && isMuted} icon="volume-high" label="Unmute" onPress={onUnmute} member={member} />
+          <ActionButton visible={actions?.canKick} icon="account-remove" label="Kick" onPress={onKick} member={member} />
+          <ActionButton visible={actions?.canBan} icon="cancel" label="Ban" onPress={onBan} member={member} />
+          <ActionButton visible={actions?.canPromote} icon="arrow-up-bold" label={`Promote to ${nextRole}`} onPress={onPromote} member={member} />
+          <ActionButton visible={actions?.canDemote} icon="arrow-down-bold" label={`Demote to ${prevRole}`} onPress={onDemote} member={member} />
+          <ActionButton visible={actions?.canTransferOwnership} icon="crown" label="Transfer Ownership" onPress={onTransferOwnership} member={member} />
+        </View>
         {badgeLabel ? <Chip compact style={{ marginRight: 4 }}>{badgeLabel}</Chip> : null}
-        {actions?.canMute && !isMuted ? (
-          <Tooltip title="Mute">
-            <IconButton icon="volume-off" size={20} onPress={() => onMute?.(member)} accessibilityLabel="Mute" />
-          </Tooltip>
-        ) : null}
-        {actions?.canMute && isMuted ? (
-          <Tooltip title="Unmute">
-            <IconButton icon="volume-high" size={20} onPress={() => onUnmute?.(member)} accessibilityLabel="Unmute" />
-          </Tooltip>
-        ) : null}
-        {actions?.canKick ? (
-          <Tooltip title="Kick">
-            <IconButton icon="account-remove" size={20} onPress={() => onKick?.(member)} accessibilityLabel="Kick" />
-          </Tooltip>
-        ) : null}
-        {actions?.canBan ? (
-          <Tooltip title="Ban">
-            <IconButton icon="cancel" size={20} onPress={() => onBan?.(member)} accessibilityLabel="Ban" />
-          </Tooltip>
-        ) : null}
-        {actions?.canPromote ? (
-          <Tooltip title={`Promote to ${nextRole}`}>
-            <IconButton icon="arrow-up-bold" size={20} onPress={() => onPromote?.(member)} accessibilityLabel={`Promote to ${nextRole}`} />
-          </Tooltip>
-        ) : null}
-        {actions?.canDemote ? (
-          <Tooltip title={`Demote to ${prevRole}`}>
-            <IconButton icon="arrow-down-bold" size={20} onPress={() => onDemote?.(member)} accessibilityLabel={`Demote to ${prevRole}`} />
-          </Tooltip>
-        ) : null}
-        {actions?.canTransferOwnership ? (
-          <Tooltip title="Transfer Ownership">
-            <IconButton icon="crown" size={20} onPress={() => onTransferOwnership?.(member)} accessibilityLabel="Transfer Ownership" />
-          </Tooltip>
-        ) : null}
       </View>
     );
   }
@@ -105,21 +109,26 @@ export function MemberListItem({
     optionalProps['onPress'] = () => handler(member);
   }
 
+  const pointerProps = Platform.OS === 'web'
+    ? { onPointerEnter: () => setHovered(true), onPointerLeave: () => setHovered(false) }
+    : {};
+
   return (
-    <List.Item
-      title={name}
-      description={badgeLabel}
-      left={() => (
-        <UserAvatar
-          avatarAttachmentId={member.avatar_url}
-          name={name}
-          size={36}
-        />
-      )}
-      {...optionalProps}
-      accessibilityRole="text"
-      accessibilityLabel={`${name}${badgeLabel ? `, ${badgeLabel.toLowerCase()}` : ''}${isMuted ? ', muted' : ''}`}
-      style={{ minHeight: 48 }}
-    />
+    <View {...pointerProps}>
+      <List.Item
+        title={name}
+        left={() => (
+          <UserAvatar
+            avatarAttachmentId={member.avatar_url}
+            name={name}
+            size={36}
+          />
+        )}
+        {...optionalProps}
+        accessibilityRole="text"
+        accessibilityLabel={`${name}${badgeLabel ? `, ${badgeLabel.toLowerCase()}` : ''}${isMuted ? ', muted' : ''}`}
+        style={{ minHeight: 48 }}
+      />
+    </View>
   );
 }

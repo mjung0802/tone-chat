@@ -143,7 +143,8 @@ describe('MemberListItem', () => {
       />,
     );
 
-    fireEvent.press(getByLabelText('Kick'));
+    const kickBtn = getByLabelText('Kick');
+    fireEvent(kickBtn, 'click');
     expect(onKick).toHaveBeenCalledWith(member);
   });
 
