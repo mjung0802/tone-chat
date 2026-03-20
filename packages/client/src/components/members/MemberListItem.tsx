@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Platform, View } from 'react-native';
 import { Chip, IconButton, List, Tooltip } from 'react-native-paper';
-import { UserAvatar } from '../common/UserAvatar';
-import { getAvailableActions, isMemberMuted, type Role } from '../../utils/roles';
 import type { ServerMember } from '../../types/models';
+import { getAvailableActions, isMemberMuted, type Role } from '../../utils/roles';
+import { UserAvatar } from '../common/UserAvatar';
 
-type ActionCallback = ((member: ServerMember) => void) | undefined;
+type ActionCallback = (member: ServerMember) => void;
 
 interface ActionButtonProps {
-  visible: boolean | null | undefined;
+  visible?: boolean;
   icon: string;
   label: string;
   onPress?: ActionCallback;
@@ -36,11 +36,11 @@ const rowCenter = { flexDirection: 'row', alignItems: 'center' } as const;
 
 interface MemberListItemProps {
   member: ServerMember;
-  displayName?: string | undefined;
-  isOwner?: boolean | undefined;
-  onPress?: ((member: ServerMember) => void) | undefined;
-  actorRole?: Role | undefined;
-  actorIsOwner?: boolean | undefined;
+  displayName?: string;
+  isOwner?: boolean;
+  onPress?: (member: ServerMember) => void;
+  actorRole?: Role;
+  actorIsOwner?: boolean;
   onMute?: ActionCallback;
   onUnmute?: ActionCallback;
   onKick?: ActionCallback;

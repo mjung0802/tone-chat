@@ -1,11 +1,11 @@
 import React from 'react';
-import { Modal, View, Image, StyleSheet, ScrollView, Pressable } from 'react-native';
-import { Text, IconButton } from 'react-native-paper';
+import { Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { IconButton, Text } from 'react-native-paper';
 import type { Attachment } from '../../types/models';
 
 interface AttachmentViewerProps {
   visible: boolean;
-  attachment: Attachment | null;
+  attachment?: Attachment;
   onClose: () => void;
 }
 

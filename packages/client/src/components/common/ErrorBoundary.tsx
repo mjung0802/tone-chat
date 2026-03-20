@@ -1,6 +1,6 @@
 import React, { Component, type ReactNode } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, Button } from 'react-native-paper';
+import { StyleSheet, View } from 'react-native';
+import { Button, Text } from 'react-native-paper';
 
 interface Props {
   children: ReactNode;
@@ -9,18 +9,18 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error: Error | null;
+  error?: Error;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { hasError: false, error: null };
+  state: State = { hasError: false };
 
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
   handleRetry = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState({ hasError: false, error: undefined });
   };
 
   render() {

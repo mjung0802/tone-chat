@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 import { Button, Dialog, Portal, RadioButton, Text, TextInput } from 'react-native-paper';
-import { ConfirmDialog } from '../common/ConfirmDialog';
 import type { ServerMember } from '../../types/models';
+import { ConfirmDialog } from '../common/ConfirmDialog';
 
-export type DialogType = 'mute' | 'kick' | 'ban' | 'promote' | 'demote' | 'transfer' | null;
+export type DialogType = 'mute' | 'kick' | 'ban' | 'promote' | 'demote' | 'transfer';
 
 interface MemberActionDialogsProps {
-  member: ServerMember | null;
-  dialogType: DialogType;
+  member?: ServerMember;
+  dialogType?: DialogType;
   onDismiss: () => void;
-  onMute?: ((userId: string, duration: number) => void) | undefined;
-  onKick?: ((userId: string) => void) | undefined;
-  onBan?: ((userId: string, reason?: string) => void) | undefined;
-  onPromote?: ((userId: string) => void) | undefined;
-  onDemote?: ((userId: string) => void) | undefined;
-  onTransferOwnership?: ((userId: string) => void) | undefined;
+  onMute?: (userId: string, duration: number) => void;
+  onKick?: (userId: string) => void;
+  onBan?: (userId: string, reason?: string) => void;
+  onPromote?: (userId: string) => void;
+  onDemote?: (userId: string) => void;
+  onTransferOwnership?: (userId: string) => void;
 }
 
 export function MemberActionDialogs({

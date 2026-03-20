@@ -1,10 +1,10 @@
 import React from 'react';
-import { Card, Text, Button, useTheme } from 'react-native-paper';
+import { Button, Card, Text, useTheme } from 'react-native-paper';
 import type { Invite } from '../../types/models';
 
 interface InviteCardProps {
   invite: Invite;
-  onRevoke?: ((invite: Invite) => void) | null | undefined;
+  onRevoke?: (invite: Invite) => void;
 }
 
 export function InviteCard({ invite, onRevoke }: InviteCardProps) {

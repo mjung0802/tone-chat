@@ -3,11 +3,11 @@ export interface User {
   username: string;
   email: string;
   email_verified: boolean;
-  display_name: string | null;
-  pronouns: string | null;
-  avatar_url: string | null;
+  display_name?: string;
+  pronouns?: string;
+  avatar_url?: string;
   status: string;
-  bio: string | null;
+  bio?: string;
   created_at: Date;
   updated_at: Date;
 }

@@ -31,7 +31,7 @@ export interface AvailableActions {
   canTransferOwnership: boolean;
 }
 
-export function isMemberMuted(mutedUntil: string | null | undefined): boolean {
+export function isMemberMuted(mutedUntil?: string): boolean {
   return mutedUntil ? new Date(mutedUntil) > new Date() : false;
 }
 

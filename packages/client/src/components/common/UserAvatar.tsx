@@ -3,9 +3,9 @@ import { Avatar } from 'react-native-paper';
 import { useAttachment } from '../../hooks/useAttachments';
 
 interface UserAvatarProps {
-  avatarAttachmentId?: string | null | undefined;
+  avatarAttachmentId?: string;
   name: string;
-  size?: number | undefined;
+  size?: number;
 }
 
 function InitialsAvatar({ name, size }: { name: string; size: number }) {

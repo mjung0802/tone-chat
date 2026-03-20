@@ -3,11 +3,11 @@ export interface User {
   username: string;
   email: string;
   email_verified: boolean;
-  display_name: string | null;
-  pronouns: string | null;
-  avatar_url: string | null;
+  display_name?: string;
+  pronouns?: string;
+  avatar_url?: string;
   status: string;
-  bio: string | null;
+  bio?: string;
   created_at: string;
   updated_at: string;
 }
@@ -63,13 +63,13 @@ export interface ServerMember {
   _id: string;
   serverId: string;
   userId: string;
-  nickname?: string | undefined;
+  nickname?: string;
   role: string;
-  mutedUntil?: string | null | undefined;
+  mutedUntil?: string;
   joinedAt: string;
-  username?: string | undefined;
-  display_name?: string | null | undefined;
-  avatar_url?: string | null | undefined;
+  username?: string;
+  display_name?: string;
+  avatar_url?: string;
 }
 
 export interface ServerBan {
@@ -78,8 +78,8 @@ export interface ServerBan {
   reason?: string | undefined;
   bannedBy: string;
   bannedAt: string;
-  username?: string | undefined;
-  display_name?: string | null | undefined;
+  username?: string;
+  display_name?: string;
 }
 
 export interface Invite {
@@ -102,6 +102,6 @@ export interface Attachment {
   size_bytes: number;
   storage_key: string;
   status: 'processing' | 'ready' | 'failed';
-  url: string | null;
+  url?: string;
   created_at: string;
 }

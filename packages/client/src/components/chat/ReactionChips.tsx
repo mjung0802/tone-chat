@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Pressable, Platform, StyleSheet } from 'react-native';
-import { Text, IconButton, useTheme, type MD3Theme } from 'react-native-paper';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { IconButton, Text, useTheme, type MD3Theme } from 'react-native-paper';
 
 interface ReactionChipsProps {
   reactions: { emoji: string; userIds: string[] }[];
-  currentUserId: string | null;
-  authorNames?: Record<string, string> | undefined;
+  currentUserId?: string;
+  authorNames?: Record<string, string>;
   onToggle: (emoji: string) => void;
   onAddReaction: () => void;
 }

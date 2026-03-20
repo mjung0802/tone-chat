@@ -1,9 +1,9 @@
-import React, { useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { forwardRef, useCallback, useImperativeHandle, useRef } from 'react';
 import { FlatList, StyleSheet, type ListRenderItemInfo } from 'react-native';
-import { MessageBubble } from './MessageBubble';
-import { LoadingSpinner } from '../common/LoadingSpinner';
+import type { Attachment, CustomToneDefinition, Message } from '../../types/models';
 import { EmptyState } from '../common/EmptyState';
-import type { Message, Attachment, CustomToneDefinition } from '../../types/models';
+import { LoadingSpinner } from '../common/LoadingSpinner';
+import { MessageBubble } from './MessageBubble';
 
 export interface MessageListHandle {
   scrollToMessage: (messageId: string) => boolean;
@@ -11,20 +11,20 @@ export interface MessageListHandle {
 
 interface MessageListProps {
   messages: Message[];
-  currentUserId: string | null;
-  authorNames?: Record<string, string> | undefined;
-  authorAvatars?: Record<string, string | null> | undefined;
-  onLoadMore?: (() => void) | undefined;
-  isLoadingMore?: boolean | undefined;
-  onMessageLongPress?: ((message: Message) => void) | undefined;
-  onImagePress?: ((attachment: Attachment) => void) | undefined;
-  onToggleReaction?: ((messageId: string, emoji: string) => void) | undefined;
-  onAddReaction?: ((messageId: string) => void) | undefined;
-  onReply?: ((message: Message) => void) | undefined;
-  onReplyPress?: ((messageId: string) => void) | undefined;
-  highlightedMessageId?: string | null | undefined;
-  customTones?: CustomToneDefinition[] | undefined;
-  modActionsMap?: Record<string, { onMute?: (() => void) | undefined; onUnmute?: (() => void) | undefined; onKick?: (() => void) | undefined; onBan?: (() => void) | undefined }> | undefined;
+  currentUserId?: string;
+  authorNames?: Record<string, string>;
+  authorAvatars?: Record<string, string>;
+  onLoadMore?: () => void;
+  isLoadingMore?: boolean;
+  onMessageLongPress?: (message: Message) => void;
+  onImagePress?: (attachment: Attachment) => void;
+  onToggleReaction?: (messageId: string, emoji: string) => void;
+  onAddReaction?: (messageId: string) => void;
+  onReply?: (message: Message) => void;
+  onReplyPress?: (messageId: string) => void;
+  highlightedMessageId?: string;
+  customTones?: CustomToneDefinition[];
+  modActionsMap?: Record<string, { onMute?: () => void; onUnmute?: () => void; onKick?: () => void; onBan?: () => void }>;
 }
 
 export const MessageList = forwardRef<MessageListHandle, MessageListProps>(function MessageList(props, ref) {
