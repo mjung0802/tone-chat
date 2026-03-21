@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Codebase Index System
+
+An index system exists throughout this repo to minimize token usage when navigating. **Always consult the index before reading source files.**
+
+- Each package root has an `index.md` (e.g. `packages/server/index.md`) — start here for a service overview and directory map
+- Each `src/` subdirectory has an `index.md` summarizing every file's exports and purpose
+- Navigation pattern: `packages/<service>/index.md` → `src/<directory>/index.md` → open only the specific file you need
+
 ## Package Manager & Monorepo
 
 This is a **Lerna monorepo** using **pnpm** as the package manager. Always use `pnpm` (not npm or yarn).
