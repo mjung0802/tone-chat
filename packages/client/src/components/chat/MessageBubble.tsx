@@ -57,6 +57,7 @@ interface MessageBubbleProps {
   onUnmute?: (() => void) | undefined;
   onKick?: (() => void) | undefined;
   onBan?: (() => void) | undefined;
+  serverId?: string | undefined;
 }
 
 function formatTime(dateStr: string): string {
@@ -83,10 +84,12 @@ export const MessageBubble = memo(function MessageBubble({
   onUnmute,
   onKick,
   onBan,
+  serverId,
 }: MessageBubbleProps) {
   const theme = useTheme();
   const [hovered, setHovered] = useState(false);
   const toneDisplay = useUiStore((s) => s.toneDisplay);
+  const openProfileModal = useUiStore((s) => s.openProfileModal);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const toneDef = message.tone ? resolveTone(message.tone, customTones) : undefined;
@@ -125,6 +128,8 @@ export const MessageBubble = memo(function MessageBubble({
     ...(toneDef.textStyle === 'medium' ? { fontWeight: '500' as const } : {}),
   } : {};
 
+  const handleAuthorPress = serverId ? () => openProfileModal(message.authorId, serverId) : undefined;
+
   const hasAttachments = message.attachmentIds.length > 0;
   const attachmentLabel = hasAttachments
     ? `, ${message.attachmentIds.length} attachment${message.attachmentIds.length > 1 ? 's' : ''}`
@@ -146,21 +151,32 @@ export const MessageBubble = memo(function MessageBubble({
       accessibilityLabel={`${authorName ?? 'Unknown'} said: ${message.content}. ${formatTime(message.createdAt)}${message.editedAt ? ', edited' : ''}${attachmentLabel}${toneDef ? `, tone: ${toneDef.label}` : ''}`}
     >
       {authorName ? (
-        <View style={styles.avatarColumn}>
+        <Pressable
+          style={styles.avatarColumn}
+          onPress={handleAuthorPress}
+          accessibilityRole="button"
+          accessibilityLabel={`View ${authorName}'s avatar`}
+        >
           <UserAvatar avatarAttachmentId={authorAvatarId} name={authorName} size={32} />
-        </View>
+        </Pressable>
       ) : (
         <View style={styles.avatarSpacer} />
       )}
       <View style={styles.messageContent}>
       {authorName ? (
         <View style={styles.authorRow}>
-          <Text
-            variant="labelMedium"
-            style={{ color: theme.colors.primary }}
+          <Pressable
+            onPress={handleAuthorPress}
+            accessibilityRole="button"
+            accessibilityLabel={`View ${authorName}'s profile`}
           >
-            {authorName}
-          </Text>
+            <Text
+              variant="labelMedium"
+              style={{ color: theme.colors.primary }}
+            >
+              {authorName}
+            </Text>
+          </Pressable>
           <Text variant="labelSmall" style={[styles.time, { color: theme.colors.onSurfaceVariant, opacity: 0.6 }]}>
             {formatTime(message.createdAt)}
           </Text>

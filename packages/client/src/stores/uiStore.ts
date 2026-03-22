@@ -50,16 +50,25 @@ const colorThemePersister = createPersister<ThemeId>(
   'default',
 );
 
+interface ProfileModalState {
+  visible: boolean;
+  userId: string | null;
+  serverId: string | null;
+}
+
 interface UiState {
   themePreference: ThemePreference;
   toneDisplay: ToneDisplay;
   colorTheme: ThemeId;
   isSidebarOpen: boolean;
+  profileModal: ProfileModalState;
   setThemePreference: (pref: ThemePreference) => void;
   setToneDisplay: (pref: ToneDisplay) => void;
   setColorTheme: (id: ThemeId) => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
+  openProfileModal: (userId: string, serverId: string) => void;
+  closeProfileModal: () => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -67,6 +76,7 @@ export const useUiStore = create<UiState>((set) => ({
   toneDisplay: 'full',
   colorTheme: 'default',
   isSidebarOpen: true,
+  profileModal: { visible: false, userId: null, serverId: null },
 
   setThemePreference: (pref: ThemePreference) => {
     set({ themePreference: pref });
@@ -89,6 +99,14 @@ export const useUiStore = create<UiState>((set) => ({
 
   setSidebarOpen: (open: boolean) => {
     set({ isSidebarOpen: open });
+  },
+
+  openProfileModal: (userId: string, serverId: string) => {
+    set({ profileModal: { visible: true, userId, serverId } });
+  },
+
+  closeProfileModal: () => {
+    set({ profileModal: { visible: false, userId: null, serverId: null } });
   },
 }));
 

@@ -3,6 +3,7 @@ import {
   MOCK_ACCESS_TOKEN,
   MOCK_REFRESH_TOKEN,
   MOCK_USER,
+  MOCK_USER_TWO,
   MOCK_SERVER,
   MOCK_CHANNEL,
   MOCK_MESSAGES,
@@ -182,7 +183,7 @@ export async function mockMessagesRoutes(page: Page, messages = MOCK_MESSAGES): 
   );
 }
 
-export async function mockUsersRoutes(page: Page, user = MOCK_USER): Promise<void> {
+export async function mockUsersRoutes(page: Page, user = MOCK_USER, extraUsers: { id: string; username: string; [key: string]: unknown }[] = [user, MOCK_USER_TWO]): Promise<void> {
   await page.route(`${API}/users/me`, async (route) => {
     if (route.request().method() === 'GET') {
       await route.fulfill({
@@ -198,6 +199,28 @@ export async function mockUsersRoutes(page: Page, user = MOCK_USER): Promise<voi
         contentType: 'application/json',
         body: JSON.stringify({ user: updatedUser }),
       });
+    } else {
+      await route.continue();
+    }
+  });
+
+  const userMap: Record<string, { id: string; username: string; [key: string]: unknown }> = Object.fromEntries(
+    extraUsers.map((u) => [u.id, u]),
+  );
+  await page.route(/\/api\/v1\/users\/(?!me\b)[^/]+$/, async (route) => {
+    if (route.request().method() === 'GET') {
+      const url = route.request().url();
+      const userId = url.split('/users/')[1] ?? '';
+      const found = userMap[userId];
+      if (found) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ user: found }),
+        });
+      } else {
+        await route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
+      }
     } else {
       await route.continue();
     }

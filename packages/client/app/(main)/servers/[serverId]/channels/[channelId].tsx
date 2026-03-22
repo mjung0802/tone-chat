@@ -266,6 +266,7 @@ export default function ChannelScreen() {
         highlightedMessageId={highlightMessageId}
         customTones={customTones}
         modActionsMap={modActionsMap}
+        serverId={sid}
       />
       <TypingIndicator userNames={typingUserNames} />
       {isMuted ? (

@@ -31,6 +31,13 @@ export interface AvailableActions {
   canTransferOwnership: boolean;
 }
 
+export function getBadgeLabel(role: string | undefined, isOwner: boolean | undefined): string {
+  if (isOwner) return 'Owner';
+  if (role === 'admin') return 'Admin';
+  if (role === 'mod') return 'Mod';
+  return '';
+}
+
 export function isMemberMuted(mutedUntil: string | null | undefined): boolean {
   return mutedUntil ? new Date(mutedUntil) > new Date() : false;
 }

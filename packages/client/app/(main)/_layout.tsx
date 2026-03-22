@@ -1,5 +1,6 @@
 import { ServerIcon } from '@/components/servers/ServerIcon';
 import { NotificationBanner } from '@/components/common/NotificationBanner';
+import { UserProfileModal } from '@/components/common/UserProfileModal';
 import { useLogout } from '@/hooks/useAuth';
 import { useMentionNotifications } from '@/hooks/useMentionNotifications';
 import { useServers } from '@/hooks/useServers';
@@ -115,6 +116,7 @@ export default function MainLayout() {
       <Portal>
         <NotificationBanner />
       </Portal>
+      <UserProfileModal />
     </>
   );
 }

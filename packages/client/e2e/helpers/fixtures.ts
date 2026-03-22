@@ -154,6 +154,20 @@ export const MOCK_CUSTOM_TONE = {
   textStyle: 'italic' as const,
 };
 
+export const MOCK_USER_TWO = {
+  id: 'user-002',
+  username: 'janedoe',
+  email: 'jane@example.com',
+  email_verified: true,
+  display_name: 'Jane Doe',
+  pronouns: null as string | null,
+  avatar_url: null as string | null,
+  status: 'online',
+  bio: 'Hello from Jane',
+  created_at: '2024-01-01T00:00:00.000Z',
+  updated_at: '2024-01-01T00:00:00.000Z',
+};
+
 export const MOCK_MESSAGE_WITH_MENTION = {
   _id: 'msg-mention-001',
   channelId: 'channel-001',

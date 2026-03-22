@@ -25,6 +25,7 @@ interface MessageListProps {
   highlightedMessageId?: string | null | undefined;
   customTones?: CustomToneDefinition[] | undefined;
   modActionsMap?: Record<string, { onMute?: (() => void) | undefined; onUnmute?: (() => void) | undefined; onKick?: (() => void) | undefined; onBan?: (() => void) | undefined }> | undefined;
+  serverId?: string | undefined;
 }
 
 export const MessageList = forwardRef<MessageListHandle, MessageListProps>(function MessageList(props, ref) {
@@ -44,6 +45,7 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
     highlightedMessageId,
     customTones,
     modActionsMap,
+    serverId,
   } = props;
 
   const flatListRef = useRef<FlatList>(null);
@@ -78,9 +80,10 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
         onUnmute={modActionsMap?.[item.authorId]?.onUnmute}
         onKick={modActionsMap?.[item.authorId]?.onKick}
         onBan={modActionsMap?.[item.authorId]?.onBan}
+        serverId={serverId}
       />
     ),
-    [currentUserId, authorNames, authorAvatars, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId, customTones, modActionsMap],
+    [currentUserId, authorNames, authorAvatars, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId, customTones, modActionsMap, serverId],
   );
 
   const keyExtractor = useCallback((item: Message) => item._id, []);

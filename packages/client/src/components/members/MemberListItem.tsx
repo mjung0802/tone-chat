@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Platform, View } from 'react-native';
 import { Chip, IconButton, List, Tooltip } from 'react-native-paper';
 import { UserAvatar } from '../common/UserAvatar';
-import { getAvailableActions, isMemberMuted, type Role } from '../../utils/roles';
-import type { ServerMember } from '../../types/models';
+import { getBadgeLabel, getAvailableActions, isMemberMuted, type Role } from '@/utils/roles';
+import type { ServerMember } from '@/types/models';
 
 type ActionCallback = ((member: ServerMember) => void) | undefined;
 
@@ -22,13 +22,6 @@ function ActionButton({ visible, icon, label, onPress, member }: ActionButtonPro
       <IconButton icon={icon} size={20} style={noMargin} onPress={() => onPress?.(member)} accessibilityLabel={label} />
     </Tooltip>
   );
-}
-
-function getBadgeLabel(role: string | undefined, isOwner: boolean | undefined): string {
-  if (isOwner) return 'Owner';
-  if (role === 'admin') return 'Admin';
-  if (role === 'mod') return 'Mod';
-  return '';
 }
 
 const noMargin = { margin: 0 } as const;

@@ -14,6 +14,7 @@ import { CustomToneForm } from '@/components/servers/CustomToneForm';
 import { useMembers, useMuteMember, useUnmuteMember, usePromoteMember, useDemoteMember, useBanMember, useKickMember } from '@/hooks/useMembers';
 import { useDeleteServer, useServer, useUpdateServer, useTransferOwnership } from '@/hooks/useServers';
 import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore';
 import { getRoleLevel, type Role } from '@/utils/roles';
 import * as DocumentPicker from 'expo-document-picker';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -39,6 +40,8 @@ export default function ServerSettingsScreen() {
   const router = useRouter();
   const userId = useAuthStore((s) => s.userId);
   const theme = useTheme();
+
+  const openProfileModal = useUiStore((s) => s.openProfileModal);
 
   const { data: server, isLoading } = useServer(sid);
   const { data: channels } = useChannels(sid);
@@ -259,6 +262,7 @@ export default function ServerSettingsScreen() {
         ownerId={server.ownerId}
         actorRole={actorRole}
         actorIsOwner={isOwner}
+        onMemberPress={(m) => openProfileModal(m.userId, sid)}
         onMute={(m) => openDialog(m, 'mute')}
         onUnmute={(m) => unmuteMember.mutate(m.userId)}
         onKick={(m) => openDialog(m, 'kick')}
