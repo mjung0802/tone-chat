@@ -13,8 +13,8 @@ export interface IDirectMessage extends Document {
   } | undefined;
   mentions: string[];
   reactions: { emoji: string; userIds: string[] }[];
-  tone?: string | undefined;
-  editedAt?: Date | null | undefined;
+  tone: string | null;
+  editedAt: Date | null;
   createdAt: Date;
 }
 
@@ -26,20 +26,20 @@ const directMessageSchema = new Schema<IDirectMessage>(
     attachmentIds: { type: [String], default: [] },
     replyTo: {
       type: {
+        _id: false,
         messageId: { type: String, required: true },
         authorId: { type: String, required: true },
         authorName: { type: String, required: true },
         content: { type: String, required: true },
       },
-      _id: false,
     },
     mentions: { type: [String], default: [] },
     reactions: {
       type: [{ emoji: { type: String, required: true }, userIds: [{ type: String }], _id: false }],
       default: [],
     },
-    tone: { type: String },
-    editedAt: { type: Date },
+    tone: { type: String, default: null },
+    editedAt: { type: Date, default: null },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
 );
