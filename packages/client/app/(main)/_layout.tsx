@@ -1,139 +1,77 @@
-import { ServerIcon } from '@/components/servers/ServerIcon';
 import { NotificationBanner } from '@/components/common/NotificationBanner';
 import { UserProfileModal } from '@/components/common/UserProfileModal';
-import { useLogout } from '@/hooks/useAuth';
+import { ServerRail } from '@/components/layout/ServerRail';
+import { Sidebar } from '@/components/layout/Sidebar';
 import { useMentionNotifications } from '@/hooks/useMentionNotifications';
-import { useServers } from '@/hooks/useServers';
-import { DrawerContentScrollView, DrawerItem, type DrawerContentComponentProps } from '@react-navigation/drawer';
-import { useRouter } from 'expo-router';
-import { Drawer } from 'expo-router/drawer';
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Divider, Icon, IconButton, Portal, Text, useTheme } from 'react-native-paper';
-
-function ProfileHeaderButton() {
-  const router = useRouter();
-  return (
-    <IconButton
-      icon="account-circle"
-      onPress={() => router.push('/(main)/profile')}
-      accessibilityLabel="Edit profile"
-      accessibilityRole="button"
-    />
-  );
-}
-
-function CustomDrawerContent(props: DrawerContentComponentProps) {
-  const { data: servers } = useServers();
-  const logout = useLogout();
-  const router = useRouter();
-  const theme = useTheme();
-
-  return (
-    <DrawerContentScrollView {...props} style={{ backgroundColor: theme.colors.background }}>
-      <View style={styles.drawerHeader}>
-        <Text variant="titleLarge">Tone Chat</Text>
-      </View>
-      <Divider />
-
-      <DrawerItem
-        label="Home"
-        icon={({ size, color }) => <Icon source="home" size={size} color={color} />}
-        onPress={() => router.push('/(main)/servers')}
-      />
-
-      <Divider />
-      <View style={styles.sectionHeader}>
-        <Text variant="labelLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-          Servers
-        </Text>
-        <IconButton
-          icon="plus"
-          size={18}
-          onPress={() => router.push('/(main)/servers/create')}
-          accessibilityLabel="Create server"
-        />
-      </View>
-
-      {servers?.map((server) => (
-        <DrawerItem
-          key={server._id}
-          label={server.name}
-          icon={() => <ServerIcon name={server.name} icon={server.icon} size={28} />}
-          onPress={() => router.push(`/(main)/servers/${server._id}`)}
-        />
-      ))}
-
-      <Divider style={styles.bottomDivider} />
-
-      <DrawerItem
-        label="Profile"
-        icon={({ size, color }) => <Icon source="account" size={size} color={color} />}
-        onPress={() => router.push('/(main)/profile')}
-      />
-
-      <DrawerItem
-        label="Sign Out"
-        icon={({ size, color }) => <Icon source="logout" size={size} color={color} />}
-        onPress={logout}
-      />
-    </DrawerContentScrollView>
-  );
-}
+import { useAuthStore } from '@/stores/authStore';
+import { useNotificationStore } from '@/stores/notificationStore';
+import { useSocketStore } from '@/stores/socketStore';
+import { useUiStore } from '@/stores/uiStore';
+import { useSegments } from 'expo-router';
+import { Slot } from 'expo-router';
+import React, { useEffect } from 'react';
+import { useWindowDimensions, View } from 'react-native';
+import { Portal, useTheme } from 'react-native-paper';
 
 export default function MainLayout() {
   const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const isWide = width >= 768;
+  const isSidebarOpen = useUiStore((s) => s.isSidebarOpen);
+  const setSidebarOpen = useUiStore((s) => s.setSidebarOpen);
+  const userId = useAuthStore((s) => s.userId);
+
+  const socket = useSocketStore((s) => s.socket);
+  const currentConversationId = useNotificationStore((s) => s.currentConversationId);
+  const incrementDmUnread = useNotificationStore((s) => s.incrementDmUnread);
+  const showDmNotification = useNotificationStore((s) => s.showDmNotification);
 
   useMentionNotifications();
 
+  // Auto-collapse sidebar on narrow screens
+  useEffect(() => {
+    if (!isWide && isSidebarOpen) {
+      setSidebarOpen(false);
+    } else if (isWide && !isSidebarOpen) {
+      setSidebarOpen(true);
+    }
+    // Only run when isWide changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isWide]);
+
+  // DM notification handler
+  useEffect(() => {
+    if (!socket) return;
+
+    const handler = (event: { conversationId: string; otherUserId: string; preview: string }) => {
+      if (event.conversationId === currentConversationId) return;
+      incrementDmUnread();
+      showDmNotification({
+        conversationId: event.conversationId,
+        otherUserId: event.otherUserId,
+        messageId: '',
+        preview: event.preview,
+      });
+    };
+
+    socket.on('dm:notification', handler);
+
+    return () => {
+      socket.off('dm:notification', handler);
+    };
+  }, [socket, currentConversationId, incrementDmUnread, showDmNotification]);
+
   return (
-    <>
-      <Drawer
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-        screenOptions={{
-          headerShown: true,
-          headerStyle: { backgroundColor: theme.colors.surface, borderBottomColor: 'white' },
-          headerTintColor: theme.colors.onSurface,
-          drawerType: 'front',
-          drawerStyle: { backgroundColor: theme.colors.background },
-        }}
-      >
-        <Drawer.Screen
-          name="servers/index"
-          options={{
-            title: 'Servers',
-            headerRight: () => <ProfileHeaderButton />,
-          }}
-        />
-        <Drawer.Screen name="servers/create" options={{ title: 'Create Server' }} />
-        <Drawer.Screen
-          name="servers/[serverId]"
-          options={{ headerShown: false }}
-        />
-        <Drawer.Screen name="profile/index" options={{ title: 'Profile' }} />
-        <Drawer.Screen name="invites/[code]" options={{ title: 'Join Server' }} />
-      </Drawer>
+    <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.colors.background }}>
+      <ServerRail />
+      {(isWide || isSidebarOpen) ? <Sidebar currentUserId={userId ?? ''} /> : null}
+      <View style={{ flex: 1 }}>
+        <Slot />
+      </View>
       <Portal>
         <NotificationBanner />
       </Portal>
       <UserProfileModal />
-    </>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  drawerHeader: {
-    padding: 16,
-    paddingBottom: 12,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 8,
-  },
-  bottomDivider: {
-    marginTop: 8,
-  },
-});
