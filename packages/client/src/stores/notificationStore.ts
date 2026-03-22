@@ -10,6 +10,13 @@ export interface MentionNotification {
   authorId: string;
 }
 
+export interface DmNotification {
+  conversationId: string;
+  otherUserId: string;
+  messageId: string;
+  preview: string;
+}
+
 const NOTIF_PREF_KEY = 'notificationPreference';
 
 function isValidNotificationPreference(value: string | null): value is NotificationPreference {
@@ -36,21 +43,33 @@ async function loadPreference(): Promise<NotificationPreference> {
 }
 
 interface NotificationState {
-  currentNotification: MentionNotification | null;
+  currentNotification: MentionNotification | DmNotification | null;
   currentChannelId: string | null;
+  currentConversationId: string | null;
+  dmUnreadCount: number;
   notificationPreference: NotificationPreference;
   showNotification: (notification: MentionNotification) => void;
+  showDmNotification: (notification: DmNotification) => void;
   dismissNotification: () => void;
   setCurrentChannelId: (channelId: string | null) => void;
+  setCurrentConversationId: (conversationId: string | null) => void;
+  incrementDmUnread: () => void;
+  clearDmUnread: () => void;
   setNotificationPreference: (pref: NotificationPreference) => void;
 }
 
 export const useNotificationStore = create<NotificationState>((set) => ({
   currentNotification: null,
   currentChannelId: null,
+  currentConversationId: null,
+  dmUnreadCount: 0,
   notificationPreference: 'quiet',
 
   showNotification: (notification) => {
+    set({ currentNotification: notification });
+  },
+
+  showDmNotification: (notification) => {
     set({ currentNotification: notification });
   },
 
@@ -60,6 +79,18 @@ export const useNotificationStore = create<NotificationState>((set) => ({
 
   setCurrentChannelId: (channelId) => {
     set({ currentChannelId: channelId });
+  },
+
+  setCurrentConversationId: (conversationId) => {
+    set({ currentConversationId: conversationId });
+  },
+
+  incrementDmUnread: () => {
+    set((state) => ({ dmUnreadCount: state.dmUnreadCount + 1 }));
+  },
+
+  clearDmUnread: () => {
+    set({ dmUnreadCount: 0 });
   },
 
   setNotificationPreference: (pref: NotificationPreference) => {
