@@ -2,7 +2,6 @@ import type { Request, Response } from 'express';
 import { DirectConversation } from './conversation.model.js';
 import { DirectMessage } from './directMessage.model.js';
 import { config } from '../config/index.js';
-import { AppError } from '../shared/middleware/errorHandler.js';
 
 export async function getOrCreateConversation(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
@@ -149,8 +148,10 @@ export async function sendDmMessage(req: Request, res: Response): Promise<void> 
         headers: { 'x-internal-key': config.internalApiKey },
       });
       if (resp.ok) {
-        const data = (await resp.json()) as { user?: { username?: string; id?: string } };
-        if (data.user?.username) {
+        const data = (await resp.json()) as { user?: { display_name?: string | null; username?: string } };
+        if (data.user?.display_name) {
+          authorName = data.user.display_name;
+        } else if (data.user?.username) {
           authorName = data.user.username;
         }
       }
@@ -194,7 +195,8 @@ export async function editDmMessage(req: Request, res: Response): Promise<void> 
 
   const message = await DirectMessage.findOne({ _id: messageId, conversationId });
   if (!message) {
-    throw new AppError('MESSAGE_NOT_FOUND', 'Message not found', 404);
+    res.status(404).json({ error: { code: 'MESSAGE_NOT_FOUND', message: 'Message not found', status: 404 } });
+    return;
   }
 
   if (message.authorId !== userId) {
@@ -202,7 +204,12 @@ export async function editDmMessage(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const { content } = req.body as { content: string };
+  const { content } = req.body as { content?: unknown };
+  if (!content || typeof content !== 'string' || content.trim().length === 0) {
+    res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'content is required', status: 400 } });
+    return;
+  }
+
   message.content = content;
   message.editedAt = new Date();
   await message.save();
@@ -224,7 +231,8 @@ export async function toggleDmReaction(req: Request, res: Response): Promise<voi
 
   const message = await DirectMessage.findOne({ _id: messageId, conversationId });
   if (!message) {
-    throw new AppError('MESSAGE_NOT_FOUND', 'Message not found', 404);
+    res.status(404).json({ error: { code: 'MESSAGE_NOT_FOUND', message: 'Message not found', status: 404 } });
+    return;
   }
 
   const existingReaction = message.reactions.find((r) => r.emoji === emoji);

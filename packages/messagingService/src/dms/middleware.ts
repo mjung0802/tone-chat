@@ -18,11 +18,6 @@ export async function requireConversationParticipant(
     return;
   }
 
-  if (typeof conversationId !== 'string') {
-    res.status(400).json({ error: { code: 'INVALID_CONVERSATION_ID', message: 'conversationId must be a string', status: 400 } });
-    return;
-  }
-
   const conversation = await DirectConversation.findById(conversationId);
   if (!conversation) {
     res.status(404).json({ error: { code: 'CONVERSATION_NOT_FOUND', message: 'Conversation not found', status: 404 } });

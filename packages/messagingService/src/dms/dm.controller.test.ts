@@ -301,6 +301,33 @@ describe('sendDmMessage', () => {
 describe('editDmMessage', () => {
   beforeEach(() => mockMsgFindOne.mock.resetCalls());
 
+  it('returns 400 when content is missing', async () => {
+    const msg = { _id: 'msg1', authorId: 'u1', content: 'old', editedAt: null, save: mock.fn() };
+    mockMsgFindOne.mock.mockImplementation(async () => msg);
+    const req = makeReq({
+      userId: 'u1',
+      params: { conversationId: 'conv1', messageId: 'msg1' },
+      body: {},
+    });
+    const res = makeRes();
+    await editDmMessage(req, res);
+    assert.equal(res.statusCode, 400);
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_FIELDS');
+  });
+
+  it('returns 400 when content is empty string', async () => {
+    const msg = { _id: 'msg1', authorId: 'u1', content: 'old', editedAt: null, save: mock.fn() };
+    mockMsgFindOne.mock.mockImplementation(async () => msg);
+    const req = makeReq({
+      userId: 'u1',
+      params: { conversationId: 'conv1', messageId: 'msg1' },
+      body: { content: '   ' },
+    });
+    const res = makeRes();
+    await editDmMessage(req, res);
+    assert.equal(res.statusCode, 400);
+  });
+
   it('returns 403 when user is not the author', async () => {
     const msg = { _id: 'msg1', authorId: 'u2', content: 'old', editedAt: null, save: mock.fn() };
     mockMsgFindOne.mock.mockImplementation(async () => msg);
