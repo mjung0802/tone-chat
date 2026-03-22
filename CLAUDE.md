@@ -76,11 +76,15 @@ First time only — install the Chromium browser:
 pnpm --filter tone-chat-client exec playwright install chromium
 ```
 
-### Docker (messagingService)
-```bash
-cd packages/messagingService
-docker-compose up   # Starts MongoDB on port 27017 and messaging service on port 3000
-```
+## Feature Planning & Testing Coverage
+
+Whenever planning a new feature or improvement, always audit for testing gaps across all three layers before implementation:
+
+- **Unit tests**: Does the new logic (service functions, helpers, type guards, middleware) have unit tests? Are edge cases and error paths covered?
+- **Integration tests**: Are new routes or service interactions covered by integration tests hitting real databases/services? Does any new DB migration need an integration test?
+- **E2E tests** (`packages/client`): Are user-facing flows that changed covered by Playwright E2E tests? Are new screens, interactions, or UI states tested end-to-end?
+
+If any layer is missing coverage for the feature, flag it and plan the missing tests as part of the implementation work — not as an afterthought.
 
 ## Architecture
 
