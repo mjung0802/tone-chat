@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
 import { blockUser, unblockUser, getBlockedIds } from './blocks.service.js';
+import { getUserById } from './users.service.js';
 
 export async function postBlock(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
@@ -14,6 +15,7 @@ export async function postBlock(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  await getUserById(targetId);
   await blockUser(userId, targetId);
   res.status(204).end();
 }
