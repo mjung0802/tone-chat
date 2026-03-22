@@ -75,6 +75,11 @@ beforeEach(() => {
   useUiStore.setState({
     profileModal: { visible: false, userId: null, serverId: null },
   });
+  jest.mocked(useBlockedIds).mockReturnValue(mockQuerySuccess([]));
+  jest.mocked(useBlockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+  jest.mocked(useUnblockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+  jest.mocked(useGetOrCreateConversation).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+  jest.mocked(useRouter).mockReturnValue(mockRouter());
 });
 
 describe('UserProfileModal', () => {
@@ -230,11 +235,11 @@ describe('UserProfileModal', () => {
       profileModal: { visible: true, userId: TARGET_USER_ID, serverId: null },
     });
 
-    const { getByLabelText } = renderWithProviders(<UserProfileModal />, { queryClient });
+    const { getByLabelText, getByText } = renderWithProviders(<UserProfileModal />, { queryClient });
 
     const blockButton = getByLabelText('Block user');
     expect(blockButton).toBeTruthy();
-    expect(blockButton.parent?.props.children).toContain('Block');
+    expect(getByText('Block')).toBeTruthy();
   });
 
   it('shows unblock button when user is already blocked', () => {
@@ -259,10 +264,10 @@ describe('UserProfileModal', () => {
       profileModal: { visible: true, userId: TARGET_USER_ID, serverId: null },
     });
 
-    const { getByLabelText } = renderWithProviders(<UserProfileModal />, { queryClient });
+    const { getByLabelText, getByText } = renderWithProviders(<UserProfileModal />, { queryClient });
 
     const unblockButton = getByLabelText('Unblock user');
     expect(unblockButton).toBeTruthy();
-    expect(unblockButton.parent?.props.children).toContain('Unblock');
+    expect(getByText('Unblock')).toBeTruthy();
   });
 });
