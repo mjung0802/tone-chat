@@ -1,4 +1,4 @@
-import type { User, Server, Channel, Message, ServerMember, ServerBan, Invite, Attachment, CustomToneDefinition } from './models';
+import type { User, Server, Channel, Message, ServerMember, ServerBan, Invite, Attachment, CustomToneDefinition, DirectConversation, DirectMessage } from './models';
 
 export interface ApiError {
   error: {
@@ -149,3 +149,20 @@ export interface InvitesResponse { invites: Invite[] }
 export interface AttachmentResponse { attachment: Attachment }
 export interface BansResponse { bans: ServerBan[] }
 export interface JoinInviteResponse { member: ServerMember; server: Server }
+
+export interface SendDmRequest {
+  content?: string | undefined;
+  attachmentIds?: string[] | undefined;
+  replyToId?: string | undefined;
+  mentions?: string[] | undefined;
+  tone?: string | undefined;
+}
+
+export interface UpdateDmRequest { content: string }
+export interface ToggleDmReactionRequest { emoji: string }
+
+export interface DirectConversationResponse { conversation: DirectConversation }
+export interface DirectConversationsResponse { conversations: DirectConversation[] }
+export interface DirectMessageResponse { message: DirectMessage }
+export interface DirectMessagesResponse { messages: DirectMessage[] }
+export interface BlockedIdsResponse { blockedIds: string[] }

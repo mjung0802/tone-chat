@@ -1,4 +1,4 @@
-import type { Message } from './models';
+import type { Message, DirectMessage } from './models';
 
 export interface JoinChannelPayload {
   serverId: string;
@@ -44,12 +44,26 @@ export interface MentionEvent {
   authorId: string;
 }
 
+export interface DmSendPayload {
+  conversationId: string;
+  content?: string | undefined;
+  attachmentIds?: string[] | undefined;
+  replyToId?: string | undefined;
+  mentions?: string[] | undefined;
+  tone?: string | undefined;
+}
+
 export interface ClientToServerEvents {
   join_channel: (payload: JoinChannelPayload) => void;
   leave_channel: (payload: LeaveChannelPayload) => void;
   send_message: (payload: SendMessagePayload) => void;
   typing: (payload: TypingPayload) => void;
   toggle_reaction: (payload: ToggleReactionPayload) => void;
+  join_dm: (payload: { conversationId: string }) => void;
+  leave_dm: (payload: { conversationId: string }) => void;
+  'dm:send': (payload: DmSendPayload) => void;
+  'dm:typing': (payload: { conversationId: string }) => void;
+  'dm:react': (payload: { conversationId: string; messageId: string; emoji: string }) => void;
 }
 
 export interface ServerToClientEvents {
@@ -57,4 +71,8 @@ export interface ServerToClientEvents {
   typing: (event: TypingEvent) => void;
   reaction_updated: (data: { message: Message }) => void;
   mention: (event: MentionEvent) => void;
+  'dm:new_message': (data: { message: DirectMessage }) => void;
+  'dm:typing': (event: { conversationId: string; userId: string }) => void;
+  'dm:reaction_updated': (data: { message: DirectMessage }) => void;
+  'dm:notification': (event: { conversationId: string; otherUserId: string; preview: string }) => void;
 }
