@@ -15,7 +15,7 @@ const directConversationSchema = new Schema<IDirectConversation>(
   { timestamps: true },
 );
 
-directConversationSchema.index({ participantIds: 1 }, { unique: true });
+directConversationSchema.index({ 'participantIds.0': 1, 'participantIds.1': 1 }, { unique: true });
 directConversationSchema.index({ participantIds: 1, lastMessageAt: -1 });
 
 export const DirectConversation = mongoose.model<IDirectConversation>(
