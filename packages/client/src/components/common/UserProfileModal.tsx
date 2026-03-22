@@ -90,18 +90,18 @@ export function UserProfileModal() {
     setDialogType(null);
   };
 
-  const handleMute = (userId: string, duration: number) => {
-    muteMember.mutate({ userId, data: { duration } });
+  const handleMute = (targetUserId: string, duration: number) => {
+    muteMember.mutate({ userId: targetUserId, data: { duration } });
     closeProfileModal();
   };
 
-  const handleKick = (userId: string) => {
-    kickMember.mutate(userId);
+  const handleKick = (targetUserId: string) => {
+    kickMember.mutate(targetUserId);
     closeProfileModal();
   };
 
-  const handleBan = (userId: string, reason?: string | undefined) => {
-    banMember.mutate({ userId, data: reason ? { reason } : {} });
+  const handleBan = (targetUserId: string, reason?: string | undefined) => {
+    banMember.mutate({ userId: targetUserId, data: reason ? { reason } : {} });
     closeProfileModal();
   };
 

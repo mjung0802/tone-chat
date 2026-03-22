@@ -28,8 +28,8 @@ export async function getBlockedIds(userId: string): Promise<string[]> {
 }
 
 export async function isBlockedBy(viewerId: string, targetId: string): Promise<boolean> {
-  const rows = await sql<{ blocker_id: string }[]>`
-    SELECT blocker_id FROM user_blocks
+  const rows = await sql`
+    SELECT 1 FROM user_blocks
     WHERE blocker_id = ${targetId} AND blocked_id = ${viewerId}
     LIMIT 1
   `;

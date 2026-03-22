@@ -1,9 +1,8 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocketStore } from '../stores/socketStore';
-import { injectDmMessage } from './useDms';
+import { injectDmMessage, updateDmMessageInCache } from './useDms';
 import type { DirectMessage } from '../types/models';
-import type { DirectMessagesResponse } from '../types/api.types';
 
 export function useDmSocket(
   conversationId: string | undefined,
@@ -30,21 +29,7 @@ export function useDmSocket(
     };
 
     const handleReactionUpdated = (data: { message: DirectMessage }) => {
-      queryClient.setQueryData<{
-        pages: DirectMessagesResponse[];
-        pageParams: (string | undefined)[];
-          }>(
-          ['dms', conversationId, 'messages'],
-          (old) => {
-            if (!old) return old;
-            return {
-              ...old,
-              pages: old.pages.map((page) => ({
-                messages: page.messages.map((m) => (m._id === data.message._id ? data.message : m)),
-              })),
-            };
-          },
-          );
+      updateDmMessageInCache(queryClient, conversationId, data.message);
     };
 
     socket.on('dm:new_message', handleNewMessage);
@@ -58,4 +43,19 @@ export function useDmSocket(
       socket.off('dm:reaction_updated', handleReactionUpdated);
     };
   }, [socket, conversationId, queryClient, onTyping, onNewMessage]);
+}
+
+export function useDmTypingEmit(conversationId: string | undefined) {
+  const socket = useSocketStore((s) => s.socket);
+  const lastEmitRef = useRef(0);
+
+  return useCallback(() => {
+    if (!socket || !conversationId) return;
+
+    const now = Date.now();
+    if (now - lastEmitRef.current < 2000) return;
+    lastEmitRef.current = now;
+
+    socket.emit('dm:typing', { conversationId });
+  }, [socket, conversationId]);
 }

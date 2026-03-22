@@ -59,14 +59,14 @@ dmsRouter.post('/:conversationId/messages', async (req: AuthRequest, res) => {
   const userId = req.userId!;
   const conversationId = req.params['conversationId'] as string;
 
-  // Resolve other participant
   const convResult = await dmsClient.getConversation(userId, conversationId);
   if (convResult.status !== 200) {
     res.status(convResult.status).json(convResult.data);
     return;
   }
-  const conv = (convResult.data as { conversation?: { participantIds?: string[] } }).conversation;
-  const otherUserId = conv?.participantIds?.find((id) => id !== userId);
+
+  const conversation = (convResult.data as { conversation?: { participantIds?: string[] } }).conversation;
+  const otherUserId = conversation?.participantIds?.find((id) => id !== userId);
   if (otherUserId) {
     const blocked = await isBlockedBidirectional(userId, otherUserId);
     if (blocked) {

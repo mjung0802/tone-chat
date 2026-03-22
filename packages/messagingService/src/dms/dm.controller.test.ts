@@ -6,6 +6,13 @@ import type { IDirectConversation } from './conversation.model.js';
 type TestResponse = Response & { statusCode: number; _json: unknown };
 type DmReq = Request & { conversation?: IDirectConversation };
 
+function assertErrorCode(error: unknown, code: string): true {
+  assert.equal(typeof error, 'object');
+  assert.notEqual(error, null);
+  assert.equal((error as { code?: unknown }).code, code);
+  return true;
+}
+
 // --- Mock DirectConversation ---
 const mockConvFindOneAndUpdate = mock.fn<AnyFn>();
 const mockConvFind = mock.fn<AnyFn>();
@@ -42,21 +49,6 @@ mock.module('../config/index.js', {
     config: {
       usersServiceUrl: 'http://localhost:3002',
       internalApiKey: 'dev-internal-key',
-    },
-  },
-});
-
-// --- Mock errorHandler AppError ---
-mock.module('../shared/middleware/errorHandler.js', {
-  namedExports: {
-    AppError: class AppError extends Error {
-      code: string;
-      status: number;
-      constructor(code: string, message: string, status: number) {
-        super(message);
-        this.code = code;
-        this.status = status;
-      }
     },
   },
 });
@@ -301,16 +293,37 @@ describe('sendDmMessage', () => {
 describe('editDmMessage', () => {
   beforeEach(() => mockMsgFindOne.mock.resetCalls());
 
+  it('throws MESSAGE_NOT_FOUND when message does not exist', async () => {
+    mockMsgFindOne.mock.mockImplementation(async () => null);
+    await assert.rejects(
+      () => editDmMessage(
+        makeReq({ userId: 'u1', params: { conversationId: 'conv1', messageId: 'msg1' }, body: { content: 'new' } }),
+        makeRes(),
+      ),
+      (error) => assertErrorCode(error, 'MESSAGE_NOT_FOUND'),
+    );
+  });
+
+  it('throws FORBIDDEN when user is not the author', async () => {
+    mockMsgFindOne.mock.mockImplementation(async () => ({ _id: 'msg1', authorId: 'u2' }));
+    await assert.rejects(
+      () => editDmMessage(
+        makeReq({ userId: 'u1', params: { conversationId: 'conv1', messageId: 'msg1' }, body: { content: 'new' } }),
+        makeRes(),
+      ),
+      (error) => assertErrorCode(error, 'FORBIDDEN'),
+    );
+  });
+
   it('returns 400 when content is missing', async () => {
     const msg = { _id: 'msg1', authorId: 'u1', content: 'old', editedAt: null, save: mock.fn() };
     mockMsgFindOne.mock.mockImplementation(async () => msg);
-    const req = makeReq({
+    const res = makeRes();
+    await editDmMessage(makeReq({
       userId: 'u1',
       params: { conversationId: 'conv1', messageId: 'msg1' },
       body: {},
-    });
-    const res = makeRes();
-    await editDmMessage(req, res);
+    }), res);
     assert.equal(res.statusCode, 400);
     assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_FIELDS');
   });
@@ -318,28 +331,13 @@ describe('editDmMessage', () => {
   it('returns 400 when content is empty string', async () => {
     const msg = { _id: 'msg1', authorId: 'u1', content: 'old', editedAt: null, save: mock.fn() };
     mockMsgFindOne.mock.mockImplementation(async () => msg);
-    const req = makeReq({
+    const res = makeRes();
+    await editDmMessage(makeReq({
       userId: 'u1',
       params: { conversationId: 'conv1', messageId: 'msg1' },
       body: { content: '   ' },
-    });
-    const res = makeRes();
-    await editDmMessage(req, res);
+    }), res);
     assert.equal(res.statusCode, 400);
-  });
-
-  it('returns 403 when user is not the author', async () => {
-    const msg = { _id: 'msg1', authorId: 'u2', content: 'old', editedAt: null, save: mock.fn() };
-    mockMsgFindOne.mock.mockImplementation(async () => msg);
-    const req = makeReq({
-      userId: 'u1',
-      params: { conversationId: 'conv1', messageId: 'msg1' },
-      body: { content: 'new content' },
-    });
-    const res = makeRes();
-    await editDmMessage(req, res);
-    assert.equal(res.statusCode, 403);
-    assert.equal((res._json as { error: { code: string } }).error.code, 'FORBIDDEN');
   });
 
   it('updates content and editedAt when user is author', async () => {
@@ -364,6 +362,17 @@ describe('editDmMessage', () => {
 
 describe('toggleDmReaction', () => {
   beforeEach(() => mockMsgFindOne.mock.resetCalls());
+
+  it('throws MESSAGE_NOT_FOUND when message does not exist', async () => {
+    mockMsgFindOne.mock.mockImplementation(async () => null);
+    await assert.rejects(
+      () => toggleDmReaction(
+        makeReq({ userId: 'u1', params: { conversationId: 'conv1', messageId: 'msg1' }, body: { emoji: '👍' } }),
+        makeRes(),
+      ),
+      (error) => assertErrorCode(error, 'MESSAGE_NOT_FOUND'),
+    );
+  });
 
   it('adds a reaction when none exists', async () => {
     const saveFn = mock.fn<AnyFn>(async () => undefined);

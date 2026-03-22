@@ -5,7 +5,7 @@ import { MessageList, type MessageListHandle } from '@/components/chat/MessageLi
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useDmMessages, useSendDmMessage, useReactToDm } from '@/hooks/useDms';
-import { useDmSocket } from '@/hooks/useDmSocket';
+import { useDmSocket, useDmTypingEmit } from '@/hooks/useDmSocket';
 import { useUser } from '@/hooks/useUser';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
@@ -24,11 +24,11 @@ function dmToMessage(dm: DirectMessage): Message {
     authorId: dm.authorId,
     content: dm.content ?? '',
     attachmentIds: dm.attachmentIds,
-    ...(dm.editedAt !== null ? { editedAt: dm.editedAt } : {}),
+    ...(dm.editedAt != null ? { editedAt: dm.editedAt } : {}),
     reactions: dm.reactions,
-    ...(dm.replyTo ? { replyTo: dm.replyTo } : {}),
+    replyTo: dm.replyTo,
     mentions: dm.mentions,
-    ...(dm.tone !== null ? { tone: dm.tone } : {}),
+    ...(dm.tone != null ? { tone: dm.tone } : {}),
     createdAt: dm.createdAt,
   };
 }
@@ -55,6 +55,7 @@ export default function DmConversationScreen() {
 
   const sendMessage = useSendDmMessage(cid);
   const reactToDm = useReactToDm(cid);
+  const emitTyping = useDmTypingEmit(cid);
 
   // Typing state
   const [typingUsers, setTypingUsers] = useState<Map<string, number>>(new Map());
@@ -80,7 +81,6 @@ export default function DmConversationScreen() {
   // Determine the other participant to show header title and build author names
   const rawMessages = messagesData?.messages ?? [];
   const otherUserId = useMemo(() => {
-    // Find the first message not authored by current user to get the other participant
     const otherMsg = rawMessages.find((m) => m.authorId !== userId);
     return otherMsg?.authorId ?? null;
   }, [rawMessages, userId]);
@@ -90,19 +90,13 @@ export default function DmConversationScreen() {
   const headerTitle = otherUser?.display_name ?? otherUser?.username ?? 'Direct Message';
 
   const authorNames = useMemo(() => {
-    const names: Record<string, string> = {};
-    if (otherUser) {
-      names[otherUser.id] = otherUser.display_name ?? otherUser.username;
-    }
-    return names;
+    if (!otherUser) return {};
+    return { [otherUser.id]: otherUser.display_name ?? otherUser.username };
   }, [otherUser]);
 
   const authorAvatars = useMemo(() => {
-    const avatars: Record<string, string | null> = {};
-    if (otherUser) {
-      avatars[otherUser.id] = otherUser.avatar_url ?? null;
-    }
-    return avatars;
+    if (!otherUser) return {};
+    return { [otherUser.id]: otherUser.avatar_url ?? null };
   }, [otherUser]);
 
   const handleImagePress = useCallback((attachment: Attachment) => {
@@ -241,11 +235,6 @@ export default function DmConversationScreen() {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const handleTypingEmit = useCallback(() => {
-    // DM typing emit — socket emits handled via useDmSocket internally
-    // No-op here; typing indicator still fires from useDmSocket
-  }, []);
-
   if (isLoading) {
     return <LoadingSpinner message="Loading messages..." />;
   }
@@ -274,7 +263,7 @@ export default function DmConversationScreen() {
       <TypingIndicator userNames={typingUserNames} />
       <MessageInput
         onSend={handleSend}
-        onTyping={handleTypingEmit}
+        onTyping={emitTyping}
         disabled={sendMessage.isPending}
         members={undefined}
         currentUserId={userId ?? undefined}

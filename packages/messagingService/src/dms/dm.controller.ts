@@ -1,17 +1,12 @@
 import type { Request, Response } from 'express';
 import { DirectConversation } from './conversation.model.js';
 import { DirectMessage } from './directMessage.model.js';
+import { AppError } from '../shared/middleware/errorHandler.js';
 import { config } from '../config/index.js';
 
 export async function getOrCreateConversation(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
   const otherUserId = req.params['otherUserId'] as string;
-
-  // NoSQL injection guard
-  if (typeof otherUserId !== 'string') {
-    res.status(400).json({ error: { code: 'INVALID_USER_ID', message: 'otherUserId must be a string', status: 400 } });
-    return;
-  }
 
   if (otherUserId === userId) {
     res.status(400).json({ error: { code: 'INVALID_USER_ID', message: 'Cannot start a conversation with yourself', status: 400 } });
@@ -46,7 +41,7 @@ export async function listConversations(req: Request, res: Response): Promise<vo
 }
 
 export async function listDmMessages(req: Request, res: Response): Promise<void> {
-  const conversationId = req.params['conversationId'] as string;
+  const { conversationId } = req.params;
   const limit = Math.min(Number(req.query['limit'] ?? 50), 100);
   const before = req.query['before'];
 
@@ -68,7 +63,7 @@ export async function listDmMessages(req: Request, res: Response): Promise<void>
 
 export async function sendDmMessage(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
-  const conversationId = req.params['conversationId'] as string;
+  const { conversationId } = req.params;
   const conversation = req.conversation!;
 
   const { content, attachmentIds, replyToId, mentions: rawMentions, tone: rawTone } = req.body as {
@@ -134,7 +129,7 @@ export async function sendDmMessage(req: Request, res: Response): Promise<void> 
     | { messageId: string; authorId: string; authorName: string; content: string }
     | undefined;
 
-  if (replyToId && typeof replyToId === 'string') {
+  if (replyToId) {
     const original = await DirectMessage.findOne({ _id: replyToId, conversationId });
     if (!original) {
       res.status(404).json({ error: { code: 'REPLY_TARGET_NOT_FOUND', message: 'Reply target message not found', status: 404 } });
@@ -190,18 +185,14 @@ export async function sendDmMessage(req: Request, res: Response): Promise<void> 
 
 export async function editDmMessage(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
-  const conversationId = req.params['conversationId'] as string;
-  const messageId = req.params['messageId'] as string;
+  const { conversationId, messageId } = req.params;
 
   const message = await DirectMessage.findOne({ _id: messageId, conversationId });
   if (!message) {
-    res.status(404).json({ error: { code: 'MESSAGE_NOT_FOUND', message: 'Message not found', status: 404 } });
-    return;
+    throw new AppError('MESSAGE_NOT_FOUND', 'Message not found', 404);
   }
-
   if (message.authorId !== userId) {
-    res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only edit your own messages', status: 403 } });
-    return;
+    throw new AppError('FORBIDDEN', 'You can only edit your own messages', 403);
   }
 
   const { content } = req.body as { content?: unknown };
@@ -219,8 +210,7 @@ export async function editDmMessage(req: Request, res: Response): Promise<void> 
 
 export async function toggleDmReaction(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
-  const conversationId = req.params['conversationId'] as string;
-  const messageId = req.params['messageId'] as string;
+  const { conversationId, messageId } = req.params;
 
   const { emoji } = req.body as { emoji?: unknown };
 
@@ -231,8 +221,7 @@ export async function toggleDmReaction(req: Request, res: Response): Promise<voi
 
   const message = await DirectMessage.findOne({ _id: messageId, conversationId });
   if (!message) {
-    res.status(404).json({ error: { code: 'MESSAGE_NOT_FOUND', message: 'Message not found', status: 404 } });
-    return;
+    throw new AppError('MESSAGE_NOT_FOUND', 'Message not found', 404);
   }
 
   const existingReaction = message.reactions.find((r) => r.emoji === emoji);

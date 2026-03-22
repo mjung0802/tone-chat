@@ -1,9 +1,14 @@
-import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as dmsApi from '../api/dms.api';
-import type { DirectMessage } from '../types/models';
 import type { DirectMessagesResponse, SendDmRequest } from '../types/api.types';
+import type { DirectMessage } from '../types/models';
 
 const PAGE_SIZE = 50;
+
+type DmMessagesCache = {
+  pages: DirectMessagesResponse[];
+  pageParams: (string | undefined)[];
+};
 
 export function useDmConversations() {
   return useQuery({
@@ -96,24 +101,41 @@ export function injectDmMessage(
   queryClient: ReturnType<typeof useQueryClient>,
   message: DirectMessage,
 ) {
-  queryClient.setQueryData<{
-    pages: DirectMessagesResponse[];
-    pageParams: (string | undefined)[];
-      }>(
-      ['dms', message.conversationId, 'messages'],
-      (old) => {
-        if (!old) return old;
-        const lastPage = old.pages[old.pages.length - 1];
-        if (!lastPage) return old;
-        const exists = lastPage.messages.some((m) => m._id === message._id);
-        if (exists) return old;
-        return {
-          ...old,
-          pages: [
-            ...old.pages.slice(0, -1),
-            { messages: [...lastPage.messages, message] },
-          ],
-        };
-      },
-      );
+  queryClient.setQueryData<DmMessagesCache>(
+    ['dms', message.conversationId, 'messages'],
+    (old) => {
+      if (!old) return old;
+      const lastPage = old.pages[old.pages.length - 1];
+      if (!lastPage) return old;
+      const exists = lastPage.messages.some((m) => m._id === message._id);
+      if (exists) return old;
+      return {
+        ...old,
+        pages: [
+          ...old.pages.slice(0, -1),
+          { messages: [...lastPage.messages, message] },
+        ],
+      };
+    },
+  );
+}
+
+// Helper to update an existing DM in the query cache (e.g., reactions changed)
+export function updateDmMessageInCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  conversationId: string,
+  message: DirectMessage,
+) {
+  queryClient.setQueryData<DmMessagesCache>(
+    ['dms', conversationId, 'messages'],
+    (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        pages: old.pages.map((page) => ({
+          messages: page.messages.map((m) => (m._id === message._id ? message : m)),
+        })),
+      };
+    },
+  );
 }

@@ -1,13 +1,14 @@
 import { get, post, patch, put, del } from './client';
 import type {
+  BlockedIdsResponse,
   DirectConversationResponse,
   DirectConversationsResponse,
   DirectMessageResponse,
   DirectMessagesResponse,
-  BlockedIdsResponse,
+  MessagesQuery,
   SendDmRequest,
-  UpdateDmRequest,
   ToggleDmReactionRequest,
+  UpdateDmRequest,
 } from '../types/api.types';
 
 export function getOrCreateConversation(otherUserId: string) {
@@ -22,7 +23,7 @@ export function getConversation(conversationId: string) {
   return get<DirectConversationResponse>(`/dms/${conversationId}`);
 }
 
-export function getDmMessages(conversationId: string, query?: { limit?: number | undefined; before?: string | undefined }) {
+export function getDmMessages(conversationId: string, query?: MessagesQuery) {
   const params = new URLSearchParams();
   if (query?.limit != null) params.set('limit', String(query.limit));
   if (query?.before) params.set('before', query.before);
