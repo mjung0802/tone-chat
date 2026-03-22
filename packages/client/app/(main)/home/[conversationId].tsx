@@ -9,7 +9,6 @@ import { useDmSocket } from '@/hooks/useDmSocket';
 import { useUser } from '@/hooks/useUser';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
-import { useUiStore } from '@/stores/uiStore';
 import type { Attachment, DirectMessage, Message } from '@/types/models';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -40,7 +39,6 @@ export default function DmConversationScreen() {
 
   const userId = useAuthStore((s) => s.userId);
   const setCurrentConversationId = useNotificationStore((s) => s.setCurrentConversationId);
-  const openProfileModal = useUiStore((s) => s.openProfileModal);
 
   useEffect(() => {
     setCurrentConversationId(cid || null);

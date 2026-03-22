@@ -14,6 +14,7 @@ jest.mock('expo-router');
 
 import { useBlockedIds, useBlockUser, useUnblockUser, useGetOrCreateConversation } from '../../hooks/useDms';
 import { useRouter } from 'expo-router';
+import { mockQuerySuccess, mockMutationResult, mockRouter } from '../../test-utils/queryMocks';
 
 const TARGET_USER_ID = 'user-456';
 const ACTOR_USER_ID = 'user-123';
@@ -163,32 +164,11 @@ describe('UserProfileModal', () => {
     queryClient.setQueryData(['me'], { user: meUser });
     queryClient.setQueryData(['blocks'], { blockedIds: [] });
 
-    jest.mocked(useBlockedIds).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-      error: null,
-      status: 'success',
-    } as any);
-
-    jest.mocked(useBlockUser).mockReturnValue({
-      mutate: jest.fn(),
-      isPending: false,
-    } as any);
-
-    jest.mocked(useUnblockUser).mockReturnValue({
-      mutate: jest.fn(),
-      isPending: false,
-    } as any);
-
-    jest.mocked(useGetOrCreateConversation).mockReturnValue({
-      mutate: jest.fn(),
-      isPending: false,
-    } as any);
-
-    jest.mocked(useRouter).mockReturnValue({
-      push: jest.fn(),
-    } as any);
+    jest.mocked(useBlockedIds).mockReturnValue(mockQuerySuccess([]));
+    jest.mocked(useBlockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useUnblockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useGetOrCreateConversation).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useRouter).mockReturnValue(mockRouter());
 
     useUiStore.setState({
       profileModal: { visible: true, userId: TARGET_USER_ID, serverId: null },
@@ -212,32 +192,11 @@ describe('UserProfileModal', () => {
     queryClient.setQueryData(['users', TARGET_USER_ID], { user: targetUser });
     queryClient.setQueryData(['me'], { user: meUser });
 
-    jest.mocked(useBlockedIds).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-      error: null,
-      status: 'success',
-    } as any);
-
-    jest.mocked(useBlockUser).mockReturnValue({
-      mutate: jest.fn(),
-      isPending: false,
-    } as any);
-
-    jest.mocked(useUnblockUser).mockReturnValue({
-      mutate: jest.fn(),
-      isPending: false,
-    } as any);
-
-    jest.mocked(useGetOrCreateConversation).mockReturnValue({
-      mutate: jest.fn(),
-      isPending: false,
-    } as any);
-
-    jest.mocked(useRouter).mockReturnValue({
-      push: jest.fn(),
-    } as any);
+    jest.mocked(useBlockedIds).mockReturnValue(mockQuerySuccess([]));
+    jest.mocked(useBlockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useUnblockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useGetOrCreateConversation).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useRouter).mockReturnValue(mockRouter());
 
     useUiStore.setState({
       profileModal: { visible: true, userId: TARGET_USER_ID, serverId: null },
@@ -260,33 +219,12 @@ describe('UserProfileModal', () => {
     queryClient.setQueryData(['users', TARGET_USER_ID], { user: targetUser });
     queryClient.setQueryData(['me'], { user: meUser });
 
-    jest.mocked(useBlockedIds).mockReturnValue({
-      data: [],
-      isLoading: false,
-      isError: false,
-      error: null,
-      status: 'success',
-    } as any);
-
+    jest.mocked(useBlockedIds).mockReturnValue(mockQuerySuccess([]));
     const mockBlockUser = jest.fn();
-    jest.mocked(useBlockUser).mockReturnValue({
-      mutate: mockBlockUser,
-      isPending: false,
-    } as any);
-
-    jest.mocked(useUnblockUser).mockReturnValue({
-      mutate: jest.fn(),
-      isPending: false,
-    } as any);
-
-    jest.mocked(useGetOrCreateConversation).mockReturnValue({
-      mutate: jest.fn(),
-      isPending: false,
-    } as any);
-
-    jest.mocked(useRouter).mockReturnValue({
-      push: jest.fn(),
-    } as any);
+    jest.mocked(useBlockUser).mockReturnValue(mockMutationResult({ mutate: mockBlockUser }));
+    jest.mocked(useUnblockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useGetOrCreateConversation).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useRouter).mockReturnValue(mockRouter());
 
     useUiStore.setState({
       profileModal: { visible: true, userId: TARGET_USER_ID, serverId: null },
@@ -311,32 +249,11 @@ describe('UserProfileModal', () => {
     queryClient.setQueryData(['users', TARGET_USER_ID], { user: targetUser });
     queryClient.setQueryData(['me'], { user: meUser });
 
-    jest.mocked(useBlockedIds).mockReturnValue({
-      data: [TARGET_USER_ID],
-      isLoading: false,
-      isError: false,
-      error: null,
-      status: 'success',
-    } as any);
-
-    jest.mocked(useBlockUser).mockReturnValue({
-      mutate: jest.fn(),
-      isPending: false,
-    } as any);
-
-    jest.mocked(useUnblockUser).mockReturnValue({
-      mutate: jest.fn(),
-      isPending: false,
-    } as any);
-
-    jest.mocked(useGetOrCreateConversation).mockReturnValue({
-      mutate: jest.fn(),
-      isPending: false,
-    } as any);
-
-    jest.mocked(useRouter).mockReturnValue({
-      push: jest.fn(),
-    } as any);
+    jest.mocked(useBlockedIds).mockReturnValue(mockQuerySuccess([TARGET_USER_ID]));
+    jest.mocked(useBlockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useUnblockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useGetOrCreateConversation).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useRouter).mockReturnValue(mockRouter());
 
     useUiStore.setState({
       profileModal: { visible: true, userId: TARGET_USER_ID, serverId: null },

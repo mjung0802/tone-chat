@@ -75,7 +75,6 @@ function findHandler(path: string, httpMethod: string): (req: DmsReq, res: DmsRe
     (l) => l.route?.path === path && Boolean(l.route?.methods?.[httpMethod]),
   );
   const handle =
-    // @ts-expect-error - casting handler
     (layer?.route?.stack?.find((s: RouteStackEntry) => s.method === httpMethod)?.handle) ??
     (async () => {});
   return handle as (req: DmsReq, res: DmsRes) => Promise<void>;
@@ -87,7 +86,6 @@ function findLastHandler(path: string, httpMethod: string): (req: DmsReq, res: D
   const layer = (dmsRouter.stack as RouterLayer[]).find(
     (l) => l.route?.path === path && Boolean(l.route?.methods?.[httpMethod]),
   );
-  // @ts-expect-error - casting handler
   const stack = (layer?.route?.stack ?? []) as RouteStackEntry[];
   const methodHandlers = stack.filter((s) => s.method === httpMethod);
   const handle = methodHandlers[methodHandlers.length - 1]?.handle ?? (async () => {});

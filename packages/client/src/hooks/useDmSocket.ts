@@ -33,18 +33,18 @@ export function useDmSocket(
       queryClient.setQueryData<{
         pages: DirectMessagesResponse[];
         pageParams: (string | undefined)[];
-      }>(
-        ['dms', conversationId, 'messages'],
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page) => ({
-              messages: page.messages.map((m) => (m._id === data.message._id ? data.message : m)),
-            })),
-          };
-        },
-      );
+          }>(
+          ['dms', conversationId, 'messages'],
+          (old) => {
+            if (!old) return old;
+            return {
+              ...old,
+              pages: old.pages.map((page) => ({
+                messages: page.messages.map((m) => (m._id === data.message._id ? data.message : m)),
+              })),
+            };
+          },
+          );
     };
 
     socket.on('dm:new_message', handleNewMessage);

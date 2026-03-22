@@ -7,7 +7,6 @@ import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useSocketStore } from '@/stores/socketStore';
 import { useUiStore } from '@/stores/uiStore';
-import { useSegments } from 'expo-router';
 import { Slot } from 'expo-router';
 import React, { useEffect } from 'react';
 import { useWindowDimensions, View } from 'react-native';
@@ -36,7 +35,6 @@ export default function MainLayout() {
       setSidebarOpen(true);
     }
     // Only run when isWide changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isWide]);
 
   // DM notification handler

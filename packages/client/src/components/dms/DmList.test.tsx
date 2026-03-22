@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { fireEvent } from '@testing-library/react-native';
 import { DmList } from './DmList';
 import * as useDmsModule from '@/hooks/useDms';
 import { renderWithProviders } from '@/test-utils/renderWithProviders';

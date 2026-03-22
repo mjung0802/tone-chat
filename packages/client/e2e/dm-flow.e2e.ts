@@ -146,7 +146,7 @@ test('User A views User B profile and clicks Message to open DM screen', async (
   await expect(page.getByText('Hello from Jane!')).toBeVisible();
 
   // Click Jane's author name to open profile modal
-  await page.getByRole('button', { name: "View Jane Doe's profile" }).click();
+  await page.getByRole('button', { name: 'View Jane Doe\'s profile' }).click();
 
   await expect(page.getByTestId('user-profile-modal')).toBeVisible();
 

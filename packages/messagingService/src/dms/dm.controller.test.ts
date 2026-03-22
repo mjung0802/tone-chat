@@ -185,7 +185,7 @@ describe('listDmMessages', () => {
 
   it('returns messages oldest-first', async () => {
     const msgs = [{ _id: 'msg2' }, { _id: 'msg1' }];
-    const chain = {
+    const chain: { sort: AnyFn; limit: AnyFn } = {
       sort: mock.fn<AnyFn>(() => chain),
       limit: mock.fn<AnyFn>(async () => msgs),
     };

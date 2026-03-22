@@ -99,21 +99,21 @@ export function injectDmMessage(
   queryClient.setQueryData<{
     pages: DirectMessagesResponse[];
     pageParams: (string | undefined)[];
-  }>(
-    ['dms', message.conversationId, 'messages'],
-    (old) => {
-      if (!old) return old;
-      const lastPage = old.pages[old.pages.length - 1];
-      if (!lastPage) return old;
-      const exists = lastPage.messages.some((m) => m._id === message._id);
-      if (exists) return old;
-      return {
-        ...old,
-        pages: [
-          ...old.pages.slice(0, -1),
-          { messages: [...lastPage.messages, message] },
-        ],
-      };
-    },
-  );
+      }>(
+      ['dms', message.conversationId, 'messages'],
+      (old) => {
+        if (!old) return old;
+        const lastPage = old.pages[old.pages.length - 1];
+        if (!lastPage) return old;
+        const exists = lastPage.messages.some((m) => m._id === message._id);
+        if (exists) return old;
+        return {
+          ...old,
+          pages: [
+            ...old.pages.slice(0, -1),
+            { messages: [...lastPage.messages, message] },
+          ],
+        };
+      },
+      );
 }

@@ -90,7 +90,7 @@ test('Block button toggles to Unblock after blocking a user', async ({ page }) =
   await expect(page.getByText('Hello from Jane!')).toBeVisible();
 
   // Open profile modal for Jane
-  await page.getByRole('button', { name: "View Jane Doe's profile" }).click();
+  await page.getByRole('button', { name: 'View Jane Doe\'s profile' }).click();
   await expect(page.getByTestId('user-profile-modal')).toBeVisible();
 
   // Initially should show "Block user" button
@@ -123,7 +123,7 @@ test('Message button is still visible when user is blocked', async ({ page }) =>
   await expect(page.getByText('Hello from Jane!')).toBeVisible();
 
   // Open profile modal for Jane
-  await page.getByRole('button', { name: "View Jane Doe's profile" }).click();
+  await page.getByRole('button', { name: 'View Jane Doe\'s profile' }).click();
   await expect(page.getByTestId('user-profile-modal')).toBeVisible();
 
   // Message button should still be visible (blocking doesn't hide it, it just prevents sending via API)

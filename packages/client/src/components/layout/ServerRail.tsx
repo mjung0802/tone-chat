@@ -1,6 +1,6 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Badge, Icon, IconButton, useTheme } from 'react-native-paper';
+import { Badge, IconButton, useTheme } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { ServerIcon } from '@/components/servers/ServerIcon';
 import { useServers } from '@/hooks/useServers';
