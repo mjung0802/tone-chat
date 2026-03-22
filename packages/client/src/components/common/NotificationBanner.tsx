@@ -5,7 +5,12 @@ import { Text, useTheme } from 'react-native-paper';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useNotificationStore } from '../../stores/notificationStore';
+import type { MentionNotification } from '../../stores/notificationStore';
 import type { MembersResponse, ChannelsResponse } from '../../types/api.types';
+
+function isMentionNotification(n: unknown): n is MentionNotification {
+  return typeof n === 'object' && n !== null && 'channelId' in n;
+}
 
 export function NotificationBanner() {
   const theme = useTheme();
@@ -19,15 +24,19 @@ export function NotificationBanner() {
 
   let notificationText = '';
   if (notification) {
-    const membersData = queryClient.getQueryData<MembersResponse>(['servers', notification.serverId, 'members']);
-    const member = membersData?.members?.find((m) => m.userId === notification.authorId);
-    const authorName = member?.nickname ?? member?.display_name ?? member?.username ?? 'Someone';
+    if (isMentionNotification(notification)) {
+      const membersData = queryClient.getQueryData<MembersResponse>(['servers', notification.serverId, 'members']);
+      const member = membersData?.members?.find((m) => m.userId === notification.authorId);
+      const authorName = member?.nickname ?? member?.display_name ?? member?.username ?? 'Someone';
 
-    const channelsData = queryClient.getQueryData<ChannelsResponse>(['servers', notification.serverId, 'channels']);
-    const channel = channelsData?.channels?.find((c) => c._id === notification.channelId);
-    const channelName = channel?.name ?? 'a channel';
+      const channelsData = queryClient.getQueryData<ChannelsResponse>(['servers', notification.serverId, 'channels']);
+      const channel = channelsData?.channels?.find((c) => c._id === notification.channelId);
+      const channelName = channel?.name ?? 'a channel';
 
-    notificationText = `@${authorName} mentioned you in #${channelName}`;
+      notificationText = `@${authorName} mentioned you in #${channelName}`;
+    } else {
+      notificationText = notification.preview;
+    }
   }
 
   const slideIn = useCallback(() => {
@@ -65,7 +74,11 @@ export function NotificationBanner() {
 
   const handleGo = () => {
     if (notification) {
-      router.push(`/(main)/servers/${notification.serverId}/channels/${notification.channelId}`);
+      if (isMentionNotification(notification)) {
+        router.push(`/(main)/servers/${notification.serverId}/channels/${notification.channelId}`);
+      } else {
+        router.push(`/(main)/home/${notification.conversationId}`);
+      }
       dismissNotification();
     }
   };
