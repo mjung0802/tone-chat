@@ -10,7 +10,7 @@ export interface IDirectMessage extends Document {
     authorId: string;
     authorName: string;
     content: string;
-  } | undefined;
+  };
   mentions: string[];
   reactions: { emoji: string; userIds: string[] }[];
   tone: string | null;
@@ -26,12 +26,12 @@ const directMessageSchema = new Schema<IDirectMessage>(
     attachmentIds: { type: [String], default: [] },
     replyTo: {
       type: {
-        _id: false,
         messageId: { type: String, required: true },
         authorId: { type: String, required: true },
         authorName: { type: String, required: true },
         content: { type: String, required: true },
       },
+      _id: false,
     },
     mentions: { type: [String], default: [] },
     reactions: {
