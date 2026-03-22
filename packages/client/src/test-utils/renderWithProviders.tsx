@@ -6,7 +6,7 @@ import { render, type RenderOptions } from '@testing-library/react-native';
 export function createTestQueryClient() {
   return new QueryClient({
     defaultOptions: {
-      queries: { retry: false, gcTime: Infinity },
+      queries: { retry: false, gcTime: Infinity, staleTime: Infinity },
       mutations: { retry: false },
     },
   });

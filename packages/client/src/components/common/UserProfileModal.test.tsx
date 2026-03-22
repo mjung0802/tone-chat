@@ -12,6 +12,9 @@ jest.mock('../../api/members.api');
 jest.mock('../../hooks/useDms');
 jest.mock('expo-router');
 
+import * as usersApi from '../../api/users.api';
+import * as serversApi from '../../api/servers.api';
+import * as membersApi from '../../api/members.api';
 import { useBlockedIds, useBlockUser, useUnblockUser, useGetOrCreateConversation } from '../../hooks/useDms';
 import { useRouter } from 'expo-router';
 import { mockQuerySuccess, mockMutationResult, mockRouter } from '../../test-utils/queryMocks';
@@ -75,6 +78,10 @@ beforeEach(() => {
   useUiStore.setState({
     profileModal: { visible: false, userId: null, serverId: null },
   });
+  jest.mocked(usersApi.getMe).mockResolvedValue({ user: makeUser({ id: ACTOR_USER_ID }) });
+  jest.mocked(usersApi.getUser).mockResolvedValue({ user: makeUser({ id: TARGET_USER_ID }) });
+  jest.mocked(membersApi.getMembers).mockResolvedValue({ members: [] });
+  jest.mocked(serversApi.getServer).mockResolvedValue({ server: { _id: SERVER_ID, name: 'Test Server', ownerId: 'owner-999' } } as never);
   jest.mocked(useBlockedIds).mockReturnValue(mockQuerySuccess([]));
   jest.mocked(useBlockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
   jest.mocked(useUnblockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
