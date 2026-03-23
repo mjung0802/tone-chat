@@ -8,6 +8,9 @@ import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useSocketStore } from '@/stores/socketStore';
 import { useUiStore } from '@/stores/uiStore';
+import { hasNotificationPermission, showSystemNotification } from '@/utils/systemNotifications';
+import type { User } from '@/types/models';
+import { useQueryClient } from '@tanstack/react-query';
 import { Slot } from 'expo-router';
 import React, { useEffect } from 'react';
 import { useWindowDimensions, View } from 'react-native';
@@ -25,6 +28,8 @@ export default function MainLayout() {
   const currentConversationId = useNotificationStore((s) => s.currentConversationId);
   const incrementDmUnread = useNotificationStore((s) => s.incrementDmUnread);
   const showDmNotification = useNotificationStore((s) => s.showDmNotification);
+  const notificationPreference = useNotificationStore((s) => s.notificationPreference);
+  const queryClient = useQueryClient();
 
   useMentionNotifications();
 
@@ -42,9 +47,21 @@ export default function MainLayout() {
   useEffect(() => {
     if (!socket) return;
 
-    const handler = (event: { conversationId: string; otherUserId: string; preview: string }) => {
+    const handler = async (event: { conversationId: string; otherUserId: string; preview: string }) => {
       if (event.conversationId === currentConversationId) return;
-      incrementDmUnread();
+      incrementDmUnread(event.conversationId, event.otherUserId);
+
+      if (notificationPreference === 'system') {
+        const permitted = await hasNotificationPermission();
+        if (permitted) {
+          const userData = queryClient.getQueryData<{ user: User }>(['users', event.otherUserId]);
+          const senderName = userData?.user.display_name ?? userData?.user.username ?? 'Someone';
+          await showSystemNotification('Tone Chat', `${senderName}: ${event.preview}`);
+          return;
+        }
+        // Permission denied — fall back to in-app banner
+      }
+
       showDmNotification({
         conversationId: event.conversationId,
         otherUserId: event.otherUserId,
@@ -58,7 +75,7 @@ export default function MainLayout() {
     return () => {
       socket.off('dm:notification', handler);
     };
-  }, [socket, currentConversationId, incrementDmUnread, showDmNotification]);
+  }, [socket, currentConversationId, incrementDmUnread, showDmNotification, notificationPreference, queryClient]);
 
   return (
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.colors.background }}>

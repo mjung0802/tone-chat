@@ -20,7 +20,7 @@ beforeEach(() => {
     currentNotification: null,
     currentChannelId: null,
     currentConversationId: null,
-    dmUnreadCount: 0,
+    dmUnreadEntries: {},
     notificationPreference: 'quiet',
   });
   localStorage.clear();
@@ -77,19 +77,32 @@ describe('notificationStore', () => {
 });
 
 describe('notificationStore — DM features', () => {
-  it('incrementDmUnread increments dmUnreadCount by 1', () => {
-    useNotificationStore.getState().incrementDmUnread();
-    expect(useNotificationStore.getState().dmUnreadCount).toBe(1);
+  it('incrementDmUnread increments count for a given conversationId', () => {
+    useNotificationStore.getState().incrementDmUnread('conv-1', 'user-3');
+    expect(useNotificationStore.getState().dmUnreadEntries['conv-1']?.count).toBe(1);
 
-    useNotificationStore.getState().incrementDmUnread();
-    expect(useNotificationStore.getState().dmUnreadCount).toBe(2);
+    useNotificationStore.getState().incrementDmUnread('conv-1', 'user-3');
+    expect(useNotificationStore.getState().dmUnreadEntries['conv-1']?.count).toBe(2);
   });
 
-  it('clearDmUnread resets dmUnreadCount to 0', () => {
-    useNotificationStore.getState().incrementDmUnread();
-    useNotificationStore.getState().incrementDmUnread();
-    useNotificationStore.getState().clearDmUnread();
-    expect(useNotificationStore.getState().dmUnreadCount).toBe(0);
+  it('incrementDmUnread tracks otherUserId per conversation', () => {
+    useNotificationStore.getState().incrementDmUnread('conv-1', 'user-3');
+    expect(useNotificationStore.getState().dmUnreadEntries['conv-1']?.otherUserId).toBe('user-3');
+  });
+
+  it('clearConversationUnread removes the entry for the given conversationId', () => {
+    useNotificationStore.getState().incrementDmUnread('conv-1', 'user-3');
+    useNotificationStore.getState().incrementDmUnread('conv-2', 'user-4');
+    useNotificationStore.getState().clearConversationUnread('conv-1');
+    expect(useNotificationStore.getState().dmUnreadEntries['conv-1']).toBeUndefined();
+    expect(useNotificationStore.getState().dmUnreadEntries['conv-2']?.count).toBe(1);
+  });
+
+  it('clearAllDmUnreads resets dmUnreadEntries to empty', () => {
+    useNotificationStore.getState().incrementDmUnread('conv-1', 'user-3');
+    useNotificationStore.getState().incrementDmUnread('conv-2', 'user-4');
+    useNotificationStore.getState().clearAllDmUnreads();
+    expect(useNotificationStore.getState().dmUnreadEntries).toEqual({});
   });
 
   it('setCurrentConversationId updates currentConversationId', () => {

@@ -39,11 +39,13 @@ export default function DmConversationScreen() {
 
   const userId = useAuthStore((s) => s.userId);
   const setCurrentConversationId = useNotificationStore((s) => s.setCurrentConversationId);
+  const clearConversationUnread = useNotificationStore((s) => s.clearConversationUnread);
 
   useEffect(() => {
     setCurrentConversationId(cid || null);
+    if (cid) clearConversationUnread(cid);
     return () => setCurrentConversationId(null);
-  }, [cid, setCurrentConversationId]);
+  }, [cid, setCurrentConversationId, clearConversationUnread]);
 
   const {
     data: messagesData,

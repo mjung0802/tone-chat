@@ -17,6 +17,7 @@ jest.mock('expo-router', () => ({
 jest.mock('@/hooks/useServers');
 jest.mock('@/hooks/useAuth');
 jest.mock('@/stores/notificationStore', () => ({
+  ...jest.requireActual('@/stores/notificationStore'),
   useNotificationStore: jest.fn(),
 }));
 
@@ -71,10 +72,7 @@ beforeEach(() => {
 
   jest.mocked(useAuthModule.useLogout).mockReturnValue(jest.fn());
 
-  jest.mocked(notificationStore.useNotificationStore).mockImplementation((selector) => {
-    const state = { dmUnreadCount: 0 };
-    return (selector as (s: typeof state) => unknown)(state);
-  });
+  jest.mocked(notificationStore.useNotificationStore).mockReturnValue(0);
 
   jest.mocked(useServersModule.useServers).mockReturnValue(
     makeQueryResult<Server[]>({
@@ -123,11 +121,8 @@ describe('ServerRail', () => {
     expect(getByLabelText('Beta server')).toBeTruthy();
   });
 
-  it('shows a badge when dmUnreadCount is greater than zero', () => {
-    jest.mocked(notificationStore.useNotificationStore).mockImplementation((selector) => {
-      const state = { dmUnreadCount: 3 };
-      return (selector as (s: typeof state) => unknown)(state);
-    });
+  it('shows a badge when dmUnreadEntries has unread counts', () => {
+    jest.mocked(notificationStore.useNotificationStore).mockReturnValue(3);
 
     const { getByText } = renderWithProviders(<ServerRail />);
 

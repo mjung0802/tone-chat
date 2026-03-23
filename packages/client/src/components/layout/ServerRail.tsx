@@ -4,14 +4,14 @@ import { Badge, IconButton, useTheme } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { ServerIcon } from '@/components/servers/ServerIcon';
 import { useServers } from '@/hooks/useServers';
-import { useNotificationStore } from '@/stores/notificationStore';
+import { useNotificationStore, selectTotalDmUnread } from '@/stores/notificationStore';
 import { useLogout } from '@/hooks/useAuth';
 
 export function ServerRail() {
   const theme = useTheme();
   const router = useRouter();
   const { data: servers } = useServers();
-  const dmUnreadCount = useNotificationStore((s) => s.dmUnreadCount);
+  const dmUnreadCount = useNotificationStore(selectTotalDmUnread);
   const logout = useLogout();
 
   return (

@@ -42,27 +42,32 @@ async function loadPreference(): Promise<NotificationPreference> {
   return isValidNotificationPreference(value) ? value : 'quiet';
 }
 
-interface NotificationState {
+export interface NotificationState {
   currentNotification: MentionNotification | DmNotification | null;
   currentChannelId: string | null;
   currentConversationId: string | null;
-  dmUnreadCount: number;
+  dmUnreadEntries: Record<string, { count: number; otherUserId: string }>;
   notificationPreference: NotificationPreference;
   showNotification: (notification: MentionNotification) => void;
   showDmNotification: (notification: DmNotification) => void;
   dismissNotification: () => void;
   setCurrentChannelId: (channelId: string | null) => void;
   setCurrentConversationId: (conversationId: string | null) => void;
-  incrementDmUnread: () => void;
-  clearDmUnread: () => void;
+  incrementDmUnread: (conversationId: string, otherUserId: string) => void;
+  clearConversationUnread: (conversationId: string) => void;
+  clearAllDmUnreads: () => void;
   setNotificationPreference: (pref: NotificationPreference) => void;
+}
+
+export function selectTotalDmUnread(state: NotificationState): number {
+  return Object.values(state.dmUnreadEntries).reduce((sum, e) => sum + e.count, 0);
 }
 
 export const useNotificationStore = create<NotificationState>((set) => ({
   currentNotification: null,
   currentChannelId: null,
   currentConversationId: null,
-  dmUnreadCount: 0,
+  dmUnreadEntries: {},
   notificationPreference: 'quiet',
 
   showNotification: (notification) => {
@@ -85,12 +90,31 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     set({ currentConversationId: conversationId });
   },
 
-  incrementDmUnread: () => {
-    set((state) => ({ dmUnreadCount: state.dmUnreadCount + 1 }));
+  incrementDmUnread: (conversationId, otherUserId) => {
+    set((state) => {
+      const existing = state.dmUnreadEntries[conversationId];
+      return {
+        dmUnreadEntries: {
+          ...state.dmUnreadEntries,
+          [conversationId]: {
+            count: (existing?.count ?? 0) + 1,
+            otherUserId,
+          },
+        },
+      };
+    });
   },
 
-  clearDmUnread: () => {
-    set({ dmUnreadCount: 0 });
+  clearConversationUnread: (conversationId) => {
+    set((state) => {
+      const next = { ...state.dmUnreadEntries };
+      delete next[conversationId];
+      return { dmUnreadEntries: next };
+    });
+  },
+
+  clearAllDmUnreads: () => {
+    set({ dmUnreadEntries: {} });
   },
 
   setNotificationPreference: (pref: NotificationPreference) => {
