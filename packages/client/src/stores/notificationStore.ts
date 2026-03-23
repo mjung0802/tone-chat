@@ -98,7 +98,7 @@ export const useNotificationStore = create<NotificationState>((set) => ({
           ...state.dmUnreadEntries,
           [conversationId]: {
             count: (existing?.count ?? 0) + 1,
-            otherUserId,
+            otherUserId: existing?.otherUserId ?? otherUserId,
           },
         },
       };
