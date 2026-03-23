@@ -194,3 +194,7 @@ Follow these rules for ongoing development:
 - **CORS**: Controlled via the `ALLOWED_ORIGINS` env var (comma-separated). Never revert to `origin: '*'` or `origin: true`.
 - **Rate limiting**: Auth endpoints use `express-rate-limit` (`packages/server/src/auth/auth.rateLimit.ts`). New public-facing endpoints should get rate limiters too.
 - **Data exposure**: `getUser()` strips `email` before returning. Any new PII field must follow the same strip-before-return pattern.
+
+## Shell Commands
+
+- **Avoid compound commands**: Run each shell command separately rather than chaining with `&&` or `;`. Compound commands require a single approval for multiple operations, which triggers more user prompts than necessary for commands that already have permission to run individually.
