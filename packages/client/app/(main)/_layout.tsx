@@ -1,6 +1,7 @@
 import { NotificationBanner } from '@/components/common/NotificationBanner';
 import { UserProfileModal } from '@/components/common/UserProfileModal';
 import { ServerRail } from '@/components/layout/ServerRail';
+import { ServerSidebar } from '@/components/layout/ServerSidebar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useMentionNotifications } from '@/hooks/useMentionNotifications';
 import { useAuthStore } from '@/stores/authStore';
@@ -62,6 +63,7 @@ export default function MainLayout() {
   return (
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.colors.background }}>
       <ServerRail />
+      <ServerSidebar />
       {(isWide || isSidebarOpen) ? <Sidebar currentUserId={userId ?? ''} /> : null}
       <View style={{ flex: 1 }}>
         <Slot />

@@ -102,7 +102,11 @@ export async function mockServersRoutes(page: Page, servers = [MOCK_SERVER]): Pr
   });
 }
 
-export async function mockChannelsRoutes(page: Page, channels = [MOCK_CHANNEL]): Promise<void> {
+export async function mockChannelsRoutes(
+  page: Page,
+  channels = [MOCK_CHANNEL],
+  channelsByServerId?: Record<string, typeof channels>,
+): Promise<void> {
   // Individual channel endpoint GET /servers/:sid/channels/:cid
   await page.route(`${API}/servers/*/channels/*`, async (route) => {
     if (route.request().method() === 'GET') {
@@ -121,10 +125,13 @@ export async function mockChannelsRoutes(page: Page, channels = [MOCK_CHANNEL]):
 
   // Channel list endpoint GET /servers/:sid/channels
   await page.route(`${API}/servers/*/channels`, async (route) => {
+    const url = route.request().url();
+    const serverId = url.split('/servers/')[1]?.split('/channels')[0] ?? '';
+    const serverChannels = channelsByServerId?.[serverId] ?? channels;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ channels }),
+      body: JSON.stringify({ channels: serverChannels }),
     });
   });
 }
