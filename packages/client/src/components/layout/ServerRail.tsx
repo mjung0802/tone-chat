@@ -6,13 +6,19 @@ import { ServerIcon } from '@/components/servers/ServerIcon';
 import { useServers } from '@/hooks/useServers';
 import { useNotificationStore, selectTotalDmUnread } from '@/stores/notificationStore';
 import { useLogout } from '@/hooks/useAuth';
+import { DmRailAvatar } from '@/components/dms/DmRailAvatar';
 
 export function ServerRail() {
   const theme = useTheme();
   const router = useRouter();
   const { data: servers } = useServers();
   const dmUnreadCount = useNotificationStore(selectTotalDmUnread);
+  const dmUnreadEntries = useNotificationStore((s) => s.dmUnreadEntries);
   const logout = useLogout();
+
+  const dmEntries = Object.entries(dmUnreadEntries)
+    .filter(([, e]) => e.count > 0)
+    .slice(0, 5);
 
   return (
     <View
@@ -35,6 +41,24 @@ export function ServerRail() {
           </Badge>
         )}
       </View>
+
+      {/* DM avatars (max 5 with unread) */}
+      {dmEntries.map(([conversationId, entry]) => (
+        <DmRailAvatar
+          key={conversationId}
+          conversationId={conversationId}
+          otherUserId={entry.otherUserId}
+          unreadCount={entry.count}
+          onPress={() => router.push(`/(main)/dms/${conversationId}`)}
+        />
+      ))}
+
+      {/* Separator between DM entries and server list */}
+      {dmEntries.length > 0 && (
+        <View
+          style={[styles.separator, { backgroundColor: theme.colors.outlineVariant }]}
+        />
+      )}
 
       {/* Server icons */}
       <ScrollView
@@ -71,7 +95,7 @@ export function ServerRail() {
         <IconButton
           icon="account-circle"
           size={28}
-          onPress={() => router.push('/(main)/profile')}
+          onPress={() => router.push(`/(main)/profile`)}
           accessibilityLabel="Profile"
           accessibilityRole="button"
         />
@@ -104,6 +128,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 4,
     right: 4,
+  },
+  separator: {
+    width: 36,
+    height: 1,
+    marginVertical: 4,
   },
   serverList: {
     flex: 1,
