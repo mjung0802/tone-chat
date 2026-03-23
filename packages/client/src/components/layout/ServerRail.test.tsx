@@ -3,6 +3,26 @@ import { fireEvent } from '@testing-library/react-native';
 import { ServerRail } from './ServerRail';
 import * as useServersModule from '@/hooks/useServers';
 import * as notificationStore from '@/stores/notificationStore';
+import type { NotificationState } from '@/stores/notificationStore';
+
+function makeNotificationState(dmUnreadEntries: NotificationState['dmUnreadEntries']): NotificationState {
+  return {
+    currentNotification: null,
+    currentChannelId: null,
+    currentConversationId: null,
+    dmUnreadEntries,
+    notificationPreference: 'quiet',
+    showNotification: jest.fn(),
+    showDmNotification: jest.fn(),
+    dismissNotification: jest.fn(),
+    setCurrentChannelId: jest.fn(),
+    setCurrentConversationId: jest.fn(),
+    incrementDmUnread: jest.fn(),
+    clearConversationUnread: jest.fn(),
+    clearAllDmUnreads: jest.fn(),
+    setNotificationPreference: jest.fn(),
+  };
+}
 import * as useAuthModule from '@/hooks/useAuth';
 import { renderWithProviders } from '@/test-utils/renderWithProviders';
 import type { Server } from '@/types/models';
@@ -73,8 +93,7 @@ beforeEach(() => {
   jest.mocked(useAuthModule.useLogout).mockReturnValue(jest.fn());
 
   jest.mocked(notificationStore.useNotificationStore).mockImplementation((selector) => {
-    const fakeState = { dmUnreadEntries: {} };
-    return selector(fakeState as any);
+    return selector(makeNotificationState({}));
   });
 
   jest.mocked(useServersModule.useServers).mockReturnValue(
@@ -126,10 +145,7 @@ describe('ServerRail', () => {
 
   it('shows a badge when dmUnreadEntries has unread counts', () => {
     jest.mocked(notificationStore.useNotificationStore).mockImplementation((selector) => {
-      const fakeState = {
-        dmUnreadEntries: { 'conv-1': { count: 3, otherUserId: 'user-2' } },
-      };
-      return selector(fakeState as any);
+      return selector(makeNotificationState({ 'conv-1': { count: 3, otherUserId: 'user-2' } }));
     });
 
     const { getAllByText } = renderWithProviders(<ServerRail />);

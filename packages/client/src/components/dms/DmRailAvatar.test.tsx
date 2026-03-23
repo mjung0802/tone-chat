@@ -32,7 +32,7 @@ describe('DmRailAvatar', () => {
   it('renders Avatar.Text with first-letter initial when user has no avatar_url', () => {
     jest.mocked(useUserHook.useUser).mockReturnValue({
       data: makeUser({ display_name: 'Alice', avatar_url: null }),
-    } as any);
+    } as ReturnType<typeof useUserHook.useUser>);
 
     renderWithProviders(
       <DmRailAvatar otherUserId="user-42" unreadCount={0} onPress={jest.fn()} />,
@@ -44,7 +44,7 @@ describe('DmRailAvatar', () => {
   it('renders Avatar.Text using username initial when display_name is null', () => {
     jest.mocked(useUserHook.useUser).mockReturnValue({
       data: makeUser({ display_name: null, username: 'bob', avatar_url: null }),
-    } as any);
+    } as ReturnType<typeof useUserHook.useUser>);
 
     renderWithProviders(
       <DmRailAvatar otherUserId="user-42" unreadCount={0} onPress={jest.fn()} />,
@@ -56,7 +56,7 @@ describe('DmRailAvatar', () => {
   it('renders Avatar.Image when user has avatar_url', () => {
     jest.mocked(useUserHook.useUser).mockReturnValue({
       data: makeUser({ display_name: 'Carol', avatar_url: 'https://example.com/avatar.png' }),
-    } as any);
+    } as ReturnType<typeof useUserHook.useUser>);
 
     renderWithProviders(
       <DmRailAvatar otherUserId="user-42" unreadCount={0} onPress={jest.fn()} />,
@@ -72,7 +72,7 @@ describe('DmRailAvatar', () => {
   it('shows Badge when unreadCount > 0', () => {
     jest.mocked(useUserHook.useUser).mockReturnValue({
       data: makeUser({ display_name: 'Dave' }),
-    } as any);
+    } as ReturnType<typeof useUserHook.useUser>);
 
     renderWithProviders(
       <DmRailAvatar otherUserId="user-42" unreadCount={3} onPress={jest.fn()} />,
@@ -84,7 +84,7 @@ describe('DmRailAvatar', () => {
   it('hides badge when unreadCount === 0', () => {
     jest.mocked(useUserHook.useUser).mockReturnValue({
       data: makeUser({ display_name: 'Eve' }),
-    } as any);
+    } as ReturnType<typeof useUserHook.useUser>);
 
     renderWithProviders(
       <DmRailAvatar otherUserId="user-42" unreadCount={0} onPress={jest.fn()} />,
@@ -96,7 +96,7 @@ describe('DmRailAvatar', () => {
   it('shows 99+ when unreadCount > 99', () => {
     jest.mocked(useUserHook.useUser).mockReturnValue({
       data: makeUser({ display_name: 'Frank' }),
-    } as any);
+    } as ReturnType<typeof useUserHook.useUser>);
 
     renderWithProviders(
       <DmRailAvatar otherUserId="user-42" unreadCount={150} onPress={jest.fn()} />,
@@ -108,7 +108,7 @@ describe('DmRailAvatar', () => {
   it('shows exact count when unreadCount is exactly 99', () => {
     jest.mocked(useUserHook.useUser).mockReturnValue({
       data: makeUser({ display_name: 'Grace' }),
-    } as any);
+    } as ReturnType<typeof useUserHook.useUser>);
 
     renderWithProviders(
       <DmRailAvatar otherUserId="user-42" unreadCount={99} onPress={jest.fn()} />,
@@ -121,7 +121,7 @@ describe('DmRailAvatar', () => {
     const onPress = jest.fn();
     jest.mocked(useUserHook.useUser).mockReturnValue({
       data: makeUser({ display_name: 'Hank' }),
-    } as any);
+    } as ReturnType<typeof useUserHook.useUser>);
 
     renderWithProviders(
       <DmRailAvatar otherUserId="user-42" unreadCount={0} onPress={onPress} />,
@@ -134,7 +134,7 @@ describe('DmRailAvatar', () => {
   it('has correct accessibility label including display name', () => {
     jest.mocked(useUserHook.useUser).mockReturnValue({
       data: makeUser({ display_name: 'Iris' }),
-    } as any);
+    } as ReturnType<typeof useUserHook.useUser>);
 
     renderWithProviders(
       <DmRailAvatar otherUserId="user-42" unreadCount={0} onPress={jest.fn()} />,
@@ -148,7 +148,7 @@ describe('DmRailAvatar', () => {
   it('uses username in accessibility label when display_name is null', () => {
     jest.mocked(useUserHook.useUser).mockReturnValue({
       data: makeUser({ display_name: null, username: 'jack' }),
-    } as any);
+    } as ReturnType<typeof useUserHook.useUser>);
 
     renderWithProviders(
       <DmRailAvatar otherUserId="user-42" unreadCount={0} onPress={jest.fn()} />,
@@ -162,7 +162,7 @@ describe('DmRailAvatar', () => {
   it('falls back to otherUserId in accessibility label when user data is unavailable', () => {
     jest.mocked(useUserHook.useUser).mockReturnValue({
       data: undefined,
-    } as any);
+    } as ReturnType<typeof useUserHook.useUser>);
 
     renderWithProviders(
       <DmRailAvatar otherUserId="user-42" unreadCount={0} onPress={jest.fn()} />,
