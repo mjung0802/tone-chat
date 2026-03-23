@@ -1,4 +1,4 @@
-import { useNotificationStore, hydrateNotificationPreference } from './notificationStore';
+import { useNotificationStore, hydrateNotificationPreference, selectTotalDmUnread } from './notificationStore';
 import type { MentionNotification, DmNotification } from './notificationStore';
 
 const mentionNotification: MentionNotification = {
@@ -77,6 +77,31 @@ describe('notificationStore', () => {
 });
 
 describe('notificationStore — DM features', () => {
+  it('dmUnreadEntries starts as empty object', () => {
+    expect(useNotificationStore.getState().dmUnreadEntries).toEqual({});
+  });
+
+  it('selectTotalDmUnread returns sum of all conversation counts', () => {
+    useNotificationStore.getState().incrementDmUnread('conv-1', 'user-3');
+    useNotificationStore.getState().incrementDmUnread('conv-1', 'user-3');
+    useNotificationStore.getState().incrementDmUnread('conv-2', 'user-4');
+    const total = selectTotalDmUnread(useNotificationStore.getState());
+    expect(total).toBe(3);
+  });
+
+  it('selectTotalDmUnread returns 0 when no unreads', () => {
+    const total = selectTotalDmUnread(useNotificationStore.getState());
+    expect(total).toBe(0);
+  });
+
+  it('multiple conversations track independently', () => {
+    useNotificationStore.getState().incrementDmUnread('conv-1', 'user-3');
+    useNotificationStore.getState().incrementDmUnread('conv-1', 'user-3');
+    useNotificationStore.getState().incrementDmUnread('conv-2', 'user-4');
+    expect(useNotificationStore.getState().dmUnreadEntries['conv-1']?.count).toBe(2);
+    expect(useNotificationStore.getState().dmUnreadEntries['conv-2']?.count).toBe(1);
+  });
+
   it('incrementDmUnread increments count for a given conversationId', () => {
     useNotificationStore.getState().incrementDmUnread('conv-1', 'user-3');
     expect(useNotificationStore.getState().dmUnreadEntries['conv-1']?.count).toBe(1);
