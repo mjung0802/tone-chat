@@ -65,6 +65,8 @@ describe('DmRailAvatar', () => {
     // Avatar.Image renders an <Image> element; Avatar.Text renders text
     // When avatar_url is set, the initial text should NOT appear
     expect(screen.queryByText('C')).toBeNull();
+    // Positive assertion: verify Avatar.Image was rendered
+    expect(screen.getByTestId('dm-avatar-image')).toBeDefined();
   });
 
   it('shows Badge when unreadCount > 0', () => {

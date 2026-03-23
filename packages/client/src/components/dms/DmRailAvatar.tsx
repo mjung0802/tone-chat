@@ -28,6 +28,7 @@ export function DmRailAvatar({ otherUserId, unreadCount, onPress }: DmRailAvatar
             size={32}
             source={{ uri: otherUser.avatar_url }}
             style={{ backgroundColor: theme.colors.surfaceVariant }}
+            testID="dm-avatar-image"
           />
         ) : (
           <Avatar.Text size={32} label={avatarLabel} />
