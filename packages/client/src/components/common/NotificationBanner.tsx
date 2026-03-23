@@ -6,7 +6,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useNotificationStore } from '../../stores/notificationStore';
 import type { MentionNotification } from '../../stores/notificationStore';
-import type { MembersResponse, ChannelsResponse, UserResponse } from '../../types/api.types';
+import type { MembersResponse, ChannelsResponse } from '../../types/api.types';
+import type { User } from '../../types/models';
 
 function isMentionNotification(n: unknown): n is MentionNotification {
   return typeof n === 'object' && n !== null && 'channelId' in n;
@@ -35,8 +36,8 @@ export function NotificationBanner() {
 
       notificationText = `@${authorName} mentioned you in #${channelName}`;
     } else {
-      const userData = queryClient.getQueryData<UserResponse>(['users', notification.otherUserId]);
-      const senderName = userData?.user.display_name ?? userData?.user.username ?? null;
+      const userData = queryClient.getQueryData<User>(['users', notification.otherUserId]);
+      const senderName = userData?.display_name ?? userData?.username ?? null;
       notificationText = senderName ? `${senderName}: ${notification.preview}` : notification.preview;
     }
   }
@@ -105,7 +106,7 @@ export function NotificationBanner() {
       <Pressable
         onPress={handleGo}
         accessibilityRole="button"
-        accessibilityLabel={isMentionNotification(notification) ? 'Go to mentioned channel' : 'Go to conversation'}
+        accessibilityLabel={notification && isMentionNotification(notification) ? 'Go to mentioned channel' : 'Go to conversation'}
         style={[styles.goButton, { backgroundColor: theme.colors.inversePrimary }]}
       >
         <Text style={[styles.goButtonText, { color: theme.colors.onSurface }]}>Go</Text>
