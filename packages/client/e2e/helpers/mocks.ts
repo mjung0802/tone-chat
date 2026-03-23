@@ -67,6 +67,41 @@ export async function mockSocketIO(page: Page): Promise<void> {
   });
 }
 
+/**
+ * Like mockSocketIO, but also completes the Socket.IO handshake and returns a
+ * helper that lets tests push server→client Socket.IO events.
+ *
+ * Usage:
+ *   const { emitToClient } = await mockSocketIOWithEmitter(page);
+ *   emitToClient('dm:notification', { conversationId: 'conv1', otherUserId: 'user-002', preview: 'Hi' });
+ */
+export async function mockSocketIOWithEmitter(page: Page): Promise<{
+  emitToClient: (event: string, payload: unknown) => void;
+}> {
+  let sendToClient: ((data: string) => void) | null = null;
+
+  await page.routeWebSocket(/localhost:4000/, (ws) => {
+    // Complete the Engine.IO + Socket.IO handshake so the client processes events
+    ws.send('0{"sid":"mock-sid","upgrades":[],"pingInterval":25000,"pingTimeout":20000}');
+    ws.send('40');
+
+    sendToClient = (data: string) => ws.send(data);
+
+    ws.onMessage(() => {
+      // drop all client→server frames
+    });
+  });
+
+  return {
+    emitToClient: (event: string, payload: unknown) => {
+      const frame = `42${JSON.stringify([event, payload])}`;
+      if (sendToClient) {
+        sendToClient(frame);
+      }
+    },
+  };
+}
+
 export async function mockServersRoutes(page: Page, servers = [MOCK_SERVER]): Promise<void> {
   // Individual server endpoint GET /servers/:id
   await page.route(`${API}/servers/*`, async (route) => {

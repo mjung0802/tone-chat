@@ -49,7 +49,7 @@ export function ServerRail() {
           key={conversationId}
           otherUserId={entry.otherUserId}
           unreadCount={entry.count}
-          onPress={() => router.push(`/(main)/dms/${conversationId}`)}
+          onPress={() => router.push(`/(main)/home/${conversationId}`)}
         />
       ))}
 
