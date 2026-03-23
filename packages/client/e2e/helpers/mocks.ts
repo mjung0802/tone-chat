@@ -77,6 +77,7 @@ export async function mockSocketIO(page: Page): Promise<void> {
  */
 export async function mockSocketIOWithEmitter(page: Page): Promise<{
   emitToClient: (event: string, payload: unknown) => void;
+  waitForConnection: (timeout?: number) => Promise<void>;
 }> {
   let sendToClient: ((data: string) => void) | null = null;
 
@@ -94,9 +95,15 @@ export async function mockSocketIOWithEmitter(page: Page): Promise<{
 
   return {
     emitToClient: (event: string, payload: unknown) => {
+      if (!sendToClient) return;
       const frame = `42${JSON.stringify([event, payload])}`;
-      if (sendToClient) {
-        sendToClient(frame);
+      sendToClient(frame);
+    },
+    async waitForConnection(timeout = 5000): Promise<void> {
+      const deadline = Date.now() + timeout;
+      while (!sendToClient) {
+        if (Date.now() > deadline) throw new Error('Socket did not connect within timeout');
+        await new Promise<void>((r) => setTimeout(r, 50));
       }
     },
   };

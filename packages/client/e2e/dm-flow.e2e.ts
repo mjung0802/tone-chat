@@ -184,26 +184,25 @@ test('navigation to home screen shows DM list', async ({ page }) => {
 // describe block with mockSocketIOWithEmitter instead of the base mockSocketIO.
 
 test.describe('DM rail notifications', () => {
-  let emitToClient: (event: string, payload: unknown) => void = () => { /* assigned in beforeEach */ };
+  let emitter: Awaited<ReturnType<typeof mockSocketIOWithEmitter>>;
 
   // The top-level beforeEach already sets up HTTP mocks and mockSocketIO.
   // Here we override the WebSocket mock with mockSocketIOWithEmitter, which
   // also completes the Socket.IO handshake so the client can receive events.
   // Playwright uses the last-registered route handler, so this takes priority.
   test.beforeEach(async ({ page }) => {
-    ({ emitToClient } = await mockSocketIOWithEmitter(page));
+    emitter = await mockSocketIOWithEmitter(page);
   });
 
   test('DM notification shows avatar in server rail with badge', async ({ page }) => {
     await mockMessagesRoutes(page);
 
     await page.goto(CHANNEL_URL);
-    // Wait for the page to be fully idle so the Socket.IO connection has
-    // had time to establish before we emit an event.
-    await page.waitForLoadState('networkidle');
+    // Wait for the WebSocket handshake to complete before emitting events.
+    await emitter.waitForConnection();
 
     // Emit a dm:notification event from the mock server
-    emitToClient('dm:notification', {
+    emitter.emitToClient('dm:notification', {
       conversationId: 'conv1',
       otherUserId: MOCK_USER_TWO.id,
       preview: 'Hello!',
@@ -216,20 +215,20 @@ test.describe('DM rail notifications', () => {
     });
     await expect(dmAvatar).toBeVisible();
 
-    // Badge should show the unread count of 1
-    await expect(page.getByText('1')).toBeVisible();
+    // Badge should show the unread count of 1 — scoped to the avatar element
+    // to avoid false positives from other "1" text on the page.
+    await expect(dmAvatar.getByText('1')).toBeVisible();
   });
 
   test('clicking DM avatar in rail navigates to conversation', async ({ page }) => {
     await mockMessagesRoutes(page);
 
     await page.goto(CHANNEL_URL);
-    // Wait for the page to be fully idle so the Socket.IO connection has
-    // had time to establish before we emit an event.
-    await page.waitForLoadState('networkidle');
+    // Wait for the WebSocket handshake to complete before emitting events.
+    await emitter.waitForConnection();
 
     // Emit notification so the avatar appears in the rail
-    emitToClient('dm:notification', {
+    emitter.emitToClient('dm:notification', {
       conversationId: 'conv1',
       otherUserId: MOCK_USER_TWO.id,
       preview: 'Hello!',
