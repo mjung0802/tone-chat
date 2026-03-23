@@ -6,10 +6,10 @@ Expo 55 + Expo Router v5 app targeting web, iOS, Android. Connects to BFF via HT
 
 | Directory | Purpose |
 |-----------|---------|
-| `api/` | Fetch wrapper + domain API modules (auth, messages, servers, channels, members, attachments, bans, invites, users, tones) |
-| `stores/` | Zustand stores: auth (JWT + persistence), socket (Socket.IO lifecycle), notification (mention alerts), ui (theme + sidebar) |
-| `hooks/` | TanStack Query hooks per domain; `useSocket` manages real-time room join/leave + cache injection |
-| `components/` | Domain-organized UI: channels, chat, common, invites, members, servers |
+| `api/` | Fetch wrapper + domain API modules (auth, messages, servers, channels, members, attachments, bans, invites, users, tones, dms) |
+| `stores/` | Zustand stores: auth (JWT + persistence), socket (Socket.IO lifecycle), notification (mention alerts + DM unread count), ui (theme + sidebar) |
+| `hooks/` | TanStack Query hooks per domain; `useSocket` manages real-time room join/leave + cache injection; `useDmSocket` for DM rooms |
+| `components/` | Domain-organized UI: channels, chat, common, dms, invites, members, servers |
 | `theme/` | WCAG 2.1 AA color palettes, MD3 typography, 7 color theme presets |
 | `types/` | Shared model, API, and socket TypeScript interfaces |
 | `tone/` | Tone tag registry — 9 base tones + custom tone resolution + `parseToneTag()` |
