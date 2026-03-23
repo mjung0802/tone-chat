@@ -36,8 +36,8 @@ export function NotificationBanner() {
       notificationText = `@${authorName} mentioned you in #${channelName}`;
     } else {
       const userData = queryClient.getQueryData<UserResponse>(['users', notification.otherUserId]);
-      const senderName = userData?.user.display_name ?? userData?.user.username ?? notification.preview;
-      notificationText = `${senderName}: ${notification.preview}`;
+      const senderName = userData?.user.display_name ?? userData?.user.username ?? null;
+      notificationText = senderName ? `${senderName}: ${notification.preview}` : notification.preview;
     }
   }
 
