@@ -4,13 +4,12 @@ import { Avatar, Badge, useTheme } from 'react-native-paper';
 import { useUser } from '@/hooks/useUser';
 
 interface DmRailAvatarProps {
-  conversationId: string;
   otherUserId: string;
   unreadCount: number;
   onPress: () => void;
 }
 
-export function DmRailAvatar({ conversationId: _conversationId, otherUserId, unreadCount, onPress }: DmRailAvatarProps) {
+export function DmRailAvatar({ otherUserId, unreadCount, onPress }: DmRailAvatarProps) {
   const theme = useTheme();
   const { data: otherUser } = useUser(otherUserId);
   const displayName = otherUser?.display_name ?? otherUser?.username ?? otherUserId;

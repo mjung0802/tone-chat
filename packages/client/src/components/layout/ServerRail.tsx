@@ -18,6 +18,7 @@ export function ServerRail() {
 
   const dmEntries = Object.entries(dmUnreadEntries)
     .filter(([, e]) => e.count > 0)
+    .sort(([, a], [, b]) => b.count - a.count)
     .slice(0, 5);
 
   return (
@@ -46,7 +47,6 @@ export function ServerRail() {
       {dmEntries.map(([conversationId, entry]) => (
         <DmRailAvatar
           key={conversationId}
-          conversationId={conversationId}
           otherUserId={entry.otherUserId}
           unreadCount={entry.count}
           onPress={() => router.push(`/(main)/dms/${conversationId}`)}

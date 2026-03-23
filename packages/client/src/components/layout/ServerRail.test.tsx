@@ -72,7 +72,10 @@ beforeEach(() => {
 
   jest.mocked(useAuthModule.useLogout).mockReturnValue(jest.fn());
 
-  jest.mocked(notificationStore.useNotificationStore).mockReturnValue(0);
+  jest.mocked(notificationStore.useNotificationStore).mockImplementation((selector) => {
+    const fakeState = { dmUnreadEntries: {} };
+    return selector(fakeState as any);
+  });
 
   jest.mocked(useServersModule.useServers).mockReturnValue(
     makeQueryResult<Server[]>({
@@ -122,11 +125,16 @@ describe('ServerRail', () => {
   });
 
   it('shows a badge when dmUnreadEntries has unread counts', () => {
-    jest.mocked(notificationStore.useNotificationStore).mockReturnValue(3);
+    jest.mocked(notificationStore.useNotificationStore).mockImplementation((selector) => {
+      const fakeState = {
+        dmUnreadEntries: { 'conv-1': { count: 3, otherUserId: 'user-2' } },
+      };
+      return selector(fakeState as any);
+    });
 
-    const { getByText } = renderWithProviders(<ServerRail />);
+    const { getAllByText } = renderWithProviders(<ServerRail />);
 
-    expect(getByText('3')).toBeTruthy();
+    expect(getAllByText('3').length).toBeGreaterThan(0);
   });
 
   it('navigates to home when home button is pressed', () => {
