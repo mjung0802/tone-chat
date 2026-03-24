@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocketStore } from '../stores/socketStore';
-import { injectDmMessage, updateDmMessageInCache } from './useDms';
+import { injectDmMessage, updateConversationLastMessage, updateDmMessageInCache } from './useDms';
 import type { DirectMessage } from '../types/models';
 
 export function useDmSocket(
@@ -19,6 +19,7 @@ export function useDmSocket(
 
     const handleNewMessage = (data: { message: DirectMessage }) => {
       injectDmMessage(queryClient, data.message);
+      updateConversationLastMessage(queryClient, data.message);
       onNewMessage?.(data.message.authorId);
     };
 

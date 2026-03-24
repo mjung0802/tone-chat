@@ -110,6 +110,7 @@ export interface DirectConversation {
   _id: string;
   participantIds: [string, string];
   lastMessageAt: string | null;
+  lastMessage: DirectMessage | null;
   createdAt: string;
   updatedAt: string;
 }

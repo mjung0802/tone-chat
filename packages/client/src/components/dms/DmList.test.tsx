@@ -19,6 +19,7 @@ function makeConversation(overrides: Partial<DirectConversation> = {}): DirectCo
     _id: 'conv-1',
     participantIds: ['user-123', 'user-456'] as [string, string],
     lastMessageAt: null,
+    lastMessage: null,
     createdAt: '2025-01-01T00:00:00.000Z',
     updatedAt: '2025-01-01T00:00:00.000Z',
     ...overrides,
@@ -132,6 +133,110 @@ describe('DmList', () => {
     // Each DmListItem renders a button
     const buttons = getAllByRole('button');
     expect(buttons).toHaveLength(2);
+  });
+
+  it('shows last message content as preview', () => {
+    const conversations = [
+      makeConversation({
+        _id: 'conv-1',
+        lastMessage: {
+          _id: 'msg-1',
+          conversationId: 'conv-1',
+          authorId: 'user-456',
+          content: 'Hey there!',
+          attachmentIds: [],
+          mentions: [],
+          reactions: [],
+          tone: null,
+          editedAt: null,
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+      }),
+    ];
+
+    jest.mocked(useDmsModule.useDmConversations).mockReturnValue(
+      makeQueryResult<DirectConversation[]>({
+        data: conversations,
+        isLoading: false,
+        isSuccess: true,
+        isPending: false,
+        isFetched: true,
+        isFetchedAfterMount: true,
+        status: 'success',
+        fetchStatus: 'idle',
+        dataUpdatedAt: Date.now(),
+      }),
+    );
+
+    const { getByText } = renderWithProviders(
+      <DmList currentUserId="user-123" onConversationPress={jest.fn()} />,
+    );
+
+    expect(getByText('Hey there!')).toBeTruthy();
+  });
+
+  it('shows "Attachment" for attachment-only messages', () => {
+    const conversations = [
+      makeConversation({
+        _id: 'conv-1',
+        lastMessage: {
+          _id: 'msg-1',
+          conversationId: 'conv-1',
+          authorId: 'user-456',
+          content: null,
+          attachmentIds: ['att-1'],
+          mentions: [],
+          reactions: [],
+          tone: null,
+          editedAt: null,
+          createdAt: '2025-01-01T00:00:00.000Z',
+        },
+      }),
+    ];
+
+    jest.mocked(useDmsModule.useDmConversations).mockReturnValue(
+      makeQueryResult<DirectConversation[]>({
+        data: conversations,
+        isLoading: false,
+        isSuccess: true,
+        isPending: false,
+        isFetched: true,
+        isFetchedAfterMount: true,
+        status: 'success',
+        fetchStatus: 'idle',
+        dataUpdatedAt: Date.now(),
+      }),
+    );
+
+    const { getByText } = renderWithProviders(
+      <DmList currentUserId="user-123" onConversationPress={jest.fn()} />,
+    );
+
+    expect(getByText('Attachment')).toBeTruthy();
+  });
+
+  it('shows "No messages yet" when no lastMessage', () => {
+    const conversations = [makeConversation({ _id: 'conv-1' })];
+
+    jest.mocked(useDmsModule.useDmConversations).mockReturnValue(
+      makeQueryResult<DirectConversation[]>({
+        data: conversations,
+        isLoading: false,
+        isSuccess: true,
+        isPending: false,
+        isFetched: true,
+        isFetchedAfterMount: true,
+        status: 'success',
+        fetchStatus: 'idle',
+        dataUpdatedAt: Date.now(),
+      }),
+    );
+
+    const { getByText } = renderWithProviders(
+      <DmList currentUserId="user-123" onConversationPress={jest.fn()} />,
+    );
+
+    expect(getByText('No messages yet')).toBeTruthy();
   });
 
   it('calls onConversationPress when an item is pressed', () => {

@@ -95,14 +95,15 @@ function makeReq(opts: {
   return req;
 }
 
-function makeConversation(participantIds: [string, string]): IDirectConversation {
-  return {
-    _id: 'conv1',
+function makeConversation(participantIds: [string, string], overrides?: Partial<{ _id: string; lastMessageAt: Date | null }>): IDirectConversation {
+  const base = {
+    _id: overrides?._id ?? 'conv1',
     participantIds,
-    lastMessageAt: null,
+    lastMessageAt: overrides?.lastMessageAt ?? null,
     createdAt: new Date(),
     updatedAt: new Date(),
-  } as unknown as IDirectConversation;
+  };
+  return { ...base, toObject: () => base } as unknown as IDirectConversation;
 }
 
 // ─── getOrCreateConversation ─────────────────────────────────────────────────
@@ -157,16 +158,41 @@ describe('getConversation', () => {
 // ─── listConversations ────────────────────────────────────────────────────────
 
 describe('listConversations', () => {
-  beforeEach(() => mockConvFind.mock.resetCalls());
+  beforeEach(() => {
+    mockConvFind.mock.resetCalls();
+    mockMsgFindOne.mock.resetCalls();
+  });
 
-  it('returns conversations for the user', async () => {
-    const convs = [makeConversation(['u1', 'u2'])];
-    const sortedResult = { sort: mock.fn<AnyFn>(() => Promise.resolve(convs)) };
+  it('returns conversations with lastMessage when messages exist', async () => {
+    const conv = makeConversation(['u1', 'u2'], { lastMessageAt: new Date() });
+    const lastMsg = { _id: 'msg1', content: 'hello', toObject: () => ({ _id: 'msg1', content: 'hello' }) };
+    const sortedResult = { sort: mock.fn<AnyFn>(() => Promise.resolve([conv])) };
+    mockConvFind.mock.mockImplementation(() => sortedResult);
+    const msgChain: { sort: AnyFn; limit: AnyFn } = {
+      sort: mock.fn<AnyFn>(() => msgChain),
+      limit: mock.fn<AnyFn>(async () => lastMsg),
+    };
+    mockMsgFindOne.mock.mockImplementation(() => msgChain);
+    const req = makeReq({ userId: 'u1' });
+    const res = makeRes();
+    await listConversations(req, res);
+    const result = (res._json as { conversations: { lastMessage: unknown }[] }).conversations;
+    assert.equal(result.length, 1);
+    assert.deepEqual(result[0]?.lastMessage, { _id: 'msg1', content: 'hello' });
+  });
+
+  it('returns lastMessage as null when conversation has no messages', async () => {
+    const conv = makeConversation(['u1', 'u2']);
+    const sortedResult = { sort: mock.fn<AnyFn>(() => Promise.resolve([conv])) };
     mockConvFind.mock.mockImplementation(() => sortedResult);
     const req = makeReq({ userId: 'u1' });
     const res = makeRes();
     await listConversations(req, res);
-    assert.deepEqual((res._json as { conversations: unknown }).conversations, convs);
+    const result = (res._json as { conversations: { lastMessage: unknown }[] }).conversations;
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.lastMessage, null);
+    // Should not query DirectMessage when lastMessageAt is null
+    assert.equal(mockMsgFindOne.mock.callCount(), 0);
   });
 });
 

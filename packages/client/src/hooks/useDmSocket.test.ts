@@ -2,8 +2,8 @@ import { QueryClient } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import { useSocketStore } from '../stores/socketStore';
 import { createHookWrapper, createTestQueryClient } from '../test-utils/renderWithProviders';
-import type { DirectMessagesResponse } from '../types/api.types';
-import type { DirectMessage } from '../types/models';
+import type { DirectConversationsResponse, DirectMessagesResponse } from '../types/api.types';
+import type { DirectConversation, DirectMessage } from '../types/models';
 import { useDmSocket } from './useDmSocket';
 
 // ---------- mock socket ----------
@@ -125,6 +125,34 @@ describe('useDmSocket', () => {
     const data = queryClient.getQueryData<DmCacheData>(['dms', 'conv-1', 'messages']);
     expect(data!.pages[0]!.messages).toHaveLength(2);
     expect(data!.pages[0]!.messages[1]!._id).toBe('dm-2');
+  });
+
+  it('updates conversations cache lastMessage on dm:new_message', () => {
+    const conversation: DirectConversation = {
+      _id: 'conv-1',
+      participantIds: ['user-1', 'user-2'],
+      lastMessageAt: null,
+      lastMessage: null,
+      createdAt: '2025-01-01T00:00:00.000Z',
+      updatedAt: '2025-01-01T00:00:00.000Z',
+    };
+
+    queryClient.setQueryData<DirectConversationsResponse>(['dms'], {
+      conversations: [conversation],
+    });
+    seedDmCache(queryClient, 'conv-1', [{ messages: [] }]);
+
+    renderHook(() => useDmSocket('conv-1'), {
+      wrapper: createHookWrapper(queryClient),
+    });
+
+    const handler = findHandler(mockSocket, 'dm:new_message');
+    const newDm = makeDm({ _id: 'dm-2', content: 'Socket msg', conversationId: 'conv-1' });
+    act(() => handler!({ message: newDm }));
+
+    const convCache = queryClient.getQueryData<DirectConversationsResponse>(['dms']);
+    expect(convCache?.conversations[0]?.lastMessage?._id).toBe('dm-2');
+    expect(convCache?.conversations[0]?.lastMessage?.content).toBe('Socket msg');
   });
 
   it('calls onTyping when dm:typing event matches conversationId', () => {

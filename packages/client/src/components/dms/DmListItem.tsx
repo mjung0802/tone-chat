@@ -22,7 +22,9 @@ export function DmListItem({ conversation, currentUserId, onPress }: DmListItemP
   const { data: otherUser } = useUser(otherUserId ?? '');
 
   const displayName = otherUser?.display_name ?? otherUser?.username ?? otherUserId ?? '?';
-  const preview = conversation.lastMessageAt !== null ? '...' : 'No messages yet';
+  const preview = conversation.lastMessage
+    ? (conversation.lastMessage.content ?? 'Attachment')
+    : 'No messages yet';
 
   return (
     <Pressable

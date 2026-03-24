@@ -4,10 +4,11 @@ import {
   useDmConversations,
   useSendDmMessage,
   injectDmMessage,
+  updateConversationLastMessage,
 } from './useDms';
 import { createHookWrapper, createTestQueryClient } from '../test-utils/renderWithProviders';
 import { DirectMessage, DirectConversation } from '../types/models';
-import { DirectMessagesResponse } from '../types/api.types';
+import { DirectConversationsResponse, DirectMessagesResponse } from '../types/api.types';
 
 jest.mock('../api/dms.api');
 
@@ -21,6 +22,7 @@ function makeDirectConversation(overrides: Partial<DirectConversation> = {}): Di
     _id: 'conv-1',
     participantIds: ['user-1', 'user-2'] as [string, string],
     lastMessageAt: null,
+    lastMessage: null,
     createdAt: '2025-01-01T00:00:00.000Z',
     updatedAt: '2025-01-01T00:00:00.000Z',
     ...overrides,
@@ -82,6 +84,39 @@ describe('injectDmMessage', () => {
   });
 });
 
+describe('updateConversationLastMessage', () => {
+  it('updates the lastMessage on the matching conversation in the cache', () => {
+    const queryClient = createTestQueryClient();
+    const conversation = makeDirectConversation();
+
+    queryClient.setQueryData<DirectConversationsResponse>(['dms'], {
+      conversations: [conversation],
+    });
+
+    const message = makeDirectMessage({ conversationId: 'conv-1', content: 'New msg' });
+    updateConversationLastMessage(queryClient, message);
+
+    const cached = queryClient.getQueryData<DirectConversationsResponse>(['dms']);
+    expect(cached?.conversations[0]?.lastMessage).toEqual(message);
+  });
+
+  it('does not modify other conversations', () => {
+    const queryClient = createTestQueryClient();
+    const conv1 = makeDirectConversation({ _id: 'conv-1' });
+    const conv2 = makeDirectConversation({ _id: 'conv-2' });
+
+    queryClient.setQueryData<DirectConversationsResponse>(['dms'], {
+      conversations: [conv1, conv2],
+    });
+
+    const message = makeDirectMessage({ conversationId: 'conv-1', content: 'Hello' });
+    updateConversationLastMessage(queryClient, message);
+
+    const cached = queryClient.getQueryData<DirectConversationsResponse>(['dms']);
+    expect(cached?.conversations[1]?.lastMessage).toBeNull();
+  });
+});
+
 describe('useDmConversations', () => {
   it('calls listConversations and returns conversations', async () => {
     const conversation = makeDirectConversation();
@@ -130,5 +165,36 @@ describe('useSendDmMessage', () => {
 
     expect(cached?.pages[0]?.messages).toHaveLength(1);
     expect(cached?.pages[0]?.messages[0]?._id).toBe('dm-1');
+  });
+
+  it('updates the conversations cache lastMessage on success', async () => {
+    const queryClient = createTestQueryClient();
+    const conversation = makeDirectConversation();
+    const message = makeDirectMessage();
+
+    jest.mocked(dmsApi.sendDmMessage).mockResolvedValueOnce({ message });
+
+    queryClient.setQueryData<CacheData>(['dms', 'conv-1', 'messages'], {
+      pages: [{ messages: [] }],
+      pageParams: [undefined],
+    });
+    queryClient.setQueryData<DirectConversationsResponse>(['dms'], {
+      conversations: [conversation],
+    });
+
+    const { result } = renderHook(() => useSendDmMessage('conv-1'), {
+      wrapper: createHookWrapper(queryClient),
+    });
+
+    act(() => {
+      result.current.mutate({ content: 'Hello' });
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    const convCache = queryClient.getQueryData<DirectConversationsResponse>(['dms']);
+    expect(convCache?.conversations[0]?.lastMessage?._id).toBe('dm-1');
   });
 });

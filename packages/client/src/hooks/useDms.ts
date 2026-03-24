@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as dmsApi from '../api/dms.api';
-import type { DirectMessagesResponse, SendDmRequest } from '../types/api.types';
+import type { DirectConversationsResponse, DirectMessagesResponse, SendDmRequest } from '../types/api.types';
 import type { DirectMessage } from '../types/models';
 
 const PAGE_SIZE = 50;
@@ -43,6 +43,7 @@ export function useSendDmMessage(conversationId: string) {
     mutationFn: (data: SendDmRequest) => dmsApi.sendDmMessage(conversationId, data),
     onSuccess: (response) => {
       injectDmMessage(queryClient, response.message);
+      updateConversationLastMessage(queryClient, response.message);
     },
   });
 }
@@ -94,6 +95,26 @@ export function useUnblockUser() {
       void queryClient.invalidateQueries({ queryKey: ['blocks'] });
     },
   });
+}
+
+// Helper to update a conversation's lastMessage in the conversations cache
+export function updateConversationLastMessage(
+  queryClient: ReturnType<typeof useQueryClient>,
+  message: DirectMessage,
+) {
+  queryClient.setQueryData<DirectConversationsResponse>(
+    ['dms'],
+    (old) => {
+      if (!old) return old;
+      return {
+        conversations: old.conversations.map((conv) =>
+          conv._id === message.conversationId
+            ? { ...conv, lastMessage: message, lastMessageAt: message.createdAt }
+            : conv,
+        ),
+      };
+    },
+  );
 }
 
 // Helper to inject a socket-received DM into the query cache
