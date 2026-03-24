@@ -6,6 +6,12 @@ import { isBlockedBidirectional } from '../users/users.client.js';
 
 export const dmsRouter = Router();
 
+// Store io reference for DM socket events (mirrors messages.routes.ts pattern)
+let ioRef: import('socket.io').Server | null = null;
+export function setDmIO(io: import('socket.io').Server): void {
+  ioRef = io;
+}
+
 // Tightest rate limit on conversation creation (prevents flooding)
 const createConversationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
@@ -76,6 +82,20 @@ dmsRouter.post('/:conversationId/messages', async (req: AuthRequest, res) => {
   }
 
   const result = await dmsClient.sendDmMessage(userId, conversationId, req.body as Record<string, unknown>);
+
+  if (result.status === 201 && ioRef) {
+    ioRef.to(`dm:${conversationId}`).emit('dm:new_message', result.data);
+
+    if (otherUserId) {
+      const body = req.body as { content?: string };
+      ioRef.to(`user:${otherUserId}`).emit('dm:notification', {
+        conversationId,
+        otherUserId: userId,
+        preview: body.content ? body.content.slice(0, 50) : '📎 Attachment',
+      });
+    }
+  }
+
   res.status(result.status).json(result.data);
 });
 

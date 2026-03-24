@@ -35,7 +35,7 @@ mock.module('../users/users.client.js', {
   },
 });
 
-const { dmsRouter } = await import('./dms.routes.js');
+const { dmsRouter, setDmIO } = await import('./dms.routes.js');
 
 type RouteStackEntry = { method?: string; handle?: (req: unknown, res: unknown) => Promise<void> };
 type RouterLayer = { route?: { path?: string; methods?: Record<string, boolean>; stack?: RouteStackEntry[] } };
@@ -144,6 +144,13 @@ describe('POST /:otherUserId', () => {
   });
 });
 
+function makeMockIo() {
+  const mockEmit = mock.fn<AnyFn>();
+  const mockTo = mock.fn<AnyFn>(() => ({ emit: mockEmit }));
+  const mockIo = { to: mockTo } as unknown as import('socket.io').Server;
+  return { mockIo, mockTo, mockEmit };
+}
+
 describe('POST /:conversationId/messages', () => {
   const postMessagesHandler = findHandler('/:conversationId/messages', 'post');
 
@@ -200,5 +207,166 @@ describe('POST /:conversationId/messages', () => {
     assert.deepEqual(res._json, { message: { _id: 'msg-1', content: 'hello' } });
     assert.equal(mockSendDmMessage.mock.callCount(), 1);
     assert.deepEqual(mockSendDmMessage.mock.calls[0]!.arguments, ['user-1', 'conv-1', { content: 'hello' }]);
+  });
+
+  it('emits dm:new_message and dm:notification on successful send', async () => {
+    const { mockIo, mockTo, mockEmit } = makeMockIo();
+    setDmIO(mockIo);
+
+    mockGetConversation.mock.mockImplementation(async () => ({
+      status: 200,
+      data: { conversation: { participantIds: ['user-1', 'user-2'] } },
+    }));
+    mockIsBlockedBidirectional.mock.mockImplementation(async () => false);
+    mockSendDmMessage.mock.mockImplementation(async () => ({
+      status: 201,
+      data: { message: { _id: 'msg-1', content: 'hello world' } },
+    }));
+
+    const req: DmsReq = {
+      userId: 'user-1',
+      params: { conversationId: 'conv-1' },
+      query: {},
+      body: { content: 'hello world' },
+    };
+    const res = makeRes();
+
+    await postMessagesHandler(req, res);
+
+    assert.equal(res.statusCode, 201);
+    assert.equal(mockTo.mock.callCount(), 2);
+    assert.equal(mockTo.mock.calls[0]!.arguments[0], 'dm:conv-1');
+    assert.equal(mockEmit.mock.calls[0]!.arguments[0], 'dm:new_message');
+    assert.deepEqual(mockEmit.mock.calls[0]!.arguments[1], { message: { _id: 'msg-1', content: 'hello world' } });
+    assert.equal(mockTo.mock.calls[1]!.arguments[0], 'user:user-2');
+    assert.equal(mockEmit.mock.calls[1]!.arguments[0], 'dm:notification');
+    assert.deepEqual(mockEmit.mock.calls[1]!.arguments[1], {
+      conversationId: 'conv-1',
+      otherUserId: 'user-1',
+      preview: 'hello world',
+    });
+
+    setDmIO(null as unknown as import('socket.io').Server);
+  });
+
+  it('does not emit socket events when message creation fails', async () => {
+    const { mockIo, mockTo } = makeMockIo();
+    setDmIO(mockIo);
+
+    mockGetConversation.mock.mockImplementation(async () => ({
+      status: 200,
+      data: { conversation: { participantIds: ['user-1', 'user-2'] } },
+    }));
+    mockIsBlockedBidirectional.mock.mockImplementation(async () => false);
+    mockSendDmMessage.mock.mockImplementation(async () => ({
+      status: 400,
+      data: { error: { code: 'MISSING_FIELDS', message: 'Content required' } },
+    }));
+
+    const req: DmsReq = {
+      userId: 'user-1',
+      params: { conversationId: 'conv-1' },
+      query: {},
+      body: {},
+    };
+    const res = makeRes();
+
+    await postMessagesHandler(req, res);
+
+    assert.equal(res.statusCode, 400);
+    assert.equal(mockTo.mock.callCount(), 0);
+
+    setDmIO(null as unknown as import('socket.io').Server);
+  });
+
+  it('does not emit socket events when blocked', async () => {
+    const { mockIo, mockTo } = makeMockIo();
+    setDmIO(mockIo);
+
+    mockGetConversation.mock.mockImplementation(async () => ({
+      status: 200,
+      data: { conversation: { participantIds: ['user-1', 'user-2'] } },
+    }));
+    mockIsBlockedBidirectional.mock.mockImplementation(async () => true);
+
+    const req: DmsReq = {
+      userId: 'user-1',
+      params: { conversationId: 'conv-1' },
+      query: {},
+      body: { content: 'hello' },
+    };
+    const res = makeRes();
+
+    await postMessagesHandler(req, res);
+
+    assert.equal(res.statusCode, 403);
+    assert.equal(mockTo.mock.callCount(), 0);
+    assert.equal(mockSendDmMessage.mock.callCount(), 0);
+
+    setDmIO(null as unknown as import('socket.io').Server);
+  });
+
+  it('truncates notification preview to 50 characters', async () => {
+    const { mockIo, mockEmit } = makeMockIo();
+    setDmIO(mockIo);
+
+    const longContent = 'A'.repeat(100);
+    mockGetConversation.mock.mockImplementation(async () => ({
+      status: 200,
+      data: { conversation: { participantIds: ['user-1', 'user-2'] } },
+    }));
+    mockIsBlockedBidirectional.mock.mockImplementation(async () => false);
+    mockSendDmMessage.mock.mockImplementation(async () => ({
+      status: 201,
+      data: { message: { _id: 'msg-1', content: longContent } },
+    }));
+
+    const req: DmsReq = {
+      userId: 'user-1',
+      params: { conversationId: 'conv-1' },
+      query: {},
+      body: { content: longContent },
+    };
+    const res = makeRes();
+
+    await postMessagesHandler(req, res);
+
+    assert.equal(res.statusCode, 201);
+    const notificationPayload = mockEmit.mock.calls[1]!.arguments[1] as { preview: string };
+    assert.equal(notificationPayload.preview.length, 50);
+    assert.equal(notificationPayload.preview, 'A'.repeat(50));
+
+    setDmIO(null as unknown as import('socket.io').Server);
+  });
+
+  it('uses attachment preview when content is absent', async () => {
+    const { mockIo, mockEmit } = makeMockIo();
+    setDmIO(mockIo);
+
+    mockGetConversation.mock.mockImplementation(async () => ({
+      status: 200,
+      data: { conversation: { participantIds: ['user-1', 'user-2'] } },
+    }));
+    mockIsBlockedBidirectional.mock.mockImplementation(async () => false);
+    mockSendDmMessage.mock.mockImplementation(async () => ({
+      status: 201,
+      data: { message: { _id: 'msg-1', attachmentIds: ['att-1'] } },
+    }));
+
+    const req: DmsReq = {
+      userId: 'user-1',
+      params: { conversationId: 'conv-1' },
+      query: {},
+      body: { attachmentIds: ['att-1'] },
+    };
+    const res = makeRes();
+
+    await postMessagesHandler(req, res);
+
+    assert.equal(res.statusCode, 201);
+    const notificationPayload = mockEmit.mock.calls[1]!.arguments[1] as { preview: string };
+    assert.equal(notificationPayload.preview, '📎 Attachment');
+
+    setDmIO(null as unknown as import('socket.io').Server);
   });
 });
