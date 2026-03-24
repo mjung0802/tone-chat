@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Avatar, Text, useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
+import { UserAvatar } from '@/components/common/UserAvatar';
 import { useUser } from '@/hooks/useUser';
 import type { DirectConversation } from '@/types/models';
 
@@ -22,7 +23,6 @@ export function DmListItem({ conversation, currentUserId, onPress }: DmListItemP
 
   const displayName = otherUser?.display_name ?? otherUser?.username ?? otherUserId ?? '?';
   const preview = conversation.lastMessageAt !== null ? '...' : 'No messages yet';
-  const avatarLabel = displayName.charAt(0).toUpperCase();
 
   return (
     <Pressable
@@ -35,11 +35,7 @@ export function DmListItem({ conversation, currentUserId, onPress }: DmListItemP
       accessibilityLabel={`Conversation with ${displayName}`}
     >
       <View style={styles.avatarContainer}>
-        {otherUser?.avatar_url ? (
-          <Avatar.Image size={40} source={{ uri: otherUser.avatar_url }} />
-        ) : (
-          <Avatar.Text size={40} label={avatarLabel} />
-        )}
+        <UserAvatar avatarAttachmentId={otherUser?.avatar_url} name={displayName} size={40} />
       </View>
       <View style={styles.textContainer}>
         <Text variant="titleSmall" numberOfLines={1}>

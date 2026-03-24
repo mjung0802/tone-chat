@@ -10,6 +10,9 @@ jest.mock('@/hooks/useDms');
 jest.mock('@/hooks/useUser', () => ({
   useUser: () => ({ data: undefined }),
 }));
+jest.mock('@/hooks/useAttachments', () => ({
+  useAttachment: jest.fn().mockReturnValue({ data: undefined, isLoading: false }),
+}));
 
 function makeConversation(overrides: Partial<DirectConversation> = {}): DirectConversation {
   return {

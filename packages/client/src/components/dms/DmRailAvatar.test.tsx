@@ -6,6 +6,11 @@ import { renderWithProviders } from '@/test-utils/renderWithProviders';
 import type { User } from '@/types/models';
 
 jest.mock('@/hooks/useUser');
+jest.mock('@/hooks/useAttachments', () => ({
+  useAttachment: jest.fn().mockReturnValue({ data: undefined, isLoading: false }),
+}));
+
+import { useAttachment } from '@/hooks/useAttachments';
 
 function makeUser(overrides: Partial<User> = {}): User {
   return {
@@ -53,20 +58,36 @@ describe('DmRailAvatar', () => {
     expect(screen.getByText('B')).toBeTruthy();
   });
 
-  it('renders Avatar.Image when user has avatar_url', () => {
+  it('renders avatar image when user has avatar_url (attachment ID)', () => {
     jest.mocked(useUserHook.useUser).mockReturnValue({
-      data: makeUser({ display_name: 'Carol', avatar_url: 'https://example.com/avatar.png' }),
+      data: makeUser({ display_name: 'Carol', avatar_url: 'att-avatar-carol' }),
     } as ReturnType<typeof useUserHook.useUser>);
+
+    jest.mocked(useAttachment).mockReturnValue({
+      isLoading: false,
+      data: {
+        attachment: {
+          id: 'att-avatar-carol',
+          status: 'ready',
+          url: 'https://cdn.example.com/avatar.png',
+          uploader_id: 'user-42',
+          filename: 'avatar.png',
+          mime_type: 'image/png',
+          size_bytes: 1000,
+          storage_key: 'avatars/avatar.png',
+          created_at: '2025-01-01T00:00:00.000Z',
+        },
+      },
+    } as ReturnType<typeof useAttachment>);
 
     renderWithProviders(
       <DmRailAvatar otherUserId="user-42" unreadCount={0} onPress={jest.fn()} />,
     );
 
-    // Avatar.Image renders an <Image> element; Avatar.Text renders text
-    // When avatar_url is set, the initial text should NOT appear
+    // UserAvatar renders Avatar.Image when attachment is ready — initial text should NOT appear
     expect(screen.queryByText('C')).toBeNull();
-    // Positive assertion: verify Avatar.Image was rendered
-    expect(screen.getByTestId('dm-avatar-image')).toBeDefined();
+    // Positive assertion: verify UserAvatar rendered with correct accessibility label
+    expect(screen.getByLabelText("Carol's avatar")).toBeDefined();
   });
 
   it('shows Badge when unreadCount > 0', () => {

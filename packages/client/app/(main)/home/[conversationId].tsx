@@ -6,7 +6,7 @@ import { TypingIndicator } from '@/components/chat/TypingIndicator';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { useDmMessages, useSendDmMessage, useReactToDm } from '@/hooks/useDms';
 import { useDmSocket, useDmTypingEmit } from '@/hooks/useDmSocket';
-import { useUser } from '@/hooks/useUser';
+import { useMe, useUser } from '@/hooks/useUser';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import type { Attachment, DirectMessage, Message } from '@/types/models';
@@ -88,18 +88,31 @@ export default function DmConversationScreen() {
   }, [rawMessages, userId]);
 
   const { data: otherUser } = useUser(otherUserId ?? '');
+  const { data: currentUser } = useMe();
 
   const headerTitle = otherUser?.display_name ?? otherUser?.username ?? 'Direct Message';
 
   const authorNames = useMemo(() => {
-    if (!otherUser) return {};
-    return { [otherUser.id]: otherUser.display_name ?? otherUser.username };
-  }, [otherUser]);
+    const names: Record<string, string> = {};
+    if (currentUser) {
+      names[currentUser.id] = currentUser.display_name ?? currentUser.username;
+    }
+    if (otherUser) {
+      names[otherUser.id] = otherUser.display_name ?? otherUser.username;
+    }
+    return names;
+  }, [currentUser, otherUser]);
 
   const authorAvatars = useMemo(() => {
-    if (!otherUser) return {};
-    return { [otherUser.id]: otherUser.avatar_url ?? null };
-  }, [otherUser]);
+    const avatars: Record<string, string | null> = {};
+    if (currentUser) {
+      avatars[currentUser.id] = currentUser.avatar_url ?? null;
+    }
+    if (otherUser) {
+      avatars[otherUser.id] = otherUser.avatar_url ?? null;
+    }
+    return avatars;
+  }, [currentUser, otherUser]);
 
   const handleImagePress = useCallback((attachment: Attachment) => {
     setViewerAttachment(attachment);

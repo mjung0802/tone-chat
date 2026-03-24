@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Avatar, Badge, useTheme } from 'react-native-paper';
+import { Badge } from 'react-native-paper';
+import { UserAvatar } from '@/components/common/UserAvatar';
 import { useUser } from '@/hooks/useUser';
 
 interface DmRailAvatarProps {
@@ -10,10 +11,8 @@ interface DmRailAvatarProps {
 }
 
 export function DmRailAvatar({ otherUserId, unreadCount, onPress }: DmRailAvatarProps) {
-  const theme = useTheme();
   const { data: otherUser } = useUser(otherUserId);
   const displayName = otherUser?.display_name ?? otherUser?.username ?? otherUserId;
-  const avatarLabel = displayName.charAt(0).toUpperCase();
 
   return (
     <Pressable
@@ -23,16 +22,7 @@ export function DmRailAvatar({ otherUserId, unreadCount, onPress }: DmRailAvatar
       accessibilityLabel={`Direct message with ${displayName}`}
     >
       <View style={styles.avatarWrapper}>
-        {otherUser?.avatar_url ? (
-          <Avatar.Image
-            size={32}
-            source={{ uri: otherUser.avatar_url }}
-            style={{ backgroundColor: theme.colors.surfaceVariant }}
-            testID="dm-avatar-image"
-          />
-        ) : (
-          <Avatar.Text size={32} label={avatarLabel} />
-        )}
+        <UserAvatar avatarAttachmentId={otherUser?.avatar_url} name={displayName} size={32} />
         {unreadCount > 0 && (
           <Badge style={styles.badge} size={16}>
             {unreadCount > 99 ? '99+' : unreadCount}
