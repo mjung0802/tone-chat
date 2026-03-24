@@ -27,7 +27,7 @@ export default function MainLayout() {
   const socket = useSocketStore((s) => s.socket);
   const currentConversationId = useNotificationStore((s) => s.currentConversationId);
   const incrementDmUnread = useNotificationStore((s) => s.incrementDmUnread);
-  const showDmNotification = useNotificationStore((s) => s.showDmNotification);
+  const showNotification = useNotificationStore((s) => s.showNotification);
   const notificationPreference = useNotificationStore((s) => s.notificationPreference);
   const queryClient = useQueryClient();
 
@@ -62,7 +62,7 @@ export default function MainLayout() {
         // Permission denied — fall back to in-app banner
       }
 
-      showDmNotification({
+      showNotification({
         conversationId: event.conversationId,
         otherUserId: event.otherUserId,
         messageId: '',
@@ -75,7 +75,7 @@ export default function MainLayout() {
     return () => {
       socket.off('dm:notification', handler);
     };
-  }, [socket, currentConversationId, incrementDmUnread, showDmNotification, notificationPreference, queryClient]);
+  }, [socket, currentConversationId, incrementDmUnread, showNotification, notificationPreference, queryClient]);
 
   return (
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.colors.background }}>

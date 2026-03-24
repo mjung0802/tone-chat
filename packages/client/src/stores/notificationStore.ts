@@ -48,8 +48,7 @@ export interface NotificationState {
   currentConversationId: string | null;
   dmUnreadEntries: Record<string, { count: number; otherUserId: string }>;
   notificationPreference: NotificationPreference;
-  showNotification: (notification: MentionNotification) => void;
-  showDmNotification: (notification: DmNotification) => void;
+  showNotification: (notification: MentionNotification | DmNotification) => void;
   dismissNotification: () => void;
   setCurrentChannelId: (channelId: string | null) => void;
   setCurrentConversationId: (conversationId: string | null) => void;
@@ -71,10 +70,6 @@ export const useNotificationStore = create<NotificationState>((set) => ({
   notificationPreference: 'quiet',
 
   showNotification: (notification) => {
-    set({ currentNotification: notification });
-  },
-
-  showDmNotification: (notification) => {
     set({ currentNotification: notification });
   },
 

@@ -13,7 +13,6 @@ function makeNotificationState(dmUnreadEntries: NotificationState['dmUnreadEntri
     dmUnreadEntries,
     notificationPreference: 'quiet',
     showNotification: jest.fn(),
-    showDmNotification: jest.fn(),
     dismissNotification: jest.fn(),
     setCurrentChannelId: jest.fn(),
     setCurrentConversationId: jest.fn(),

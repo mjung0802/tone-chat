@@ -219,6 +219,7 @@ export function UserProfileModal() {
           </Dialog.Content>
 
           <Dialog.Actions>
+            {/* Duplicate userId checks because Dialog.Actions adds props to children, which will cause issues with wrapping in a fragment */}
             {userId !== me?.id && (
               <Button
                 onPress={handleSendMessage}
@@ -231,7 +232,7 @@ export function UserProfileModal() {
             {userId !== me?.id && (
               <Button
                 onPress={handleToggleBlock}
-                loading={blockUser.isPending ?? unblockUser.isPending ?? false}
+                loading={blockUser.isPending || unblockUser.isPending}
                 {...(!isBlocked && { textColor: theme.colors.error })}
                 accessibilityLabel={isBlocked ? 'Unblock user' : 'Block user'}
               >

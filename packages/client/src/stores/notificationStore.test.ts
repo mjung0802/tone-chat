@@ -141,13 +141,13 @@ describe('notificationStore — DM features', () => {
     expect(useNotificationStore.getState().currentConversationId).toBeNull();
   });
 
-  it('showDmNotification sets currentNotification to DmNotification', () => {
-    useNotificationStore.getState().showDmNotification(dmNotification);
+  it('showNotification sets currentNotification to DmNotification', () => {
+    useNotificationStore.getState().showNotification(dmNotification);
     expect(useNotificationStore.getState().currentNotification).toEqual(dmNotification);
   });
 
   it('dismissNotification clears DmNotification', () => {
-    useNotificationStore.getState().showDmNotification(dmNotification);
+    useNotificationStore.getState().showNotification(dmNotification);
     useNotificationStore.getState().dismissNotification();
     expect(useNotificationStore.getState().currentNotification).toBeNull();
   });
