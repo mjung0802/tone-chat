@@ -13,9 +13,11 @@ mock.module('./dms.client.js', {
 });
 
 const mockIsBlockedBidirectional = mock.fn<AnyFn>();
+const mockGetUser = mock.fn<AnyFn>();
 mock.module('../users/users.client.js', {
   namedExports: {
     isBlockedBidirectional: mockIsBlockedBidirectional,
+    getUser: mockGetUser,
   },
 });
 
@@ -43,6 +45,11 @@ describe('registerDmHandlers', () => {
     mockSendDmMessage.mock.resetCalls();
     mockReactToDmMessage.mock.resetCalls();
     mockIsBlockedBidirectional.mock.resetCalls();
+    mockGetUser.mock.resetCalls();
+    mockGetUser.mock.mockImplementation(async () => ({
+      status: 200,
+      data: { user: { display_name: 'Test User', username: 'testuser' } },
+    }));
 
     handlers = {};
     socket = {
@@ -154,11 +161,43 @@ describe('registerDmHandlers', () => {
       const notification = ioEmitNotification.mock.calls[0]!.arguments[1] as {
         conversationId: string;
         otherUserId: string;
+        senderName: string;
         preview: string;
       };
       assert.equal(notification.conversationId, 'conv-1');
       assert.equal(notification.otherUserId, 'user-1');
+      assert.equal(notification.senderName, 'Test User');
       assert.equal(notification.preview, 'hello');
+    });
+
+    it('uses "Someone" as senderName when getUser fails', async () => {
+      mockGetConversation.mock.mockImplementation(async () => ({
+        status: 200,
+        data: { conversation: { participantIds: ['user-1', 'user-2'] } },
+      }));
+      await handlers['join_dm']!({ conversationId: 'conv-1' });
+
+      mockIsBlockedBidirectional.mock.mockImplementation(async () => false);
+      mockGetUser.mock.mockImplementation(async () => ({ status: 500, data: null }));
+
+      const responseData = { message: { _id: 'm1', content: 'hello' } };
+      mockSendDmMessage.mock.mockImplementation(async () => ({ status: 201, data: responseData }));
+
+      const ioEmitNewMessage = mock.fn();
+      const ioEmitNotification = mock.fn();
+      let callCount = 0;
+      io.to = mock.fn(() => {
+        callCount++;
+        if (callCount === 1) return { emit: ioEmitNewMessage };
+        return { emit: ioEmitNotification };
+      });
+
+      await handlers['dm:send']!({ conversationId: 'conv-1', content: 'hello' });
+
+      const notification = ioEmitNotification.mock.calls[0]!.arguments[1] as {
+        senderName: string;
+      };
+      assert.equal(notification.senderName, 'Someone');
     });
   });
 

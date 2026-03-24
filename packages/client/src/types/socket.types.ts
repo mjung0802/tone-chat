@@ -74,5 +74,5 @@ export interface ServerToClientEvents {
   'dm:new_message': (data: { message: DirectMessage }) => void;
   'dm:typing': (event: { conversationId: string; userId: string }) => void;
   'dm:reaction_updated': (data: { message: DirectMessage }) => void;
-  'dm:notification': (event: { conversationId: string; otherUserId: string; preview: string }) => void;
+  'dm:notification': (event: { conversationId: string; otherUserId: string; senderName: string; preview: string }) => void;
 }

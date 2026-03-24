@@ -13,6 +13,7 @@ export interface MentionNotification {
 export interface DmNotification {
   conversationId: string;
   otherUserId: string;
+  senderName: string;
   messageId: string;
   preview: string;
 }

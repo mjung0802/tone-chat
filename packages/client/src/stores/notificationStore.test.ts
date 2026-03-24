@@ -11,6 +11,7 @@ const mentionNotification: MentionNotification = {
 const dmNotification: DmNotification = {
   conversationId: 'conv-1',
   otherUserId: 'user-3',
+  senderName: 'Test User',
   messageId: 'msg-dm-1',
   preview: 'Hello there!',
 };

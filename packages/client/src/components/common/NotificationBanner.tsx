@@ -7,7 +7,6 @@ import { useRouter } from 'expo-router';
 import { useNotificationStore } from '../../stores/notificationStore';
 import type { MentionNotification } from '../../stores/notificationStore';
 import type { MembersResponse, ChannelsResponse } from '../../types/api.types';
-import type { User } from '../../types/models';
 
 function isMentionNotification(n: unknown): n is MentionNotification {
   return typeof n === 'object' && n !== null && 'channelId' in n;
@@ -36,9 +35,7 @@ export function NotificationBanner() {
 
       notificationText = `@${authorName} mentioned you in #${channelName}`;
     } else {
-      const userData = queryClient.getQueryData<User>(['users', notification.otherUserId]);
-      const senderName = userData?.display_name ?? userData?.username ?? null;
-      notificationText = senderName ? `${senderName}: ${notification.preview}` : notification.preview;
+      notificationText = `${notification.senderName}: ${notification.preview}`;
     }
   }
 

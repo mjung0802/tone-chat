@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { AuthRequest } from '../shared/middleware/auth.js';
 import rateLimit from 'express-rate-limit';
 import * as dmsClient from './dms.client.js';
-import { isBlockedBidirectional } from '../users/users.client.js';
+import { isBlockedBidirectional, getUser } from '../users/users.client.js';
 
 export const dmsRouter = Router();
 
@@ -87,10 +87,22 @@ dmsRouter.post('/:conversationId/messages', async (req: AuthRequest, res) => {
     ioRef.to(`dm:${conversationId}`).emit('dm:new_message', result.data);
 
     if (otherUserId) {
+      let senderName = 'Someone';
+      try {
+        const userResult = await getUser(userId, userId);
+        if (userResult.status === 200) {
+          const userData = userResult.data as { user?: { display_name?: string | null; username?: string } } | null;
+          senderName = userData?.user?.display_name ?? userData?.user?.username ?? 'Someone';
+        }
+      } catch {
+        // Fall back to 'Someone'
+      }
+
       const body = req.body as { content?: string };
       ioRef.to(`user:${otherUserId}`).emit('dm:notification', {
         conversationId,
         otherUserId: userId,
+        senderName,
         preview: body.content ? body.content.slice(0, 50) : '📎 Attachment',
       });
     }

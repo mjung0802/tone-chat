@@ -9,8 +9,6 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import { useSocketStore } from '@/stores/socketStore';
 import { useUiStore } from '@/stores/uiStore';
 import { hasNotificationPermission, showSystemNotification } from '@/utils/systemNotifications';
-import type { User } from '@/types/models';
-import { useQueryClient } from '@tanstack/react-query';
 import { Slot } from 'expo-router';
 import React, { useEffect } from 'react';
 import { useWindowDimensions, View } from 'react-native';
@@ -29,8 +27,6 @@ export default function MainLayout() {
   const incrementDmUnread = useNotificationStore((s) => s.incrementDmUnread);
   const showNotification = useNotificationStore((s) => s.showNotification);
   const notificationPreference = useNotificationStore((s) => s.notificationPreference);
-  const queryClient = useQueryClient();
-
   useMentionNotifications();
 
   // Auto-collapse sidebar on narrow screens
@@ -47,16 +43,14 @@ export default function MainLayout() {
   useEffect(() => {
     if (!socket) return;
 
-    const handler = async (event: { conversationId: string; otherUserId: string; preview: string }) => {
+    const handler = async (event: { conversationId: string; otherUserId: string; senderName: string; preview: string }) => {
       if (event.conversationId === currentConversationId) return;
       incrementDmUnread(event.conversationId, event.otherUserId);
 
       if (notificationPreference === 'system') {
         const permitted = await hasNotificationPermission();
         if (permitted) {
-          const userData = queryClient.getQueryData<{ user: User }>(['users', event.otherUserId]);
-          const senderName = userData?.user.display_name ?? userData?.user.username ?? 'Someone';
-          await showSystemNotification('Tone Chat', `${senderName}: ${event.preview}`);
+          await showSystemNotification('Tone Chat', `${event.senderName}: ${event.preview}`);
           return;
         }
         // Permission denied — fall back to in-app banner
@@ -65,6 +59,7 @@ export default function MainLayout() {
       showNotification({
         conversationId: event.conversationId,
         otherUserId: event.otherUserId,
+        senderName: event.senderName,
         messageId: '',
         preview: event.preview,
       });
@@ -75,7 +70,7 @@ export default function MainLayout() {
     return () => {
       socket.off('dm:notification', handler);
     };
-  }, [socket, currentConversationId, incrementDmUnread, showNotification, notificationPreference, queryClient]);
+  }, [socket, currentConversationId, incrementDmUnread, showNotification, notificationPreference]);
 
   return (
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.colors.background }}>

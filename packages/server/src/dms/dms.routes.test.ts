@@ -22,11 +22,12 @@ mock.module('./dms.client.js', {
   },
 });
 
+const mockGetUser = mock.fn<AnyFn>();
 mock.module('../users/users.client.js', {
   namedExports: {
     getMe: mock.fn(),
     patchMe: mock.fn(),
-    getUser: mock.fn(),
+    getUser: mockGetUser,
     getUsersBatch: mock.fn(),
     getBlockedIds: mock.fn(),
     blockUser: mock.fn(),
@@ -158,6 +159,11 @@ describe('POST /:conversationId/messages', () => {
     mockGetConversation.mock.resetCalls();
     mockSendDmMessage.mock.resetCalls();
     mockIsBlockedBidirectional.mock.resetCalls();
+    mockGetUser.mock.resetCalls();
+    mockGetUser.mock.mockImplementation(async () => ({
+      status: 200,
+      data: { user: { display_name: 'Test User', username: 'testuser' } },
+    }));
   });
 
   it('returns 403 BLOCKED when bidirectional block check returns true', async () => {
@@ -243,6 +249,7 @@ describe('POST /:conversationId/messages', () => {
     assert.deepEqual(mockEmit.mock.calls[1]!.arguments[1], {
       conversationId: 'conv-1',
       otherUserId: 'user-1',
+      senderName: 'Test User',
       preview: 'hello world',
     });
 
@@ -332,7 +339,8 @@ describe('POST /:conversationId/messages', () => {
     await postMessagesHandler(req, res);
 
     assert.equal(res.statusCode, 201);
-    const notificationPayload = mockEmit.mock.calls[1]!.arguments[1] as { preview: string };
+    const notificationPayload = mockEmit.mock.calls[1]!.arguments[1] as { senderName: string; preview: string };
+    assert.equal(notificationPayload.senderName, 'Test User');
     assert.equal(notificationPayload.preview.length, 50);
     assert.equal(notificationPayload.preview, 'A'.repeat(50));
 
@@ -364,7 +372,8 @@ describe('POST /:conversationId/messages', () => {
     await postMessagesHandler(req, res);
 
     assert.equal(res.statusCode, 201);
-    const notificationPayload = mockEmit.mock.calls[1]!.arguments[1] as { preview: string };
+    const notificationPayload = mockEmit.mock.calls[1]!.arguments[1] as { senderName: string; preview: string };
+    assert.equal(notificationPayload.senderName, 'Test User');
     assert.equal(notificationPayload.preview, '📎 Attachment');
 
     setDmIO(null as unknown as import('socket.io').Server);
