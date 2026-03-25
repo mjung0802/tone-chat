@@ -1,5 +1,6 @@
 import React from 'react';
 import { FlatList, StyleSheet, type ListRenderItemInfo } from 'react-native';
+import { Text } from 'react-native-paper';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { DmListItem } from './DmListItem';
@@ -39,19 +40,28 @@ export function DmList({ currentUserId, onConversationPress }: DmListProps) {
   const keyExtractor = (item: DirectConversation) => item._id;
 
   return (
-    <FlatList
-      data={conversations}
-      renderItem={renderItem}
-      keyExtractor={keyExtractor}
-      style={styles.list}
-      accessibilityRole="list"
-      accessibilityLabel="Direct messages"
-    />
+    <>
+      <Text variant="titleMedium" style={styles.title}>
+        Direct Messages
+      </Text>
+      <FlatList
+        data={conversations}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        style={styles.list}
+        accessibilityRole="list"
+        accessibilityLabel="Direct messages"
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   list: {
     flex: 1,
+  },
+  title: {
+    marginHorizontal: 16,
+    marginVertical: 12,
   },
 });

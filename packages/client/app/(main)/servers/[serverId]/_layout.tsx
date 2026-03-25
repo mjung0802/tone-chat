@@ -37,7 +37,8 @@ export default function ServerLayout() {
       <Stack
         screenOptions={{
           contentStyle: { backgroundColor: theme.colors.background },
-          headerStyle: { backgroundColor: theme.colors.surface },
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant } as Record<string, unknown>,
           headerTintColor: theme.colors.onSurface,
           headerLeft: () =>
             !isWide ? (

@@ -23,7 +23,7 @@ export function ServerRail() {
 
   return (
     <View
-      style={[styles.rail, { backgroundColor: theme.colors.surface }]}
+      style={[styles.rail, { backgroundColor: theme.colors.surface, borderRightColor: theme.colors.outlineVariant }]}
       accessible={true}
       accessibilityLabel="Server navigation rail"
     >
@@ -117,6 +117,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     paddingVertical: 8,
+    borderRightWidth: StyleSheet.hairlineWidth,
   },
   homeButtonContainer: {
     position: 'relative',

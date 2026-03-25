@@ -32,7 +32,7 @@ export function ChannelSidebar({
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.surface, borderRightColor: theme.colors.outlineVariant }]}>
       <View style={styles.header}>
         <Text variant="titleMedium" numberOfLines={1} style={styles.title}>
           {serverName}
@@ -47,7 +47,7 @@ export function ChannelSidebar({
           />
         ) : null}
       </View>
-      <Divider style={{ backgroundColor: theme.colors.inverseSurface }} />
+      <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
       <FlatList
         data={channels}
         renderItem={renderItem}
@@ -62,8 +62,8 @@ export function ChannelSidebar({
 const styles = StyleSheet.create({
   container: {
     width: 260,
+    paddingHorizontal: 6,
     borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: 'rgba(0,0,0,0.1)',
   },
   header: {
     flexDirection: 'row',
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    minHeight: 62,
+    minHeight: 63,
   },
   title: {
     flex: 1,

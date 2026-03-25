@@ -29,7 +29,7 @@ export function Sidebar({ currentUserId }: SidebarProps) {
 
   return (
     <View
-      style={[styles.sidebar, { backgroundColor: theme.colors.background }]}
+      style={[styles.sidebar, { backgroundColor: theme.colors.background, borderRightColor: theme.colors.outlineVariant }]}
       accessible={true}
       accessibilityLabel="Direct messages sidebar"
     >
@@ -46,6 +46,5 @@ const styles = StyleSheet.create({
     width: 260,
     flexDirection: 'column',
     borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: 'rgba(0,0,0,0.1)',
   },
 });
