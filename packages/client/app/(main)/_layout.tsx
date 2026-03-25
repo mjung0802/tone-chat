@@ -9,6 +9,7 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import { useSocketStore } from '@/stores/socketStore';
 import { useUiStore } from '@/stores/uiStore';
 import { hasNotificationPermission, showSystemNotification } from '@/utils/systemNotifications';
+import { useQueryClient } from '@tanstack/react-query';
 import { Slot } from 'expo-router';
 import React, { useEffect } from 'react';
 import { useWindowDimensions, View } from 'react-native';
@@ -27,6 +28,7 @@ export default function MainLayout() {
   const incrementDmUnread = useNotificationStore((s) => s.incrementDmUnread);
   const showNotification = useNotificationStore((s) => s.showNotification);
   const notificationPreference = useNotificationStore((s) => s.notificationPreference);
+  const queryClient = useQueryClient();
   useMentionNotifications();
 
   // Auto-collapse sidebar on narrow screens
@@ -46,6 +48,7 @@ export default function MainLayout() {
     const handler = async (event: { conversationId: string; otherUserId: string; senderName: string; preview: string }) => {
       if (event.conversationId === currentConversationId) return;
       incrementDmUnread(event.conversationId, event.otherUserId);
+      void queryClient.invalidateQueries({ queryKey: ['dms'], exact: true });
 
       if (notificationPreference === 'system') {
         const permitted = await hasNotificationPermission();
@@ -70,7 +73,7 @@ export default function MainLayout() {
     return () => {
       socket.off('dm:notification', handler);
     };
-  }, [socket, currentConversationId, incrementDmUnread, showNotification, notificationPreference]);
+  }, [socket, currentConversationId, incrementDmUnread, showNotification, notificationPreference, queryClient]);
 
   return (
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.colors.background }}>

@@ -34,6 +34,7 @@ export function useDmMessages(conversationId: string | undefined) {
       messages: data.pages.flatMap((page) => page.messages),
     }),
     enabled: !!conversationId,
+    refetchOnMount: 'always',
   });
 }
 

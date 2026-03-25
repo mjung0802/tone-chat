@@ -2,6 +2,7 @@ import { renderHook, waitFor, act } from '@testing-library/react-native';
 import * as dmsApi from '../api/dms.api';
 import {
   useDmConversations,
+  useDmMessages,
   useSendDmMessage,
   injectDmMessage,
   updateConversationLastMessage,
@@ -114,6 +115,35 @@ describe('updateConversationLastMessage', () => {
 
     const cached = queryClient.getQueryData<DirectConversationsResponse>(['dms']);
     expect(cached?.conversations[1]?.lastMessage).toBeNull();
+  });
+});
+
+describe('useDmMessages', () => {
+  it('refetches on mount even when cache is seeded', async () => {
+    const queryClient = createTestQueryClient();
+    const existingMsg = makeDirectMessage({ _id: 'dm-old' });
+    const newMsg = makeDirectMessage({ _id: 'dm-new', content: 'New message' });
+
+    queryClient.setQueryData<CacheData>(['dms', 'conv-1', 'messages'], {
+      pages: [{ messages: [existingMsg] }],
+      pageParams: [undefined],
+    });
+
+    jest.mocked(dmsApi.getDmMessages).mockResolvedValueOnce({
+      messages: [existingMsg, newMsg],
+    });
+
+    const { result } = renderHook(() => useDmMessages('conv-1'), {
+      wrapper: createHookWrapper(queryClient),
+    });
+
+    await waitFor(() => {
+      expect(dmsApi.getDmMessages).toHaveBeenCalledTimes(1);
+    });
+
+    await waitFor(() => {
+      expect(result.current.data?.messages).toHaveLength(2);
+    });
   });
 });
 
