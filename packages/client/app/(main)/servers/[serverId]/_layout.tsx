@@ -59,7 +59,7 @@ export default function ServerLayout() {
       >
         <Stack.Screen name="index" options={{ title: server.name }} />
         <Stack.Screen name="settings" options={{ title: 'Server Settings' }} />
-        <Stack.Screen name="channels/[channelId]" options={{ title: server.name }} />
+        <Stack.Screen name="channels/[channelId]" options={{ title: '' }} />
       </Stack>
     </View>
   );

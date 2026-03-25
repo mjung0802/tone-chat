@@ -17,7 +17,7 @@ import { useSocketStore } from '@/stores/socketStore';
 import type { Attachment, Message, ServerMember } from '@/types/models';
 import { getAvailableActions, isMemberMuted, type Role } from '@/utils/roles';
 import type { TypingEvent } from '@/types/socket.types';
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Banner } from 'react-native-paper';
@@ -40,7 +40,7 @@ export default function ChannelScreen() {
     return () => setCurrentChannelId(null);
   }, [cid, setCurrentChannelId]);
 
-  useChannel(sid, cid);
+  const { data: channelData } = useChannel(sid, cid);
   const { data: server } = useServer(sid);
   const {
     data: messagesData,
@@ -250,6 +250,7 @@ export default function ChannelScreen() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ title: channelData?.name ? `# ${channelData.name}` : '' }} />
       <MessageList
         ref={messageListRef}
         messages={messages}

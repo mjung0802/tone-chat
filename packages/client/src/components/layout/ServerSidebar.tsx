@@ -70,7 +70,6 @@ export function ServerSidebar() {
         onChannelPress={handleChannelPress}
         onCreateChannel={handleCreateChannel}
         canManage={isAdmin}
-        onGoHome={() => router.push('/(main)/servers')}
       />
       <Portal>
         <Dialog
