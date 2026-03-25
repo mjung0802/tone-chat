@@ -32,6 +32,7 @@ mock.module('./conversation.model.js', {
 const mockMsgCreate = mock.fn<AnyFn>();
 const mockMsgFindOne = mock.fn<AnyFn>();
 const mockMsgFind = mock.fn<AnyFn>();
+const mockMsgAggregate = mock.fn<AnyFn>();
 
 mock.module('./directMessage.model.js', {
   namedExports: {
@@ -39,6 +40,7 @@ mock.module('./directMessage.model.js', {
       create: mockMsgCreate,
       findOne: mockMsgFindOne,
       find: mockMsgFind,
+      aggregate: mockMsgAggregate,
     },
   },
 });
@@ -160,25 +162,22 @@ describe('getConversation', () => {
 describe('listConversations', () => {
   beforeEach(() => {
     mockConvFind.mock.resetCalls();
-    mockMsgFindOne.mock.resetCalls();
+    mockMsgAggregate.mock.resetCalls();
   });
 
   it('returns conversations with lastMessage when messages exist', async () => {
     const conv = makeConversation(['u1', 'u2'], { lastMessageAt: new Date() });
-    const lastMsg = { _id: 'msg1', content: 'hello', toObject: () => ({ _id: 'msg1', content: 'hello' }) };
     const sortedResult = { sort: mock.fn<AnyFn>(() => Promise.resolve([conv])) };
     mockConvFind.mock.mockImplementation(() => sortedResult);
-    const msgChain: { sort: AnyFn; limit: AnyFn } = {
-      sort: mock.fn<AnyFn>(() => msgChain),
-      limit: mock.fn<AnyFn>(async () => lastMsg),
-    };
-    mockMsgFindOne.mock.mockImplementation(() => msgChain);
+    mockMsgAggregate.mock.mockImplementation(async () => [
+      { _id: 'conv1', lastMessage: { _id: 'msg1', content: 'hello', conversationId: 'conv1' } },
+    ]);
     const req = makeReq({ userId: 'u1' });
     const res = makeRes();
     await listConversations(req, res);
     const result = (res._json as { conversations: { lastMessage: unknown }[] }).conversations;
     assert.equal(result.length, 1);
-    assert.deepEqual(result[0]?.lastMessage, { _id: 'msg1', content: 'hello' });
+    assert.deepEqual(result[0]?.lastMessage, { _id: 'msg1', content: 'hello', conversationId: 'conv1' });
   });
 
   it('returns lastMessage as null when conversation has no messages', async () => {
@@ -191,8 +190,8 @@ describe('listConversations', () => {
     const result = (res._json as { conversations: { lastMessage: unknown }[] }).conversations;
     assert.equal(result.length, 1);
     assert.equal(result[0]?.lastMessage, null);
-    // Should not query DirectMessage when lastMessageAt is null
-    assert.equal(mockMsgFindOne.mock.callCount(), 0);
+    // Should not call aggregate when no conversations have messages
+    assert.equal(mockMsgAggregate.mock.callCount(), 0);
   });
 });
 

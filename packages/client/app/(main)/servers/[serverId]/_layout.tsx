@@ -3,6 +3,7 @@ import { useMembers } from '@/hooks/useMembers';
 import { useServer } from '@/hooks/useServers';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
+import { getDefaultScreenOptions } from '@/utils/screenOptions';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -36,10 +37,7 @@ export default function ServerLayout() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Stack
         screenOptions={{
-          contentStyle: { backgroundColor: theme.colors.background },
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: theme.colors.surface, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.outlineVariant } as Record<string, unknown>,
-          headerTintColor: theme.colors.onSurface,
+          ...getDefaultScreenOptions(theme),
           headerLeft: () =>
             !isWide ? (
               <IconButton

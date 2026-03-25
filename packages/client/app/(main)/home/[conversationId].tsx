@@ -92,26 +92,16 @@ export default function DmConversationScreen() {
 
   const headerTitle = otherUser?.display_name ?? otherUser?.username ?? 'Direct Message';
 
-  const authorNames = useMemo(() => {
+  const { authorNames, authorAvatars } = useMemo(() => {
     const names: Record<string, string> = {};
-    if (currentUser) {
-      names[currentUser.id] = currentUser.display_name ?? currentUser.username;
-    }
-    if (otherUser) {
-      names[otherUser.id] = otherUser.display_name ?? otherUser.username;
-    }
-    return names;
-  }, [currentUser, otherUser]);
-
-  const authorAvatars = useMemo(() => {
     const avatars: Record<string, string | null> = {};
-    if (currentUser) {
-      avatars[currentUser.id] = currentUser.avatar_url ?? null;
+    for (const user of [currentUser, otherUser]) {
+      if (user) {
+        names[user.id] = user.display_name ?? user.username;
+        avatars[user.id] = user.avatar_url ?? null;
+      }
     }
-    if (otherUser) {
-      avatars[otherUser.id] = otherUser.avatar_url ?? null;
-    }
-    return avatars;
+    return { authorNames: names, authorAvatars: avatars };
   }, [currentUser, otherUser]);
 
   const handleImagePress = useCallback((attachment: Attachment) => {

@@ -37,16 +37,22 @@ export async function listConversations(req: Request, res: Response): Promise<vo
     lastMessageAt: -1,
   });
 
-  const conversationsWithPreview = await Promise.all(
-    conversations.map(async (conv) => {
-      const obj = conv.toObject();
-      if (!conv.lastMessageAt) return { ...obj, lastMessage: null };
-      const lastMsg = await DirectMessage.findOne({ conversationId: conv._id })
-        .sort({ createdAt: -1 })
-        .limit(1);
-      return { ...obj, lastMessage: lastMsg?.toObject() ?? null };
-    }),
-  );
+  const conversationIds = conversations.filter((c) => c.lastMessageAt).map((c) => c._id);
+
+  const lastMessages = conversationIds.length > 0
+    ? await DirectMessage.aggregate<{ _id: string; lastMessage: Record<string, unknown> }>([
+      { $match: { conversationId: { $in: conversationIds.map(String) } } },
+      { $sort: { createdAt: -1 } },
+      { $group: { _id: '$conversationId', lastMessage: { $first: '$$ROOT' } } },
+    ])
+    : [];
+
+  const lastMessageMap = new Map(lastMessages.map((doc) => [doc._id, doc.lastMessage]));
+
+  const conversationsWithPreview = conversations.map((conv) => {
+    const obj = conv.toObject();
+    return { ...obj, lastMessage: lastMessageMap.get(String(conv._id)) ?? null };
+  });
 
   res.json({ conversations: conversationsWithPreview });
 }

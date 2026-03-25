@@ -1,6 +1,7 @@
 import type { Server, Socket } from 'socket.io';
 import * as dmsClient from './dms.client.js';
-import { isBlockedBidirectional, getUser } from '../users/users.client.js';
+import { isBlockedBidirectional } from '../users/users.client.js';
+import { broadcastDmAndNotify } from './dms.broadcast.js';
 
 function isValidConversationRef(data: unknown): data is { conversationId: string } {
   if (typeof data !== 'object' || data === null) return false;
@@ -120,26 +121,10 @@ export function registerDmHandlers(io: Server, socket: Socket, userId: string): 
     const result = await dmsClient.sendDmMessage(userId, conversationId, body);
 
     if (result.status === 201) {
-      io.to(`dm:${conversationId}`).emit('dm:new_message', result.data);
-
       if (otherUserId !== undefined) {
-        let senderName = 'Someone';
-        try {
-          const userResult = await getUser(userId, userId);
-          if (userResult.status === 200) {
-            const userData = userResult.data as { user?: { display_name?: string | null; username?: string } } | null;
-            senderName = userData?.user?.display_name ?? userData?.user?.username ?? 'Someone';
-          }
-        } catch {
-          // Fall back to 'Someone'
-        }
-
-        io.to(`user:${otherUserId}`).emit('dm:notification', {
-          conversationId,
-          otherUserId: userId,
-          senderName,
-          preview: data.content ? data.content.slice(0, 50) : '📎 Attachment',
-        });
+        void broadcastDmAndNotify(io, conversationId, userId, otherUserId, result.data, data.content);
+      } else {
+        io.to(`dm:${conversationId}`).emit('dm:new_message', result.data);
       }
     } else {
       const errorData = result.data as { error?: { code?: string; message?: string } } | null;
