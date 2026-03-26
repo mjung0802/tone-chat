@@ -86,6 +86,18 @@ Whenever planning a new feature or improvement, always audit for testing gaps ac
 
 If any layer is missing coverage for the feature, flag it and plan the missing tests as part of the implementation work — not as an afterthought.
 
+## Feature Validation Checklist
+
+Before considering any feature complete, verify all of the following pass with zero errors:
+
+- **No lint errors**: `pnpm lint`
+- **No typecheck errors**: `pnpm typecheck`
+- **No unit test failures**: `pnpm test`
+- **No integration test failures**: `pnpm test:integration:up` for any backend routes or DB interactions touched
+- **No E2E test failures**: `pnpm --filter tone-chat-client test:e2e` for any user-facing flows changed
+
+Do not mark work done until all checks are green.
+
 ## Architecture
 
 **Pattern**: Microservices with a Backend-For-Frontend (BFF). All backend packages are TypeScript with strict config (shared `tsconfig.base.json` at repo root). Services communicate via HTTP using native `fetch()`.
