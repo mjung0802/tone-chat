@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, StyleSheet, Platform } from 'react-native';
 import { TextInput, Icon, IconButton, Text, useTheme } from 'react-native-paper';
 import { AttachmentPicker } from './AttachmentPicker';
@@ -37,7 +37,12 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
   const [tonePickerVisible, setTonePickerVisible] = useState(false);
   const [cursorPosition, setCursorPosition] = useState(0);
   const [pendingMentions, setPendingMentions] = useState<Set<string>>(new Set());
+  const focusTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const theme = useTheme();
+
+  useEffect(() => {
+    return () => clearTimeout(focusTimerRef.current);
+  }, []);
   const upload = useUpload();
 
   const anyUploading = pendingAttachments.some((a) => a.uploading);
@@ -73,6 +78,15 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
     setPendingAttachments([]);
     setPendingMentions(new Set());
     setSelectedTone(null);
+    // On web, sending triggers multiple re-renders (state clear + mutation
+    // onSuccess cache update) that blur the input. Set a short timer during
+    // which the onBlur handler will immediately re-focus the DOM element.
+    if (Platform.OS === 'web') {
+      clearTimeout(focusTimerRef.current);
+      focusTimerRef.current = setTimeout(() => {
+        focusTimerRef.current = undefined;
+      }, 500);
+    }
   }, [text, pendingAttachments, onSend, replyTarget, pendingMentions, selectedTone]);
 
   const handleChange = useCallback(
@@ -82,6 +96,16 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
     },
     [onTyping],
   );
+
+  const handleBlur = useCallback(() => {
+    // After sending, re-renders from state clear and mutation cache update
+    // blur the input. Re-focus the DOM element while the send timer is active.
+    if (Platform.OS === 'web' && focusTimerRef.current != null) {
+      requestAnimationFrame(() => {
+        document.querySelector<HTMLInputElement>('[aria-label="Message input"]')?.focus();
+      });
+    }
+  }, []);
 
   const handleEmojiSelect = useCallback(
     (emoji: string) => {
@@ -201,6 +225,7 @@ export function MessageInput({ onSend, onTyping, disabled, replyTarget, onCancel
           style={styles.input}
           value={text}
           onChangeText={handleChange}
+          onBlur={handleBlur}
           onSelectionChange={(e) => setCursorPosition(e.nativeEvent.selection.end)}
           placeholder="Type a message..."
           maxLength={4000}
