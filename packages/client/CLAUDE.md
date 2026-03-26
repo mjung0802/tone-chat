@@ -7,7 +7,8 @@ pnpm start --web          # Expo dev server (web)
 pnpm start --android      # Expo dev server (Android)
 pnpm start --ios          # Expo dev server (iOS)
 pnpm run typecheck        # tsc --noEmit
-pnpm test                 # Jest
+pnpm test                 # Jest (all tests)
+npx jest <pattern>        # Jest (filter by pattern — run from packages/client, NOT via pnpm --filter)
 pnpm test:e2e             # Playwright E2E (all tests)
 pnpm test:e2e:ui          # Playwright UI mode
 ```
