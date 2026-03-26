@@ -10,6 +10,14 @@ export interface MentionNotification {
   authorId: string;
 }
 
+export interface DmNotification {
+  conversationId: string;
+  otherUserId: string;
+  senderName: string;
+  messageId: string;
+  preview: string;
+}
+
 const NOTIF_PREF_KEY = 'notificationPreference';
 
 function isValidNotificationPreference(value: string | null): value is NotificationPreference {
@@ -35,19 +43,31 @@ async function loadPreference(): Promise<NotificationPreference> {
   return isValidNotificationPreference(value) ? value : 'quiet';
 }
 
-interface NotificationState {
-  currentNotification: MentionNotification | null;
+export interface NotificationState {
+  currentNotification: MentionNotification | DmNotification | null;
   currentChannelId: string | null;
+  currentConversationId: string | null;
+  dmUnreadEntries: Record<string, { count: number; otherUserId: string }>;
   notificationPreference: NotificationPreference;
-  showNotification: (notification: MentionNotification) => void;
+  showNotification: (notification: MentionNotification | DmNotification) => void;
   dismissNotification: () => void;
   setCurrentChannelId: (channelId: string | null) => void;
+  setCurrentConversationId: (conversationId: string | null) => void;
+  incrementDmUnread: (conversationId: string, otherUserId: string) => void;
+  clearConversationUnread: (conversationId: string) => void;
+  clearAllDmUnreads: () => void;
   setNotificationPreference: (pref: NotificationPreference) => void;
+}
+
+export function selectTotalDmUnread(state: NotificationState): number {
+  return Object.values(state.dmUnreadEntries).reduce((sum, e) => sum + e.count, 0);
 }
 
 export const useNotificationStore = create<NotificationState>((set) => ({
   currentNotification: null,
   currentChannelId: null,
+  currentConversationId: null,
+  dmUnreadEntries: {},
   notificationPreference: 'quiet',
 
   showNotification: (notification) => {
@@ -60,6 +80,37 @@ export const useNotificationStore = create<NotificationState>((set) => ({
 
   setCurrentChannelId: (channelId) => {
     set({ currentChannelId: channelId });
+  },
+
+  setCurrentConversationId: (conversationId) => {
+    set({ currentConversationId: conversationId });
+  },
+
+  incrementDmUnread: (conversationId, otherUserId) => {
+    set((state) => {
+      const existing = state.dmUnreadEntries[conversationId];
+      return {
+        dmUnreadEntries: {
+          ...state.dmUnreadEntries,
+          [conversationId]: {
+            count: (existing?.count ?? 0) + 1,
+            otherUserId: existing?.otherUserId ?? otherUserId,
+          },
+        },
+      };
+    });
+  },
+
+  clearConversationUnread: (conversationId) => {
+    set((state) => {
+      const next = { ...state.dmUnreadEntries };
+      delete next[conversationId];
+      return { dmUnreadEntries: next };
+    });
+  },
+
+  clearAllDmUnreads: () => {
+    set({ dmUnreadEntries: {} });
   },
 
   setNotificationPreference: (pref: NotificationPreference) => {

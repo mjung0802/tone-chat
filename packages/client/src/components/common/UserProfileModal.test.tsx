@@ -9,6 +9,15 @@ import { UserProfileModal } from './UserProfileModal';
 jest.mock('../../api/users.api');
 jest.mock('../../api/servers.api');
 jest.mock('../../api/members.api');
+jest.mock('../../hooks/useDms');
+jest.mock('expo-router');
+
+import * as usersApi from '../../api/users.api';
+import * as serversApi from '../../api/servers.api';
+import * as membersApi from '../../api/members.api';
+import { useBlockedIds, useBlockUser, useUnblockUser, useGetOrCreateConversation } from '../../hooks/useDms';
+import { useRouter } from 'expo-router';
+import { mockQuerySuccess, mockMutationResult, mockRouter } from '../../test-utils/queryMocks';
 
 const TARGET_USER_ID = 'user-456';
 const ACTOR_USER_ID = 'user-123';
@@ -69,6 +78,15 @@ beforeEach(() => {
   useUiStore.setState({
     profileModal: { visible: false, userId: null, serverId: null },
   });
+  jest.mocked(usersApi.getMe).mockResolvedValue({ user: makeUser({ id: ACTOR_USER_ID }) });
+  jest.mocked(usersApi.getUser).mockResolvedValue({ user: makeUser({ id: TARGET_USER_ID }) });
+  jest.mocked(membersApi.getMembers).mockResolvedValue({ members: [] });
+  jest.mocked(serversApi.getServer).mockResolvedValue({ server: { _id: SERVER_ID, name: 'Test Server', ownerId: 'owner-999' } } as never);
+  jest.mocked(useBlockedIds).mockReturnValue(mockQuerySuccess([]));
+  jest.mocked(useBlockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+  jest.mocked(useUnblockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+  jest.mocked(useGetOrCreateConversation).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+  jest.mocked(useRouter).mockReturnValue(mockRouter());
 });
 
 describe('UserProfileModal', () => {
@@ -134,5 +152,129 @@ describe('UserProfileModal', () => {
   it('does not render when not visible', () => {
     const { queryByTestId } = renderWithProviders(<UserProfileModal />);
     expect(queryByTestId('user-profile-modal')).toBeNull();
+  });
+
+  it('does not render when userId is null', () => {
+    useUiStore.setState({
+      profileModal: { visible: true, userId: null, serverId: SERVER_ID },
+    });
+
+    const { queryByTestId } = renderWithProviders(<UserProfileModal />);
+    expect(queryByTestId('user-profile-modal')).toBeNull();
+  });
+
+  it('renders when serverId is null (DM context)', () => {
+    const queryClient = createTestQueryClient();
+    const targetUser = makeUser({
+      id: TARGET_USER_ID,
+      username: 'janedoe',
+      display_name: 'Jane Doe',
+    });
+    const meUser = makeUser({ id: ACTOR_USER_ID });
+
+    queryClient.setQueryData(['users', TARGET_USER_ID], { user: targetUser });
+    queryClient.setQueryData(['me'], { user: meUser });
+    queryClient.setQueryData(['blocks'], { blockedIds: [] });
+
+    jest.mocked(useBlockedIds).mockReturnValue(mockQuerySuccess([]));
+    jest.mocked(useBlockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useUnblockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useGetOrCreateConversation).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useRouter).mockReturnValue(mockRouter());
+
+    useUiStore.setState({
+      profileModal: { visible: true, userId: TARGET_USER_ID, serverId: null },
+    });
+
+    const { getByTestId, getByText } = renderWithProviders(<UserProfileModal />, { queryClient });
+
+    expect(getByTestId('user-profile-modal')).toBeTruthy();
+    expect(getByText('Jane Doe')).toBeTruthy();
+  });
+
+  it('renders Message button for other users in DM context', () => {
+    const queryClient = createTestQueryClient();
+    const targetUser = makeUser({
+      id: TARGET_USER_ID,
+      username: 'janedoe',
+      display_name: 'Jane Doe',
+    });
+    const meUser = makeUser({ id: ACTOR_USER_ID });
+
+    queryClient.setQueryData(['users', TARGET_USER_ID], { user: targetUser });
+    queryClient.setQueryData(['me'], { user: meUser });
+
+    jest.mocked(useBlockedIds).mockReturnValue(mockQuerySuccess([]));
+    jest.mocked(useBlockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useUnblockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useGetOrCreateConversation).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useRouter).mockReturnValue(mockRouter());
+
+    useUiStore.setState({
+      profileModal: { visible: true, userId: TARGET_USER_ID, serverId: null },
+    });
+
+    const { getByLabelText } = renderWithProviders(<UserProfileModal />, { queryClient });
+
+    expect(getByLabelText('Send message')).toBeTruthy();
+  });
+
+  it('renders block/unblock button for other users', () => {
+    const queryClient = createTestQueryClient();
+    const targetUser = makeUser({
+      id: TARGET_USER_ID,
+      username: 'janedoe',
+      display_name: 'Jane Doe',
+    });
+    const meUser = makeUser({ id: ACTOR_USER_ID });
+
+    queryClient.setQueryData(['users', TARGET_USER_ID], { user: targetUser });
+    queryClient.setQueryData(['me'], { user: meUser });
+
+    jest.mocked(useBlockedIds).mockReturnValue(mockQuerySuccess([]));
+    const mockBlockUser = jest.fn();
+    jest.mocked(useBlockUser).mockReturnValue(mockMutationResult({ mutate: mockBlockUser }));
+    jest.mocked(useUnblockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useGetOrCreateConversation).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useRouter).mockReturnValue(mockRouter());
+
+    useUiStore.setState({
+      profileModal: { visible: true, userId: TARGET_USER_ID, serverId: null },
+    });
+
+    const { getByLabelText, getByText } = renderWithProviders(<UserProfileModal />, { queryClient });
+
+    const blockButton = getByLabelText('Block user');
+    expect(blockButton).toBeTruthy();
+    expect(getByText('Block')).toBeTruthy();
+  });
+
+  it('shows unblock button when user is already blocked', () => {
+    const queryClient = createTestQueryClient();
+    const targetUser = makeUser({
+      id: TARGET_USER_ID,
+      username: 'janedoe',
+      display_name: 'Jane Doe',
+    });
+    const meUser = makeUser({ id: ACTOR_USER_ID });
+
+    queryClient.setQueryData(['users', TARGET_USER_ID], { user: targetUser });
+    queryClient.setQueryData(['me'], { user: meUser });
+
+    jest.mocked(useBlockedIds).mockReturnValue(mockQuerySuccess([TARGET_USER_ID]));
+    jest.mocked(useBlockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useUnblockUser).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useGetOrCreateConversation).mockReturnValue(mockMutationResult({ mutate: jest.fn() }));
+    jest.mocked(useRouter).mockReturnValue(mockRouter());
+
+    useUiStore.setState({
+      profileModal: { visible: true, userId: TARGET_USER_ID, serverId: null },
+    });
+
+    const { getByLabelText, getByText } = renderWithProviders(<UserProfileModal />, { queryClient });
+
+    const unblockButton = getByLabelText('Unblock user');
+    expect(unblockButton).toBeTruthy();
+    expect(getByText('Unblock')).toBeTruthy();
   });
 });

@@ -12,4 +12,6 @@
 - **useTones.ts** — `useCustomTones()`, `useAddCustomTone()`, `useRemoveCustomTone()`
 - **useUser.ts** — `useMe()`, `useUser()`, `useUpdateProfile()`
 - **useMentionNotifications.ts** — listens for `mention` socket events; suppresses if viewing that channel; shows system or in-app notification
-- **useAuth.test.ts** / **useMessages.test.ts** / **useSocket.test.ts** / **useAttachments.test.ts** / **useMentionNotifications.test.ts** — unit tests
+- **useDms.ts** — `useDmConversations()`, `useDmMessages(conversationId)`, `useSendDmMessage()`, `useReactToDm()`, `useGetOrCreateConversation()`, `useBlockedIds()`, `useBlockUser()`, `useUnblockUser()`; cache helpers `injectDmMessage()`, `updateDmMessageInCache()`
+- **useDmSocket.ts** — `useDmSocket(conversationId, onTyping?, onNewMessage?)` — joins/leaves DM socket room, handles `dm:new_message`, `dm:typing`, `dm:reaction_updated` events
+- **useAuth.test.ts** / **useMessages.test.ts** / **useSocket.test.ts** / **useAttachments.test.ts** / **useMentionNotifications.test.ts** / **useDms.test.ts** / **useDmSocket.test.ts** — unit tests

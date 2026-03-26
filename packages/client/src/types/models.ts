@@ -105,3 +105,26 @@ export interface Attachment {
   url: string | null;
   created_at: string;
 }
+
+export interface DirectConversation {
+  _id: string;
+  participantIds: [string, string];
+  lastMessageAt: string | null;
+  lastMessage: DirectMessage | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DirectMessage {
+  _id: string;
+  conversationId: string;
+  authorId: string;
+  content: string | null;
+  attachmentIds: string[];
+  replyTo?: { messageId: string; authorId: string; authorName: string; content: string } | undefined;
+  mentions: string[];
+  reactions: { emoji: string; userIds: string[] }[];
+  tone: string | null;
+  editedAt: string | null;
+  createdAt: string;
+}

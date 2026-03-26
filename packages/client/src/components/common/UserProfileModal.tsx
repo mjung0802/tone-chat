@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Button, Chip, Dialog, Divider, IconButton, Portal, Text, Tooltip } from 'react-native-paper';
+import { Button, Chip, Dialog, Divider, IconButton, Portal, Text, Tooltip, useTheme } from 'react-native-paper';
+import { useRouter } from 'expo-router';
 import { UserAvatar } from './UserAvatar';
 import { MemberActionDialogs, type DialogType } from '../members/MemberActionDialogs';
 import { useUiStore } from '@/stores/uiStore';
 import { useUser, useMe } from '@/hooks/useUser';
 import { useMembers, useMuteMember, useUnmuteMember, useKickMember, useBanMember } from '@/hooks/useMembers';
 import { useServer } from '@/hooks/useServers';
+import { useGetOrCreateConversation, useBlockedIds, useBlockUser, useUnblockUser } from '@/hooks/useDms';
 import { getBadgeLabel, getAvailableActions, isMemberMuted, type Role } from '@/utils/roles';
 
 export function UserProfileModal() {
   const { visible, userId, serverId } = useUiStore((s) => s.profileModal);
   const closeProfileModal = useUiStore((s) => s.closeProfileModal);
+  const theme = useTheme();
+  const router = useRouter();
 
   const [dialogType, setDialogType] = useState<DialogType>(null);
 
@@ -25,15 +29,22 @@ export function UserProfileModal() {
   const kickMember = useKickMember(serverId ?? '');
   const banMember = useBanMember(serverId ?? '');
 
-  if (!visible || !userId || !serverId) return null;
+  const { data: blockedIds } = useBlockedIds();
+  const blockUser = useBlockUser();
+  const unblockUser = useUnblockUser();
+  const getOrCreateConversation = useGetOrCreateConversation();
 
-  const targetMember = members?.find((m) => m.userId === userId) ?? null;
-  const currentMember = members?.find((m) => m.userId === me?.id) ?? null;
+  if (!visible || !userId) return null;
 
-  const displayName = targetMember?.nickname ?? targetMember?.display_name ?? user?.display_name ?? null;
+  const hasServerContext = !!serverId;
+
+  const targetMember = hasServerContext ? (members?.find((m) => m.userId === userId) ?? null) : null;
+  const currentMember = hasServerContext ? (members?.find((m) => m.userId === me?.id) ?? null) : null;
+
+  const displayName = (hasServerContext ? (targetMember?.nickname ?? targetMember?.display_name) : null) ?? user?.display_name ?? null;
   const username = user?.username ?? userId;
   const headerName = displayName ?? username;
-  const avatarAttachmentId = targetMember?.avatar_url ?? user?.avatar_url ?? null;
+  const avatarAttachmentId = (hasServerContext ? targetMember?.avatar_url : null) ?? user?.avatar_url ?? null;
 
   const actorRole = (currentMember?.role ?? 'member') as Role;
   const actorIsOwner = server?.ownerId === me?.id;
@@ -46,9 +57,28 @@ export function UserProfileModal() {
 
   const isMuted = isMemberMuted(targetMember?.mutedUntil ?? null);
 
-  const hasActions = actions && (actions.canMute || actions.canKick || actions.canBan);
+  const hasActions = hasServerContext && actions && (actions.canMute || actions.canKick || actions.canBan);
 
   const badgeLabel = getBadgeLabel(targetRole, targetIsOwner);
+
+  const isBlocked = blockedIds?.includes(userId) ?? false;
+
+  const handleToggleBlock = () => {
+    if (isBlocked) {
+      unblockUser.mutate(userId);
+    } else {
+      blockUser.mutate(userId);
+    }
+  };
+
+  const handleSendMessage = () => {
+    getOrCreateConversation.mutate(userId, {
+      onSuccess: (data) => {
+        router.push(`/(main)/home/${data.conversation._id}`);
+        closeProfileModal();
+      },
+    });
+  };
 
   const openDialog = (type: DialogType) => {
     if (targetMember) {
@@ -60,18 +90,18 @@ export function UserProfileModal() {
     setDialogType(null);
   };
 
-  const handleMute = (userId: string, duration: number) => {
-    muteMember.mutate({ userId, data: { duration } });
+  const handleMute = (targetUserId: string, duration: number) => {
+    muteMember.mutate({ userId: targetUserId, data: { duration } });
     closeProfileModal();
   };
 
-  const handleKick = (userId: string) => {
-    kickMember.mutate(userId);
+  const handleKick = (targetUserId: string) => {
+    kickMember.mutate(targetUserId);
     closeProfileModal();
   };
 
-  const handleBan = (userId: string, reason?: string | undefined) => {
-    banMember.mutate({ userId, data: reason ? { reason } : {} });
+  const handleBan = (targetUserId: string, reason?: string | undefined) => {
+    banMember.mutate({ userId: targetUserId, data: reason ? { reason } : {} });
     closeProfileModal();
   };
 
@@ -116,7 +146,7 @@ export function UserProfileModal() {
               </>
             ) : null}
 
-            {(badgeLabel || targetMember?.nickname) ? (
+            {hasServerContext && (badgeLabel || targetMember?.nickname) ? (
               <>
                 <Divider style={styles.divider} />
                 <View style={styles.metaRow}>
@@ -139,11 +169,11 @@ export function UserProfileModal() {
               </>
             ) : null}
 
-            {hasActions ? (
+            {hasServerContext && hasActions ? (
               <>
                 <Divider style={styles.divider} />
                 <View style={styles.actionRow}>
-                  {actions.canMute && !isMuted ? (
+                  {actions?.canMute && !isMuted ? (
                     <Tooltip title="Mute">
                       <IconButton
                         icon="volume-off"
@@ -153,7 +183,7 @@ export function UserProfileModal() {
                       />
                     </Tooltip>
                   ) : null}
-                  {actions.canMute && isMuted ? (
+                  {actions?.canMute && isMuted ? (
                     <Tooltip title="Unmute">
                       <IconButton
                         icon="volume-high"
@@ -163,7 +193,7 @@ export function UserProfileModal() {
                       />
                     </Tooltip>
                   ) : null}
-                  {actions.canKick ? (
+                  {actions?.canKick ? (
                     <Tooltip title="Kick">
                       <IconButton
                         icon="account-remove"
@@ -173,7 +203,7 @@ export function UserProfileModal() {
                       />
                     </Tooltip>
                   ) : null}
-                  {actions.canBan ? (
+                  {actions?.canBan ? (
                     <Tooltip title="Ban">
                       <IconButton
                         icon="cancel"
@@ -189,6 +219,26 @@ export function UserProfileModal() {
           </Dialog.Content>
 
           <Dialog.Actions>
+            {/* Duplicate userId checks because Dialog.Actions adds props to children, which will cause issues with wrapping in a fragment */}
+            {userId !== me?.id && (
+              <Button
+                onPress={handleSendMessage}
+                loading={getOrCreateConversation.isPending ?? false}
+                accessibilityLabel="Send message"
+              >
+                Message
+              </Button>
+            )}
+            {userId !== me?.id && (
+              <Button
+                onPress={handleToggleBlock}
+                loading={blockUser.isPending || unblockUser.isPending}
+                {...(!isBlocked && { textColor: theme.colors.error })}
+                accessibilityLabel={isBlocked ? 'Unblock user' : 'Block user'}
+              >
+                {isBlocked ? 'Unblock' : 'Block'}
+              </Button>
+            )}
             <Button onPress={closeProfileModal} accessibilityLabel="Close profile">
               Close
             </Button>
@@ -196,14 +246,16 @@ export function UserProfileModal() {
         </Dialog>
       </Portal>
 
-      <MemberActionDialogs
-        member={targetMember}
-        dialogType={dialogType}
-        onDismiss={closeDialog}
-        onMute={handleMute}
-        onKick={handleKick}
-        onBan={handleBan}
-      />
+      {hasServerContext && (
+        <MemberActionDialogs
+          member={targetMember}
+          dialogType={dialogType}
+          onDismiss={closeDialog}
+          onMute={handleMute}
+          onKick={handleKick}
+          onBan={handleBan}
+        />
+      )}
     </>
   );
 }

@@ -67,6 +67,48 @@ export async function mockSocketIO(page: Page): Promise<void> {
   });
 }
 
+/**
+ * Like mockSocketIO, but also completes the Socket.IO handshake and returns a
+ * helper that lets tests push server→client Socket.IO events.
+ *
+ * Usage:
+ *   const { emitToClient } = await mockSocketIOWithEmitter(page);
+ *   emitToClient('dm:notification', { conversationId: 'conv1', otherUserId: 'user-002', preview: 'Hi' });
+ */
+export async function mockSocketIOWithEmitter(page: Page): Promise<{
+  emitToClient: (event: string, payload: unknown) => void;
+  waitForConnection: (timeout?: number) => Promise<void>;
+}> {
+  let sendToClient: ((data: string) => void) | null = null;
+
+  await page.routeWebSocket(/localhost:4000/, (ws) => {
+    // Complete the Engine.IO + Socket.IO handshake so the client processes events
+    ws.send('0{"sid":"mock-sid","upgrades":[],"pingInterval":25000,"pingTimeout":20000}');
+    ws.send('40');
+
+    sendToClient = (data: string) => ws.send(data);
+
+    ws.onMessage(() => {
+      // drop all client→server frames
+    });
+  });
+
+  return {
+    emitToClient: (event: string, payload: unknown) => {
+      if (!sendToClient) return;
+      const frame = `42${JSON.stringify([event, payload])}`;
+      sendToClient(frame);
+    },
+    async waitForConnection(timeout = 5000): Promise<void> {
+      const deadline = Date.now() + timeout;
+      while (!sendToClient) {
+        if (Date.now() > deadline) throw new Error('Socket did not connect within timeout');
+        await new Promise<void>((r) => setTimeout(r, 50));
+      }
+    },
+  };
+}
+
 export async function mockServersRoutes(page: Page, servers = [MOCK_SERVER]): Promise<void> {
   // Individual server endpoint GET /servers/:id
   await page.route(`${API}/servers/*`, async (route) => {
@@ -102,7 +144,11 @@ export async function mockServersRoutes(page: Page, servers = [MOCK_SERVER]): Pr
   });
 }
 
-export async function mockChannelsRoutes(page: Page, channels = [MOCK_CHANNEL]): Promise<void> {
+export async function mockChannelsRoutes(
+  page: Page,
+  channels = [MOCK_CHANNEL],
+  channelsByServerId?: Record<string, typeof channels>,
+): Promise<void> {
   // Individual channel endpoint GET /servers/:sid/channels/:cid
   await page.route(`${API}/servers/*/channels/*`, async (route) => {
     if (route.request().method() === 'GET') {
@@ -121,10 +167,13 @@ export async function mockChannelsRoutes(page: Page, channels = [MOCK_CHANNEL]):
 
   // Channel list endpoint GET /servers/:sid/channels
   await page.route(`${API}/servers/*/channels`, async (route) => {
+    const url = route.request().url();
+    const serverId = url.split('/servers/')[1]?.split('/channels')[0] ?? '';
+    const serverChannels = channelsByServerId?.[serverId] ?? channels;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ channels }),
+      body: JSON.stringify({ channels: serverChannels }),
     });
   });
 }

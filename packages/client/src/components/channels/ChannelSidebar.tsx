@@ -11,7 +11,6 @@ interface ChannelSidebarProps {
   onChannelPress: (channel: Channel) => void;
   onCreateChannel?: (() => void) | undefined;
   canManage?: boolean | undefined;
-  onGoHome?: (() => void) | undefined;
 }
 
 export function ChannelSidebar({
@@ -21,7 +20,6 @@ export function ChannelSidebar({
   onChannelPress,
   onCreateChannel,
   canManage,
-  onGoHome,
 }: ChannelSidebarProps) {
   const theme = useTheme();
 
@@ -34,17 +32,8 @@ export function ChannelSidebar({
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.surface, borderRightColor: theme.colors.outlineVariant }]}>
       <View style={styles.header}>
-        {onGoHome ? (
-          <IconButton
-            icon="arrow-left"
-            size={20}
-            onPress={onGoHome}
-            accessibilityLabel="Back to server list"
-            accessibilityHint="Returns to the server selection screen"
-          />
-        ) : null}
         <Text variant="titleMedium" numberOfLines={1} style={styles.title}>
           {serverName}
         </Text>
@@ -58,7 +47,7 @@ export function ChannelSidebar({
           />
         ) : null}
       </View>
-      <Divider style={{ backgroundColor: theme.colors.inverseSurface }} />
+      <Divider style={{ backgroundColor: theme.colors.outlineVariant }} />
       <FlatList
         data={channels}
         renderItem={renderItem}
@@ -73,8 +62,8 @@ export function ChannelSidebar({
 const styles = StyleSheet.create({
   container: {
     width: 260,
+    paddingHorizontal: 6,
     borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: 'rgba(0,0,0,0.1)',
   },
   header: {
     flexDirection: 'row',
@@ -82,7 +71,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    minHeight: 48,
+    minHeight: 63,
   },
   title: {
     flex: 1,

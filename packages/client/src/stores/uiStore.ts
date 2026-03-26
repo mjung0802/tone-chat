@@ -67,7 +67,7 @@ interface UiState {
   setColorTheme: (id: ThemeId) => void;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
-  openProfileModal: (userId: string, serverId: string) => void;
+  openProfileModal: (userId: string, serverId?: string | undefined) => void;
   closeProfileModal: () => void;
 }
 
@@ -101,8 +101,8 @@ export const useUiStore = create<UiState>((set) => ({
     set({ isSidebarOpen: open });
   },
 
-  openProfileModal: (userId: string, serverId: string) => {
-    set({ profileModal: { visible: true, userId, serverId } });
+  openProfileModal: (userId: string, serverId?: string | undefined) => {
+    set({ profileModal: { visible: true, userId, serverId: serverId ?? null } });
   },
 
   closeProfileModal: () => {

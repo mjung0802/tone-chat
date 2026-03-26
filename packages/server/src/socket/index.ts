@@ -5,6 +5,8 @@ import { config } from '../config/index.js';
 import { getMember } from '../members/members.client.js';
 import { registerMessageHandlers } from '../messages/messages.socket.js';
 import { setIO } from '../messages/messages.routes.js';
+import { setDmIO } from '../dms/dms.routes.js';
+import { registerDmHandlers } from '../dms/dms.socket.js';
 
 export function setupSocketIO(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
@@ -16,6 +18,7 @@ export function setupSocketIO(httpServer: HttpServer): Server {
   });
 
   setIO(io);
+  setDmIO(io);
 
   // Auth middleware
   io.use((socket, next) => {
@@ -59,6 +62,7 @@ export function setupSocketIO(httpServer: HttpServer): Server {
 
     // Register domain-specific handlers
     registerMessageHandlers(io, socket, userId);
+    registerDmHandlers(io, socket, userId);
 
     socket.on('disconnect', () => {
       console.log(`Socket disconnected: ${userId}`);

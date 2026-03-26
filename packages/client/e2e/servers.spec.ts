@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { mockSocketIO, mockServersRoutes, mockChannelsRoutes, mockUsersRoutes } from './helpers/mocks';
-import { MOCK_CHANNEL } from './helpers/fixtures';
+import { MOCK_CHANNEL, MOCK_SERVER, MOCK_SERVER_TWO, MOCK_CHANNEL_TWO } from './helpers/fixtures';
 
 test.beforeEach(async ({ page }) => {
   await mockSocketIO(page);
@@ -33,4 +33,25 @@ test('navigates to channel view on server press', async ({ page }) => {
   await page.getByRole('button', { name: 'Test Server server, A test server' }).click();
 
   await expect(page.getByText(MOCK_CHANNEL.name)).toBeVisible();
+});
+
+test('channel drawer updates when switching servers via rail', async ({ page }) => {
+  await mockServersRoutes(page, [MOCK_SERVER, MOCK_SERVER_TWO]);
+  await mockChannelsRoutes(
+    page,
+    [MOCK_CHANNEL, MOCK_CHANNEL_TWO],
+    { 'server-001': [MOCK_CHANNEL], 'server-002': [MOCK_CHANNEL_TWO] },
+  );
+
+  await page.goto('/');
+
+  // Navigate to server 1 via the server list
+  await page.getByRole('button', { name: 'Test Server server, A test server' }).click();
+  await expect(page.getByText(MOCK_CHANNEL.name)).toBeVisible();
+
+  // Switch to server 2 via the server rail icon
+  await page.getByRole('button', { name: `${MOCK_SERVER_TWO.name} server` }).click();
+
+  // Channel drawer must update to show server 2's channel
+  await expect(page.getByText(MOCK_CHANNEL_TWO.name)).toBeVisible();
 });

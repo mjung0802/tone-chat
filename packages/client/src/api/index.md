@@ -12,4 +12,5 @@
 - **invites.api.ts** — `getInvites()`, `createInvite()`, `revokeInvite()`, `joinViaCode()`
 - **users.api.ts** — `getMe()`, `updateMe()`, `getUser()`
 - **tones.api.ts** — `getCustomTones()`, `addCustomTone()`, `removeCustomTone()`
+- **dms.api.ts** — `getOrCreateConversation()`, `listConversations()`, `getConversation()`, `getDmMessages()` (cursor pagination), `sendDmMessage()`, `updateDmMessage()`, `reactToDmMessage()`; `getBlockedIds()`, `blockUser()`, `unblockUser()`
 - **client.test.ts** — unit tests for fetch client

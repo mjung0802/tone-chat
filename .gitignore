@@ -4,9 +4,9 @@ dist/
 .env
 .expo/
 .superpowers/
+.worktrees/
+.playwright-cli/
 e2e/.auth/
 playwright-report/
 test-results/
-.playwright-cli/
 docs/superpowers/
-.worktrees/

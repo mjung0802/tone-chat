@@ -29,7 +29,7 @@ export const MOCK_SERVER = {
   _id: 'server-001',
   name: 'Test Server',
   ownerId: 'user-001',
-  icon: 'mock-icon-attachment-id',
+  icon: 'mock-icon-attachment-id' as string | null,
   description: 'A test server',
   visibility: 'public' as const,
   createdAt: '2024-01-01T00:00:00.000Z',
@@ -166,6 +166,27 @@ export const MOCK_USER_TWO = {
   bio: 'Hello from Jane',
   created_at: '2024-01-01T00:00:00.000Z',
   updated_at: '2024-01-01T00:00:00.000Z',
+};
+
+export const MOCK_SERVER_TWO = {
+  _id: 'server-002',
+  name: 'Second Server',
+  ownerId: 'user-001',
+  icon: null as string | null,
+  description: 'A second test server',
+  visibility: 'public' as const,
+  createdAt: '2024-01-01T00:00:00.000Z',
+  updatedAt: '2024-01-01T00:00:00.000Z',
+};
+
+export const MOCK_CHANNEL_TWO = {
+  _id: 'channel-002',
+  serverId: 'server-002',
+  name: 'announcements',
+  type: 'text' as const,
+  position: 0,
+  createdAt: '2024-01-01T00:00:00.000Z',
+  updatedAt: '2024-01-01T00:00:00.000Z',
 };
 
 export const MOCK_MESSAGE_WITH_MENTION = {

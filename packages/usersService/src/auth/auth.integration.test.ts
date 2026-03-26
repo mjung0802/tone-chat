@@ -22,7 +22,7 @@ after(async () => {
 });
 
 beforeEach(async () => {
-  await sql`TRUNCATE users, credentials, refresh_tokens, email_verification_tokens CASCADE`;
+  await sql`TRUNCATE users, credentials, refresh_tokens, email_verification_tokens, user_blocks CASCADE`;
 });
 
 describe('POST /auth/register', () => {

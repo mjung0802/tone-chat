@@ -164,7 +164,7 @@ after(async () => {
 
 beforeEach(async () => {
   await Promise.all([
-    usersSql`TRUNCATE users, credentials, refresh_tokens, email_verification_tokens CASCADE`,
+    usersSql`TRUNCATE users, credentials, refresh_tokens, email_verification_tokens, user_blocks CASCADE`,
     attachmentsSql`TRUNCATE attachments CASCADE`,
     ServerModel.deleteMany({}),
     ChannelModel.deleteMany({}),

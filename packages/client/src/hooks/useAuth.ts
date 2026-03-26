@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as authApi from '../api/auth.api';
 import { useAuthStore } from '../stores/authStore';
 import { useSocketStore } from '../stores/socketStore';
+import { useNotificationStore } from '../stores/notificationStore';
 import type { RegisterRequest, LoginRequest, VerifyEmailRequest } from '../types/api.types';
 
 function useAuthSuccess() {
@@ -44,6 +45,7 @@ export function useLogout() {
   return () => {
     disconnect();
     clearAuth();
+    useNotificationStore.getState().clearAllDmUnreads();
     queryClient.clear();
   };
 }
