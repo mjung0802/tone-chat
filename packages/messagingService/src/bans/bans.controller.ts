@@ -3,11 +3,12 @@ import { ServerBan } from './serverBan.model.js';
 import { ServerMember } from '../members/serverMember.model.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
 import { isAbove, type Role } from '../shared/roles.js';
+import { logAuditEvent } from '../auditLog/auditLog.model.js';
 
 export async function banMember(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
-  const { serverId } = req.params;
-  const targetUserId = req.params['userId']!;
+  const serverId = req.params['serverId'] as string;
+  const targetUserId = req.params['userId'] as string;
   const server = req.server!;
 
   const target = await ServerMember.findOne({ serverId, userId: targetUserId });
@@ -25,19 +26,22 @@ export async function banMember(req: Request, res: Response): Promise<void> {
 
   await ServerBan.create({ serverId, userId: targetUserId, reason, bannedBy: userId });
   await target.deleteOne();
+  await logAuditEvent(serverId, 'ban', userId, targetUserId, { reason });
 
   res.status(201).json({ ban: { serverId, userId: targetUserId, reason, bannedBy: userId } });
 }
 
 export async function unbanUser(req: Request, res: Response): Promise<void> {
-  const { serverId } = req.params;
-  const targetUserId = req.params['userId']!;
+  const userId = req.headers['x-user-id'] as string;
+  const serverId = req.params['serverId'] as string;
+  const targetUserId = req.params['userId'] as string;
 
   const result = await ServerBan.findOneAndDelete({ serverId, userId: targetUserId });
   if (!result) {
     throw new AppError('BAN_NOT_FOUND', 'Ban not found', 404);
   }
 
+  await logAuditEvent(serverId, 'unban', userId, targetUserId);
   res.status(204).end();
 }
 

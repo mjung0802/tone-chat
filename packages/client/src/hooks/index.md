@@ -6,6 +6,7 @@
 - **useServers.ts** — `useServers()`, `useServer()`, `useCreateServer()`, `useUpdateServer()`, `useDeleteServer()`, `useTransferOwnership()`
 - **useChannels.ts** — `useChannels()`, `useChannel()`, `useCreateChannel()`, `useUpdateChannel()`, `useDeleteChannel()`
 - **useMembers.ts** — `useMembers()`, `useMember()`, `useJoinServer()`, `useUpdateMember()`, `useRemoveMember()`, `useKickMember()`, `useMuteMember()`, `useUnmuteMember()`, `usePromoteMember()`, `useDemoteMember()`, `useBanMember()`
+- **useAuditLog.ts** — `useAuditLog()` (useInfiniteQuery, cursor pagination, 50/page)
 - **useBans.ts** — `useBans()`, `useUnban()`
 - **useInvites.ts** — `useInvites()`, `useCreateInvite()`, `useRevokeInvite()`, `useJoinViaCode()`
 - **useAttachments.ts** — `useUpload()` (mutation), `useAttachment()` (staleTime: Infinity)

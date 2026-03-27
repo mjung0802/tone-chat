@@ -7,6 +7,7 @@ import { messagesRouter } from './messages/messages.routes.js';
 import { membersRouter } from './members/members.routes.js';
 import { invitesRouter, joinRouter } from './invites/invites.routes.js';
 import { bansRouter } from './bans/bans.routes.js';
+import { auditLogRouter } from './auditLog/auditLog.routes.js';
 import { dmsRouter } from './dms/dm.routes.js';
 
 export const app = express();
@@ -27,6 +28,7 @@ app.use('/servers/:serverId/channels/:channelId/messages', messagesRouter);
 app.use('/servers/:serverId/members', membersRouter);
 app.use('/servers/:serverId/invites', invitesRouter);
 app.use('/servers/:serverId/bans', bansRouter);
+app.use('/servers/:serverId/audit-log', auditLogRouter);
 app.use('/invites', joinRouter);
 app.use('/dms', dmsRouter);
 

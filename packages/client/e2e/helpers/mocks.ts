@@ -8,6 +8,7 @@ import {
   MOCK_CHANNEL,
   MOCK_MESSAGES,
   MOCK_MEMBERS,
+  MOCK_AUDIT_LOG_ENTRIES,
 } from './fixtures';
 
 const API = 'http://localhost:4000/api/v1';
@@ -456,6 +457,26 @@ export async function mockTonesRoutes(
           status: 201,
           contentType: 'application/json',
           body: JSON.stringify({ customTone: body }),
+        });
+      } else {
+        await route.continue();
+      }
+    },
+  );
+}
+
+export async function mockAuditLogRoutes(
+  page: Page,
+  entries = MOCK_AUDIT_LOG_ENTRIES,
+): Promise<void> {
+  await page.route(
+    /http:\/\/localhost:4000\/api\/v1\/servers\/[^/]+\/audit-log(\?.*)?$/,
+    async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ entries }),
         });
       } else {
         await route.continue();

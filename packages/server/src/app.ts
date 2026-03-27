@@ -13,6 +13,7 @@ import { membersRouter } from './members/members.routes.js';
 import { attachmentsRouter } from './attachments/attachments.routes.js';
 import { serverInvitesRouter, joinRouter } from './invites/invites.routes.js';
 import { bansRouter } from './bans/bans.routes.js';
+import { auditLogRouter } from './auditLog/auditLog.routes.js';
 import { dmsRouter } from './dms/dms.routes.js';
 
 export const app = express();
@@ -40,6 +41,7 @@ app.use('/api/v1/servers/:serverId/channels/:channelId/messages', requireAuth, m
 app.use('/api/v1/servers/:serverId/members', requireAuth, membersRouter);
 app.use('/api/v1/servers/:serverId/invites', requireAuth, serverInvitesRouter);
 app.use('/api/v1/servers/:serverId/bans', requireAuth, bansRouter);
+app.use('/api/v1/servers/:serverId/audit-log', requireAuth, auditLogRouter);
 app.use('/api/v1/invites', requireAuth, joinRouter);
 app.use('/api/v1/attachments', requireAuth, attachmentsRouter);
 app.use('/api/v1/dms', requireAuth, dmsRouter);

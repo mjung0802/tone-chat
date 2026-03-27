@@ -1,4 +1,4 @@
-import type { User, Server, Channel, Message, ServerMember, ServerBan, Invite, Attachment, CustomToneDefinition, DirectConversation, DirectMessage } from './models';
+import type { User, Server, Channel, Message, ServerMember, ServerBan, Invite, Attachment, CustomToneDefinition, DirectConversation, DirectMessage, AuditLogEntry } from './models';
 
 export interface ApiError {
   error: {
@@ -148,6 +148,8 @@ export interface InviteResponse { invite: Invite }
 export interface InvitesResponse { invites: Invite[] }
 export interface AttachmentResponse { attachment: Attachment }
 export interface BansResponse { bans: ServerBan[] }
+export interface AuditLogResponse { entries: AuditLogEntry[] }
+export interface AuditLogQuery { limit?: number | undefined; before?: string | undefined }
 export interface JoinInviteResponse { member: ServerMember; server: Server }
 
 export interface SendDmRequest {
