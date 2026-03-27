@@ -9,7 +9,7 @@ export const dmsRouter = Router();
 
 // Store io reference for DM socket events (mirrors messages.routes.ts pattern)
 let ioRef: import('socket.io').Server | null = null;
-export function setDmIO(io: import('socket.io').Server): void {
+export function setDmIO(io: import('socket.io').Server | null): void {
   ioRef = io;
 }
 

@@ -18,7 +18,7 @@ mock.module('./auditLog.model.js', {
 const { listAuditLog } = await import('./auditLog.controller.js');
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as unknown as Request;
+  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
 }
 function makeRes(): TestResponse {
   const res = { statusCode: 200, _json: undefined } as TestResponse;

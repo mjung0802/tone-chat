@@ -148,8 +148,8 @@ describe('POST /:otherUserId', () => {
 function makeMockIo() {
   const mockEmit = mock.fn<AnyFn>();
   const mockTo = mock.fn<AnyFn>(() => ({ emit: mockEmit }));
-  const mockIo = { to: mockTo } as unknown as import('socket.io').Server;
-  return { mockIo, mockTo, mockEmit };
+  const mockIo: Partial<import('socket.io').Server> = { to: mockTo as import('socket.io').Server['to'] };
+  return { mockIo: mockIo as import('socket.io').Server, mockTo, mockEmit };
 }
 
 describe('POST /:conversationId/messages', () => {
@@ -253,7 +253,7 @@ describe('POST /:conversationId/messages', () => {
       preview: 'hello world',
     });
 
-    setDmIO(null as unknown as import('socket.io').Server);
+    setDmIO(null);
   });
 
   it('does not emit socket events when message creation fails', async () => {
@@ -283,7 +283,7 @@ describe('POST /:conversationId/messages', () => {
     assert.equal(res.statusCode, 400);
     assert.equal(mockTo.mock.callCount(), 0);
 
-    setDmIO(null as unknown as import('socket.io').Server);
+    setDmIO(null);
   });
 
   it('does not emit socket events when blocked', async () => {
@@ -310,7 +310,7 @@ describe('POST /:conversationId/messages', () => {
     assert.equal(mockTo.mock.callCount(), 0);
     assert.equal(mockSendDmMessage.mock.callCount(), 0);
 
-    setDmIO(null as unknown as import('socket.io').Server);
+    setDmIO(null);
   });
 
   it('truncates notification preview to 50 characters', async () => {
@@ -344,7 +344,7 @@ describe('POST /:conversationId/messages', () => {
     assert.equal(notificationPayload.preview.length, 50);
     assert.equal(notificationPayload.preview, 'A'.repeat(50));
 
-    setDmIO(null as unknown as import('socket.io').Server);
+    setDmIO(null);
   });
 
   it('uses attachment preview when content is absent', async () => {
@@ -376,6 +376,6 @@ describe('POST /:conversationId/messages', () => {
     assert.equal(notificationPayload.senderName, 'Test User');
     assert.equal(notificationPayload.preview, '📎 Attachment');
 
-    setDmIO(null as unknown as import('socket.io').Server);
+    setDmIO(null);
   });
 });

@@ -46,7 +46,7 @@ mock.module('../auditLog/auditLog.model.js', {
 const { joinServer, listMembers, getMember, updateMember, removeMember, muteMember, unmuteMember, promoteMember, demoteMember } = await import('./members.controller.js');
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as unknown as Request;
+  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
 }
 function makeRes(): TestResponse {
   const res = { statusCode: 200, _json: undefined } as TestResponse;
