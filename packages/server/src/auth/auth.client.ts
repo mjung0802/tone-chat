@@ -13,6 +13,10 @@ export function refreshToken(body: { refreshToken: string }) {
   return serviceRequest(config.usersServiceUrl, '/auth/refresh', { method: 'POST', body });
 }
 
+export function logoutUser(body: { refreshToken: string }) {
+  return serviceRequest(config.usersServiceUrl, '/auth/logout', { method: 'POST', body });
+}
+
 export function verifyEmail(body: { code: string }, userId: string) {
   return serviceRequest(config.usersServiceUrl, '/auth/verify-email', { method: 'POST', body, userId });
 }

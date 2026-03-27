@@ -50,7 +50,7 @@ mock.module('./verification.service.js', {
   namedExports: { sendVerificationOtp: mockSendVerificationOtp },
 });
 
-const { registerUser, loginUser, refreshAccessToken } = await import('./auth.service.js');
+const { registerUser, loginUser, refreshAccessToken, logoutUser } = await import('./auth.service.js');
 
 function makeUser(overrides: Record<string, unknown> = {}) {
   return { id: 'u1', username: 'alice', email: 'alice@test.com', ...overrides };
@@ -201,8 +201,22 @@ describe('loginUser', () => {
     await assert.rejects(() => loginUser('a@test.com', 'wrong'), (error) => assertErrorCode(error, 'INVALID_CREDENTIALS'));
   });
 
+  it('throws EMAIL_NOT_VERIFIED when email is not verified', async () => {
+    const user = makeUser({ email_verified: false });
+    let callCount = 0;
+    mockSql.mock.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return [user];
+      if (callCount === 2) return [{ password_hash: 'hashed' }];
+      return [];
+    });
+    mockCompare.mock.mockImplementation(async () => true);
+
+    await assert.rejects(() => loginUser('a@test.com', 'password123'), (error) => assertErrorCode(error, 'EMAIL_NOT_VERIFIED'));
+  });
+
   it('returns tokens on success', async () => {
-    const user = makeUser();
+    const user = makeUser({ email_verified: true });
     let callCount = 0;
     mockSql.mock.mockImplementation(() => {
       callCount++;
@@ -255,5 +269,17 @@ describe('refreshAccessToken', () => {
     assert.equal(result.accessToken, 'new-access');
     assert.equal(typeof result.refreshToken, 'string');
     assert.equal(callCount, 2); // DELETE RETURNING + INSERT (no separate SELECT)
+  });
+});
+
+describe('logoutUser', () => {
+  beforeEach(() => {
+    mockSql.mock.resetCalls();
+  });
+
+  it('deletes the refresh token by hash', async () => {
+    mockSql.mock.mockImplementation(() => []);
+    await logoutUser('some-refresh-token');
+    assert.equal(mockSql.mock.callCount(), 1);
   });
 });

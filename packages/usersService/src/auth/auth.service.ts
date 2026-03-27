@@ -66,6 +66,10 @@ export async function loginUser(email: string, password: string): Promise<{ user
     throw new AppError('INVALID_CREDENTIALS', 'Invalid email or password', 401);
   }
 
+  if (!user.email_verified) {
+    throw new AppError('EMAIL_NOT_VERIFIED', 'Please verify your email before logging in', 403);
+  }
+
   const accessToken = generateAccessToken(user.id);
   const refreshToken = await createRefreshToken(user.id);
 
@@ -97,6 +101,7 @@ export async function refreshAccessToken(token: string): Promise<{ accessToken: 
 function generateAccessToken(userId: string): string {
   return jwt.sign({ sub: userId }, config.jwtSecret, {
     expiresIn: config.jwtAccessExpiresIn,
+    algorithm: 'HS256',
   } as jwt.SignOptions);
 }
 
@@ -110,6 +115,11 @@ async function createRefreshToken(userId: string): Promise<string> {
   `;
 
   return token;
+}
+
+export async function logoutUser(refreshToken: string): Promise<void> {
+  const tokenHash = hashToken(refreshToken);
+  await sql`DELETE FROM refresh_tokens WHERE token_hash = ${tokenHash}`;
 }
 
 const hashToken = hashSha256;

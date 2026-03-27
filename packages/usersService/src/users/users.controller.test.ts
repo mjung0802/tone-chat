@@ -68,6 +68,15 @@ describe('patchMe', () => {
     assert.equal(res.statusCode, 200);
     assert.deepEqual((res._json as { user: unknown }).user, user);
   });
+
+  it('strips email from response', async () => {
+    const user = { id: 'u1', display_name: 'Alice', email: 'alice@test.com' };
+    mockUpdateUser.mock.mockImplementation(async () => user);
+    const res = makeRes();
+    await patchMe(makeReq({ headers: { 'x-user-id': 'u1' }, body: { display_name: 'Alice' } }), res);
+    assert.equal(res.statusCode, 200);
+    assert.equal((res._json as { user: { email?: unknown } }).user.email, undefined);
+  });
 });
 
 describe('getUser', () => {

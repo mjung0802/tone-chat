@@ -38,6 +38,19 @@ function makeRes(): TestResponse {
 describe('toggleReaction', () => {
   beforeEach(() => mockMessageFindOne.mock.resetCalls());
 
+  it('returns 403 MUTED when user is muted', async () => {
+    const res = makeRes();
+    const req = makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { channelId: 'c1', messageId: 'm1' },
+      body: { emoji: '\u{1F44D}' },
+    });
+    Object.defineProperty(req, 'member', { value: { mutedUntil: new Date(Date.now() + 60_000) }, writable: true });
+    await toggleReaction(req, res);
+    assert.equal(res.statusCode, 403);
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MUTED');
+  });
+
   it('returns 400 when emoji is missing', async () => {
     const res = makeRes();
     await toggleReaction(makeReq({

@@ -185,7 +185,8 @@ describe('BFF Auth', () => {
   });
 
   it('logs in with credentials', async () => {
-    await registerUser('alice', 'alice@test.com', 'password123');
+    const { user } = await registerUser('alice', 'alice@test.com', 'password123');
+    await usersSql`UPDATE users SET email_verified = true WHERE id = ${user.id}`;
 
     const res = await fetch(`${bffUrl}/api/v1/auth/login`, {
       method: 'POST',

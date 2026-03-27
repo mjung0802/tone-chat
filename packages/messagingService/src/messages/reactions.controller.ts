@@ -7,6 +7,11 @@ export async function toggleReaction(req: Request, res: Response): Promise<void>
   const { channelId, messageId } = req.params;
   const { emoji } = req.body as { emoji?: string };
 
+  if (req.member?.mutedUntil && req.member.mutedUntil > new Date()) {
+    res.status(403).json({ error: { code: 'MUTED', message: 'You are muted in this server', status: 403 } });
+    return;
+  }
+
   if (!emoji || typeof emoji !== 'string') {
     res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'emoji is required', status: 400 } });
     return;

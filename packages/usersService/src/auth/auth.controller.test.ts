@@ -5,12 +5,14 @@ import { beforeEach, describe, it, mock } from 'node:test';
 const mockRegisterUser = mock.fn<AnyFn>();
 const mockLoginUser = mock.fn<AnyFn>();
 const mockRefreshAccessToken = mock.fn<AnyFn>();
+const mockLogoutUser = mock.fn<AnyFn>();
 
 mock.module('./auth.service.js', {
   namedExports: {
     registerUser: mockRegisterUser,
     loginUser: mockLoginUser,
     refreshAccessToken: mockRefreshAccessToken,
+    logoutUser: mockLogoutUser,
   },
 });
 
@@ -30,7 +32,7 @@ mock.module('../users/users.service.js', {
   namedExports: { getUserById: mockGetUserById },
 });
 
-const { register, login, refresh, verifyEmail, resendVerification } = await import('./auth.controller.js');
+const { register, login, refresh, logout, verifyEmail, resendVerification } = await import('./auth.controller.js');
 
 type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
 type TestResponse = Response & { statusCode: number; _json: unknown };
@@ -130,6 +132,26 @@ describe('refresh', () => {
     await refresh(makeReq({ body: { refreshToken: 'old-rt' } }), res);
     assert.equal(res.statusCode, 200);
     assert.equal((res._json as { accessToken: string }).accessToken, 'new-at');
+  });
+});
+
+describe('logout', () => {
+  beforeEach(() => mockLogoutUser.mock.resetCalls());
+
+  it('returns 400 when refreshToken missing', async () => {
+    const res = makeRes();
+    await logout(makeReq({ body: {} }), res);
+    assert.equal(res.statusCode, 400);
+    assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_FIELDS');
+  });
+
+  it('returns 200 on success', async () => {
+    mockLogoutUser.mock.mockImplementation(async () => {});
+    const res = makeRes();
+    await logout(makeReq({ body: { refreshToken: 'some-token' } }), res);
+    assert.equal(res.statusCode, 200);
+    assert.equal((res._json as { message: string }).message, 'Logged out');
+    assert.equal(mockLogoutUser.mock.callCount(), 1);
   });
 });
 

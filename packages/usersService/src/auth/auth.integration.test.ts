@@ -102,10 +102,11 @@ describe('POST /auth/register', () => {
 
 describe('POST /auth/login', () => {
   beforeEach(async () => {
-    await fetch(`${baseUrl}/auth/register`, {
+    const { userId, code } = await registerAndCaptureOtp(baseUrl, 'alice', 'alice@test.com');
+    await fetch(`${baseUrl}/auth/verify-email`, {
       method: 'POST',
-      headers: HEADERS,
-      body: JSON.stringify({ username: 'alice', email: 'alice@test.com', password: 'password123' }),
+      headers: { ...HEADERS, 'x-user-id': userId },
+      body: JSON.stringify({ code }),
     });
   });
 
@@ -131,6 +132,25 @@ describe('POST /auth/login', () => {
     });
 
     assert.equal(res.status, 401);
+  });
+
+  it('returns 403 for unverified email', async () => {
+    // Register without verifying
+    await fetch(`${baseUrl}/auth/register`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({ username: 'unverified', email: 'unverified@test.com', password: 'password123' }),
+    });
+
+    const res = await fetch(`${baseUrl}/auth/login`, {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify({ email: 'unverified@test.com', password: 'password123' }),
+    });
+
+    assert.equal(res.status, 403);
+    const body = await res.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'EMAIL_NOT_VERIFIED');
   });
 
   it('returns 401 for non-existent email', async () => {

@@ -20,6 +20,13 @@ mock.module('../users/users.client.js', {
     getMe: mock.fn(),
     patchMe: mock.fn(),
     getUser: mock.fn(),
+    isBlockedBidirectional: mock.fn(),
+  },
+});
+
+mock.module('../socket/index.js', {
+  namedExports: {
+    removeUserFromServerRooms: mock.fn(async () => {}),
   },
 });
 

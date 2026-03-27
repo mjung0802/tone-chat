@@ -8,9 +8,9 @@ export const serversRouter = Router();
 
 serversRouter.post('/', createServer);
 serversRouter.get('/', listServers);
-serversRouter.get('/:serverId', getServer);
-serversRouter.patch('/:serverId', updateServer);
-serversRouter.delete('/:serverId', deleteServer);
+serversRouter.get('/:serverId', requireMember, getServer);
+serversRouter.patch('/:serverId', requireMember, updateServer);
+serversRouter.delete('/:serverId', requireMember, deleteServer);
 
 serversRouter.post('/:serverId/transfer', requireMember, transferOwnership);
 

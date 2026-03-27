@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { registerUser, loginUser, refreshAccessToken } from './auth.service.js';
+import { registerUser, loginUser, refreshAccessToken, logoutUser } from './auth.service.js';
 import { sendVerificationOtp, verifyOtp } from './verification.service.js';
 import { getUserById } from '../users/users.service.js';
 
@@ -48,6 +48,18 @@ export async function refresh(req: Request, res: Response): Promise<void> {
     accessToken: result.accessToken,
     refreshToken: result.refreshToken,
   });
+}
+
+export async function logout(req: Request, res: Response): Promise<void> {
+  const { refreshToken } = req.body as { refreshToken: string };
+
+  if (!refreshToken) {
+    res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'refreshToken is required', status: 400 } });
+    return;
+  }
+
+  await logoutUser(refreshToken);
+  res.json({ message: 'Logged out' });
 }
 
 export async function verifyEmail(req: Request, res: Response): Promise<void> {

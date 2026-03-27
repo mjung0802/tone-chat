@@ -3,10 +3,30 @@ import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 import { getMember } from '../members/members.client.js';
+import { getChannel } from '../channels/channels.client.js';
 import { registerMessageHandlers } from '../messages/messages.socket.js';
 import { setIO } from '../messages/messages.routes.js';
 import { setDmIO } from '../dms/dms.routes.js';
 import { registerDmHandlers } from '../dms/dms.socket.js';
+
+let ioInstance: Server | null = null;
+
+export function getIO(): Server | null {
+  return ioInstance;
+}
+
+/** Remove a user from all Socket.IO rooms for a given server */
+export async function removeUserFromServerRooms(userId: string, serverId: string): Promise<void> {
+  if (!ioInstance) return;
+  const sockets = await ioInstance.in(`user:${userId}`).fetchSockets();
+  for (const s of sockets) {
+    for (const room of s.rooms) {
+      if (room.startsWith(`server:${serverId}:`)) {
+        void s.leave(room);
+      }
+    }
+  }
+}
 
 export function setupSocketIO(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
@@ -17,6 +37,7 @@ export function setupSocketIO(httpServer: HttpServer): Server {
     connectionStateRecovery: {},
   });
 
+  ioInstance = io;
   setIO(io);
   setDmIO(io);
 
@@ -44,11 +65,18 @@ export function setupSocketIO(httpServer: HttpServer): Server {
     // Join user-level room for targeted events (mentions)
     void socket.join(`user:${userId}`);
 
-    // Room management — verify membership before joining
+    // Room management — verify membership and channel existence before joining
     socket.on('join_channel', async (data: { serverId: string; channelId: string }) => {
-      const memberResult = await getMember(userId, data.serverId, userId);
+      const [memberResult, channelResult] = await Promise.all([
+        getMember(userId, data.serverId, userId),
+        getChannel(userId, data.serverId, data.channelId),
+      ]);
       if (memberResult.status !== 200) {
         socket.emit('error', { message: 'Not a member of this server' });
+        return;
+      }
+      if (channelResult.status !== 200) {
+        socket.emit('error', { message: 'Channel not found' });
         return;
       }
       const room = `server:${data.serverId}:channel:${data.channelId}`;

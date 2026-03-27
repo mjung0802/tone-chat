@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { AuthRequest } from '../shared/middleware/auth.js';
 import * as client from './members.client.js';
 import * as usersClient from '../users/users.client.js';
+import { removeUserFromServerRooms } from '../socket/index.js';
 
 export const membersRouter = Router({ mergeParams: true });
 
@@ -54,7 +55,12 @@ membersRouter.patch('/:userId', async (req: AuthRequest, res) => {
 });
 
 membersRouter.delete('/:userId', async (req: AuthRequest, res) => {
-  const result = await client.removeMember(req.userId!, req.params['serverId'] as string, req.params['userId'] as string);
+  const serverId = req.params['serverId'] as string;
+  const targetUserId = req.params['userId'] as string;
+  const result = await client.removeMember(req.userId!, serverId, targetUserId);
+  if (result.status === 204) {
+    await removeUserFromServerRooms(targetUserId, serverId);
+  }
   res.status(result.status).end();
 });
 
@@ -79,6 +85,11 @@ membersRouter.post('/:userId/demote', async (req: AuthRequest, res) => {
 });
 
 membersRouter.post('/:userId/ban', async (req: AuthRequest, res) => {
-  const result = await client.banMember(req.userId!, req.params['serverId'] as string, req.params['userId'] as string, req.body as Record<string, unknown>);
+  const serverId = req.params['serverId'] as string;
+  const targetUserId = req.params['userId'] as string;
+  const result = await client.banMember(req.userId!, serverId, targetUserId, req.body as Record<string, unknown>);
+  if (result.status === 200) {
+    await removeUserFromServerRooms(targetUserId, serverId);
+  }
   res.status(result.status).json(result.data);
 });
