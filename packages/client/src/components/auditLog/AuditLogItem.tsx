@@ -1,6 +1,6 @@
 import React from 'react';
 import { List, Text, useTheme } from 'react-native-paper';
-import type { AuditLogEntry, AuditAction } from '@/types/models';
+import type { AuditLogEntry, AuditAction, AuditMetadata } from '@/types/models';
 
 const ACTION_CONFIG: Record<AuditAction, { icon: string; verb: string }> = {
   mute: { icon: 'volume-off', verb: 'muted' },
@@ -45,14 +45,15 @@ function getDescription(entry: AuditLogEntry): string {
   const time = formatRelativeTime(entry.createdAt);
   const parts: string[] = [time];
 
-  if (entry.action === 'mute' && entry.metadata.duration) {
-    parts.push(`Duration: ${formatDuration(entry.metadata.duration as number)}`);
+  const meta = entry.metadata as AuditMetadata;
+  if (entry.action === 'mute' && 'duration' in meta) {
+    parts.push(`Duration: ${formatDuration(meta.duration)}`);
   }
-  if (entry.action === 'ban' && entry.metadata.reason) {
-    parts.push(`Reason: ${entry.metadata.reason as string}`);
+  if (entry.action === 'ban' && 'reason' in meta && meta.reason) {
+    parts.push(`Reason: ${meta.reason}`);
   }
-  if ((entry.action === 'promote' || entry.action === 'demote') && entry.metadata.fromRole) {
-    parts.push(`${entry.metadata.fromRole as string} → ${entry.metadata.toRole as string}`);
+  if ((entry.action === 'promote' || entry.action === 'demote') && 'fromRole' in meta) {
+    parts.push(`${meta.fromRole} → ${meta.toRole}`);
   }
 
   return parts.join(' · ');

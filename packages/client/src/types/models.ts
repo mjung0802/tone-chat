@@ -84,13 +84,19 @@ export interface ServerBan {
 
 export type AuditAction = 'mute' | 'unmute' | 'kick' | 'ban' | 'unban' | 'promote' | 'demote';
 
+export type AuditMetadata =
+  | { duration: number }
+  | { reason?: string | undefined }
+  | { fromRole: string; toRole: string }
+  | Record<string, never>;
+
 export interface AuditLogEntry {
   _id: string;
   serverId: string;
   action: AuditAction;
   actorId: string;
   targetId: string;
-  metadata: Record<string, unknown>;
+  metadata: AuditMetadata;
   createdAt: string;
   actorUsername?: string | undefined;
   actorDisplayName?: string | null | undefined;

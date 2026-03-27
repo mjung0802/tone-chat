@@ -3,6 +3,30 @@ import type { AuthRequest } from '../shared/middleware/auth.js';
 import * as client from './auditLog.client.js';
 import * as usersClient from '../users/users.client.js';
 
+type UserInfo = { id: string; username: string; display_name: string | null };
+
+const BATCH_SIZE = 100;
+
+async function fetchUserMap(userId: string, userIds: string[]): Promise<Map<string, UserInfo>> {
+  const userMap = new Map<string, UserInfo>();
+  if (userIds.length === 0) return userMap;
+
+  const batches = [];
+  for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+    batches.push(usersClient.getUsersBatch(userId, userIds.slice(i, i + BATCH_SIZE)));
+  }
+  const results = await Promise.all(batches);
+  for (const result of results) {
+    if (result.status === 200) {
+      const { users } = result.data as { users: UserInfo[] };
+      for (const u of users) {
+        userMap.set(u.id, u);
+      }
+    }
+  }
+  return userMap;
+}
+
 export const auditLogRouter = Router({ mergeParams: true });
 
 auditLogRouter.get('/', async (req: AuthRequest, res) => {
@@ -20,31 +44,18 @@ auditLogRouter.get('/', async (req: AuthRequest, res) => {
   const { entries } = result.data as { entries: Array<Record<string, unknown>> };
 
   const userIds = [...new Set(entries.flatMap(e => [e.actorId as string, e.targetId as string]))];
+  const userMap = await fetchUserMap(req.userId!, userIds);
 
-  if (userIds.length > 0) {
-    const BATCH_SIZE = 100;
-    const userMap = new Map<string, { id: string; username: string; display_name: string | null }>();
-    for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
-      const batch = userIds.slice(i, i + BATCH_SIZE);
-      const usersResult = await usersClient.getUsersBatch(req.userId!, batch);
-      if (usersResult.status === 200) {
-        const { users } = usersResult.data as { users: Array<{ id: string; username: string; display_name: string | null }> };
-        for (const u of users) {
-          userMap.set(u.id, u);
-        }
-      }
+  for (const entry of entries) {
+    const actor = userMap.get(entry.actorId as string);
+    const target = userMap.get(entry.targetId as string);
+    if (actor) {
+      entry.actorUsername = actor.username;
+      entry.actorDisplayName = actor.display_name;
     }
-    for (const entry of entries) {
-      const actor = userMap.get(entry.actorId as string);
-      const target = userMap.get(entry.targetId as string);
-      if (actor) {
-        entry.actorUsername = actor.username;
-        entry.actorDisplayName = actor.display_name;
-      }
-      if (target) {
-        entry.targetUsername = target.username;
-        entry.targetDisplayName = target.display_name;
-      }
+    if (target) {
+      entry.targetUsername = target.username;
+      entry.targetDisplayName = target.display_name;
     }
   }
 
