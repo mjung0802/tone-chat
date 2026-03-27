@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import type { Request } from 'express';
 
 function createRateLimiter(windowMs: number, limit: number, message: string) {
@@ -18,7 +18,7 @@ function createPerUserRateLimiter(windowMs: number, limit: number, message: stri
     limit,
     standardHeaders: 'draft-7',
     legacyHeaders: false,
-    keyGenerator: (req: Request) => (req as { userId?: string }).userId ?? req.ip ?? 'unknown',
+    keyGenerator: (req: Request) => (req as { userId?: string }).userId ?? ipKeyGenerator(req.ip ?? 'unknown'),
     message: { error: { code: 'TOO_MANY_REQUESTS', message, status: 429 } },
   });
 }
