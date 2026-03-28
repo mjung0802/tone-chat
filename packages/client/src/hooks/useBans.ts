@@ -17,6 +17,7 @@ export function useUnban(serverId: string) {
     mutationFn: (userId: string) => bansApi.unbanUser(serverId, userId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'bans'] });
+      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'audit-log'] });
     },
   });
 }

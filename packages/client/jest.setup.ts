@@ -38,7 +38,10 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
-// Clear any lingering timers after each test to prevent worker exit warnings
+// Use fake timers so clearAllTimers actually clears React's scheduler timers
+// (setTimeout / setInterval) that keep the worker process alive after tests finish
+jest.useFakeTimers();
+
 afterEach(() => {
   jest.clearAllTimers();
 });
