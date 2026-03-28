@@ -20,6 +20,7 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
+// Using `any` here to avoid duplicating the test cases for each hook, since they all have the same structure and we only care about the side effects (invalidating queries) in this test suite.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyModerationHook = (serverId: string) => UseMutationResult<unknown, Error, any, unknown>;
 

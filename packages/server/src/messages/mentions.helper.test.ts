@@ -10,6 +10,7 @@ mock.module('../members/members.client.js', {
 const { emitMentionEvents } = await import('./mentions.helper.js');
 
 describe('emitMentionEvents', () => {
+  // Using `any` here to use a simple mock for the Socket.IO server, since we only care about the emitted events in this test suite.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let io: any;
   let emittedEvents: Array<{ room: string; event: string; data: unknown }>;
