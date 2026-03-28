@@ -14,6 +14,7 @@ Express service on :3001 + MongoDB. Manages servers, channels, messages, members
 | `members/` | Member join/list/moderation with role hierarchy |
 | `invites/` | Invite creation + join-via-code flow |
 | `bans/` | Ban enforcement + ServerBan records |
+| `auditLog/` | Moderation audit log — tracks mute/unmute/kick/ban/unban/promote/demote |
 | `dms/` | Direct conversation + direct message models |
 | `shared/` | Role utilities + `requireMember`/`requireRole` middleware |
 

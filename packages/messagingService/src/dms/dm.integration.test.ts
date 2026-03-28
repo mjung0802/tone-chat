@@ -109,6 +109,34 @@ describe('GET /dms', () => {
     assert.equal(body.conversations.length, 2);
   });
 
+  it('includes lastMessage preview when conversation has messages', async () => {
+    // Create conversation
+    const createRes = await fetch(`${baseUrl}/dms/${USER_B}`, {
+      method: 'POST',
+      headers: headersFor(USER_A),
+      body: JSON.stringify({}),
+    });
+    const { conversation } = await createRes.json() as { conversation: { _id: string } };
+
+    // Send a message
+    await fetch(`${baseUrl}/dms/${conversation._id}/messages`, {
+      method: 'POST',
+      headers: headersFor(USER_A),
+      body: JSON.stringify({ content: 'hello from integration test' }),
+    });
+
+    // List conversations — lastMessage should be populated
+    const res = await fetch(`${baseUrl}/dms`, {
+      headers: headersFor(USER_A),
+    });
+
+    assert.equal(res.status, 200);
+    const body = await res.json() as { conversations: Array<{ _id: string; lastMessage: { content: string } | null }> };
+    assert.equal(body.conversations.length, 1);
+    assert.ok(body.conversations[0]?.lastMessage, 'lastMessage should not be null');
+    assert.equal(body.conversations[0]?.lastMessage?.content, 'hello from integration test');
+  });
+
   it('returns empty list when user has no conversations', async () => {
     const res = await fetch(`${baseUrl}/dms`, {
       headers: headersFor(USER_A),

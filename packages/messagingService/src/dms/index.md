@@ -8,4 +8,5 @@ Direct Messaging — 1-to-1 conversations and messages.
 - **dm.controller.ts** — `getOrCreateConversation`, `getConversation`, `listConversations`, `listDmMessages`, `sendDmMessage`, `editDmMessage`, `toggleDmReaction` — full CRUD for DM conversations and messages; `listConversations` uses a single aggregation query for last-message previews
 - **dm.routes.ts** — `dmsRouter` — mounts all DM routes; conversation-scoped routes use `requireConversationParticipant`
 - **dm.controller.test.ts** — unit tests for all controller functions
+- **dm.integration.test.ts** — integration tests covering all DM routes end-to-end against a real MongoDB instance
 - **middleware.test.ts** — unit tests for `requireConversationParticipant`

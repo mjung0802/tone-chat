@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
 import type { IDirectConversation } from './conversation.model.js';
@@ -97,15 +98,16 @@ function makeReq(opts: {
   return req;
 }
 
-function makeConversation(participantIds: [string, string], overrides?: Partial<{ _id: string; lastMessageAt: Date | null }>): IDirectConversation {
+function makeConversation(participantIds: [string, string], overrides?: Partial<{ _id: Types.ObjectId; lastMessageAt: Date | null }>): IDirectConversation {
   const base = {
-    _id: overrides?._id ?? 'conv1',
+    _id: overrides?._id ?? new Types.ObjectId(),
     participantIds,
     lastMessageAt: overrides?.lastMessageAt ?? null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
-  return { ...base, toObject: () => base } as unknown as IDirectConversation;
+  const conv: Partial<IDirectConversation> = { ...base, toObject: () => base };
+  return conv as IDirectConversation;
 }
 
 // ─── getOrCreateConversation ─────────────────────────────────────────────────
@@ -166,18 +168,19 @@ describe('listConversations', () => {
   });
 
   it('returns conversations with lastMessage when messages exist', async () => {
-    const conv = makeConversation(['u1', 'u2'], { lastMessageAt: new Date() });
+    const convId = new Types.ObjectId();
+    const conv = makeConversation(['u1', 'u2'], { _id: convId, lastMessageAt: new Date() });
     const sortedResult = { sort: mock.fn<AnyFn>(() => Promise.resolve([conv])) };
     mockConvFind.mock.mockImplementation(() => sortedResult);
     mockMsgAggregate.mock.mockImplementation(async () => [
-      { _id: 'conv1', lastMessage: { _id: 'msg1', content: 'hello', conversationId: 'conv1' } },
+      { _id: String(convId), lastMessage: { _id: 'msg1', content: 'hello', conversationId: String(convId) } },
     ]);
     const req = makeReq({ userId: 'u1' });
     const res = makeRes();
     await listConversations(req, res);
     const result = (res._json as { conversations: { lastMessage: unknown }[] }).conversations;
     assert.equal(result.length, 1);
-    assert.deepEqual(result[0]?.lastMessage, { _id: 'msg1', content: 'hello', conversationId: 'conv1' });
+    assert.deepEqual(result[0]?.lastMessage, { _id: 'msg1', content: 'hello', conversationId: String(convId) });
   });
 
   it('returns lastMessage as null when conversation has no messages', async () => {

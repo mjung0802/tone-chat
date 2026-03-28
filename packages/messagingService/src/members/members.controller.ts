@@ -4,6 +4,7 @@ import { Server } from '../servers/server.model.js';
 import { ServerBan } from '../bans/serverBan.model.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
 import { getRoleLevel, isAbove, type Role } from '../shared/roles.js';
+import { logAuditEvent } from '../auditLog/auditLog.model.js';
 
 export async function joinServer(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
@@ -47,7 +48,7 @@ export async function getMember(req: Request, res: Response): Promise<void> {
 
 export async function updateMember(req: Request, res: Response): Promise<void> {
   const { serverId } = req.params;
-  const targetUserId = req.params['userId']!;
+  const targetUserId = req.params['userId'] as string;
 
   const member = await ServerMember.findOne({ serverId, userId: targetUserId });
   if (!member) {
@@ -63,8 +64,8 @@ export async function updateMember(req: Request, res: Response): Promise<void> {
 
 export async function removeMember(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
-  const { serverId } = req.params;
-  const targetUserId = req.params['userId']!;
+  const serverId = req.params['serverId'] as string;
+  const targetUserId = req.params['userId'] as string;
 
   const server = await Server.findById(serverId);
   if (!server) {
@@ -107,13 +108,14 @@ export async function removeMember(req: Request, res: Response): Promise<void> {
   }
 
   await target.deleteOne();
+  await logAuditEvent(serverId, 'kick', userId, targetUserId);
   res.status(204).end();
 }
 
 export async function muteMember(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
-  const { serverId } = req.params;
-  const targetUserId = req.params['userId']!;
+  const serverId = req.params['serverId'] as string;
+  const targetUserId = req.params['userId'] as string;
   const server = req.server!;
 
   const { duration } = req.body as { duration?: number };
@@ -135,13 +137,14 @@ export async function muteMember(req: Request, res: Response): Promise<void> {
 
   target.mutedUntil = new Date(Date.now() + duration * 60 * 1000);
   await target.save();
+  await logAuditEvent(serverId, 'mute', userId, targetUserId, { duration });
   res.json({ member: target });
 }
 
 export async function unmuteMember(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
-  const { serverId } = req.params;
-  const targetUserId = req.params['userId']!;
+  const serverId = req.params['serverId'] as string;
+  const targetUserId = req.params['userId'] as string;
   const server = req.server!;
 
   const target = await ServerMember.findOne({ serverId, userId: targetUserId });
@@ -157,13 +160,14 @@ export async function unmuteMember(req: Request, res: Response): Promise<void> {
 
   target.mutedUntil = null;
   await target.save();
+  await logAuditEvent(serverId, 'unmute', userId, targetUserId);
   res.json({ member: target });
 }
 
 export async function promoteMember(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
-  const { serverId } = req.params;
-  const targetUserId = req.params['userId']!;
+  const serverId = req.params['serverId'] as string;
+  const targetUserId = req.params['userId'] as string;
   const server = req.server!;
 
   const target = await ServerMember.findOne({ serverId, userId: targetUserId });
@@ -172,6 +176,7 @@ export async function promoteMember(req: Request, res: Response): Promise<void> 
   }
 
   const actorIsOwner = server.ownerId === userId;
+  const fromRole = target.role;
 
   if (target.role === 'member') {
     // member → mod: requires admin+
@@ -190,13 +195,14 @@ export async function promoteMember(req: Request, res: Response): Promise<void> 
   }
 
   await target.save();
+  await logAuditEvent(serverId, 'promote', userId, targetUserId, { fromRole, toRole: target.role });
   res.json({ member: target });
 }
 
 export async function demoteMember(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
-  const { serverId } = req.params;
-  const targetUserId = req.params['userId']!;
+  const serverId = req.params['serverId'] as string;
+  const targetUserId = req.params['userId'] as string;
   const server = req.server!;
 
   const target = await ServerMember.findOne({ serverId, userId: targetUserId });
@@ -210,6 +216,8 @@ export async function demoteMember(req: Request, res: Response): Promise<void> {
   if (targetIsOwner) {
     throw new AppError('CANNOT_DEMOTE', 'Cannot demote the server owner', 400);
   }
+
+  const fromRole = target.role;
 
   if (target.role === 'admin') {
     // admin → mod: requires owner
@@ -228,5 +236,6 @@ export async function demoteMember(req: Request, res: Response): Promise<void> {
   }
 
   await target.save();
+  await logAuditEvent(serverId, 'demote', userId, targetUserId, { fromRole, toRole: target.role });
   res.json({ member: target });
 }

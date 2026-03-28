@@ -189,6 +189,48 @@ export const MOCK_CHANNEL_TWO = {
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
 
+export const MOCK_AUDIT_LOG_ENTRIES = [
+  {
+    _id: 'audit-001',
+    serverId: 'server-001',
+    action: 'ban' as const,
+    actorId: 'user-001',
+    targetId: 'user-002',
+    metadata: { reason: 'Spamming channels' },
+    createdAt: '2024-01-01T00:05:00.000Z',
+    actorUsername: 'testuser',
+    actorDisplayName: 'Test User',
+    targetUsername: 'janedoe',
+    targetDisplayName: 'Jane Doe',
+  },
+  {
+    _id: 'audit-002',
+    serverId: 'server-001',
+    action: 'mute' as const,
+    actorId: 'user-001',
+    targetId: 'user-002',
+    metadata: { duration: 60 },
+    createdAt: '2024-01-01T00:04:00.000Z',
+    actorUsername: 'testuser',
+    actorDisplayName: 'Test User',
+    targetUsername: 'janedoe',
+    targetDisplayName: 'Jane Doe',
+  },
+  {
+    _id: 'audit-003',
+    serverId: 'server-001',
+    action: 'promote' as const,
+    actorId: 'user-001',
+    targetId: 'user-002',
+    metadata: { fromRole: 'member', toRole: 'mod' },
+    createdAt: '2024-01-01T00:03:00.000Z',
+    actorUsername: 'testuser',
+    actorDisplayName: 'Test User',
+    targetUsername: 'janedoe',
+    targetDisplayName: 'Jane Doe',
+  },
+];
+
 export const MOCK_MESSAGE_WITH_MENTION = {
   _id: 'msg-mention-001',
   channelId: 'channel-001',

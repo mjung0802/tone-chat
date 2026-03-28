@@ -54,70 +54,47 @@ export function useRemoveMember(serverId: string, userId: string) {
   });
 }
 
-export function useKickMember(serverId: string) {
+function useModerationMutation<TVariables>(
+  serverId: string,
+  mutationFn: (variables: TVariables) => Promise<unknown>,
+) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (userId: string) => membersApi.removeMember(serverId, userId),
+    mutationFn,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
+      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'audit-log'] });
     },
   });
+}
+
+export function useKickMember(serverId: string) {
+  return useModerationMutation<string>(serverId, (userId) => membersApi.removeMember(serverId, userId));
 }
 
 export function useMuteMember(serverId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ userId, data }: { userId: string; data: MuteMemberRequest }) =>
-      membersApi.muteMember(serverId, userId, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
-    },
-  });
+  return useModerationMutation<{ userId: string; data: MuteMemberRequest }>(
+    serverId,
+    ({ userId, data }) => membersApi.muteMember(serverId, userId, data),
+  );
 }
 
 export function useUnmuteMember(serverId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (userId: string) => membersApi.unmuteMember(serverId, userId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
-    },
-  });
+  return useModerationMutation<string>(serverId, (userId) => membersApi.unmuteMember(serverId, userId));
 }
 
 export function usePromoteMember(serverId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (userId: string) => membersApi.promoteMember(serverId, userId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
-    },
-  });
+  return useModerationMutation<string>(serverId, (userId) => membersApi.promoteMember(serverId, userId));
 }
 
 export function useDemoteMember(serverId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (userId: string) => membersApi.demoteMember(serverId, userId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
-    },
-  });
+  return useModerationMutation<string>(serverId, (userId) => membersApi.demoteMember(serverId, userId));
 }
 
 export function useBanMember(serverId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ userId, data }: { userId: string; data: BanMemberRequest }) =>
-      membersApi.banMember(serverId, userId, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
-    },
-  });
+  return useModerationMutation<{ userId: string; data: BanMemberRequest }>(
+    serverId,
+    ({ userId, data }) => membersApi.banMember(serverId, userId, data),
+  );
 }

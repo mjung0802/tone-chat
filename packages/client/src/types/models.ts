@@ -82,6 +82,28 @@ export interface ServerBan {
   display_name?: string | null | undefined;
 }
 
+export type AuditAction = 'mute' | 'unmute' | 'kick' | 'ban' | 'unban' | 'promote' | 'demote';
+
+export type AuditMetadata =
+  | { duration: number }
+  | { reason?: string | undefined }
+  | { fromRole: string; toRole: string }
+  | Record<string, never>;
+
+export interface AuditLogEntry {
+  _id: string;
+  serverId: string;
+  action: AuditAction;
+  actorId: string;
+  targetId: string;
+  metadata: AuditMetadata;
+  createdAt: string;
+  actorUsername?: string | undefined;
+  actorDisplayName?: string | null | undefined;
+  targetUsername?: string | undefined;
+  targetDisplayName?: string | null | undefined;
+}
+
 export interface Invite {
   _id: string;
   serverId: string;

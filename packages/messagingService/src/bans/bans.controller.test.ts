@@ -33,10 +33,15 @@ mock.module('../members/serverMember.model.js', {
   namedExports: { ServerMember: { findOne: mockMemberFindOne } },
 });
 
+const mockLogAuditEvent = mock.fn<AnyFn>(async () => ({}));
+mock.module('../auditLog/auditLog.model.js', {
+  namedExports: { logAuditEvent: mockLogAuditEvent },
+});
+
 const { banMember, unbanUser, listBans } = await import('./bans.controller.js');
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as unknown as Request;
+  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
 }
 function makeRes(): TestResponse {
   const res = { statusCode: 200, _json: undefined } as TestResponse;
@@ -50,6 +55,7 @@ describe('banMember', () => {
   beforeEach(() => {
     mockMemberFindOne.mock.resetCalls();
     mockBanCreate.mock.resetCalls();
+    mockLogAuditEvent.mock.resetCalls();
   });
 
   it('bans a lower-role member', async () => {
@@ -69,6 +75,9 @@ describe('banMember', () => {
     assert.equal(res.statusCode, 201);
     assert.equal(mockBanCreate.mock.callCount(), 1);
     assert.equal(target.deleteOne.mock.callCount(), 1);
+    assert.equal(mockLogAuditEvent.mock.callCount(), 1);
+    assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments.slice(0, 4), ['s1', 'ban', 'u1', 'u2']);
+    assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments[4], { reason: 'spam' });
   });
 
   it('rejects banning equal-role member', async () => {
@@ -88,19 +97,21 @@ describe('banMember', () => {
 });
 
 describe('unbanUser', () => {
-  beforeEach(() => mockBanFindOneAndDelete.mock.resetCalls());
+  beforeEach(() => { mockBanFindOneAndDelete.mock.resetCalls(); mockLogAuditEvent.mock.resetCalls(); });
 
   it('deletes ban and returns 204', async () => {
     mockBanFindOneAndDelete.mock.mockImplementation(async () => ({ userId: 'u2' }));
     const res = makeRes();
-    await unbanUser(makeReq({ params: { serverId: 's1', userId: 'u2' } }), res);
+    await unbanUser(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1', userId: 'u2' } }), res);
     assert.equal(res.statusCode, 204);
+    assert.equal(mockLogAuditEvent.mock.callCount(), 1);
+    assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments.slice(0, 4), ['s1', 'unban', 'u1', 'u2']);
   });
 
   it('throws BAN_NOT_FOUND when no ban exists', async () => {
     mockBanFindOneAndDelete.mock.mockImplementation(async () => null);
     await assert.rejects(
-      () => unbanUser(makeReq({ params: { serverId: 's1', userId: 'u2' } }), makeRes()),
+      () => unbanUser(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1', userId: 'u2' } }), makeRes()),
       (error) => assertErrorCode(error, 'BAN_NOT_FOUND'),
     );
   });

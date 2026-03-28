@@ -9,6 +9,7 @@ Express 5 + Socket.IO 4 server on :4000. Verifies JWTs locally, proxies all clie
 | `config/` | Environment config + production validation |
 | `attachments/` | Proxy routes + HTTP client → attachmentsService |
 | `auth/` | Auth proxy routes + rate limiting → usersService |
+| `auditLog/` | Audit log proxy → messagingService; enriches entries with usernames |
 | `bans/` | Ban management proxy → messagingService |
 | `channels/` | Channel CRUD proxy → messagingService |
 | `dms/` | DM HTTP route proxy + Socket.IO handlers → messagingService |

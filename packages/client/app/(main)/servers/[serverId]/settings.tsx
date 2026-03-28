@@ -353,6 +353,18 @@ export default function ServerSettingsScreen() {
         </>
       ) : null}
 
+      {/* Audit Log */}
+      <Divider style={styles.divider} />
+      <List.Item
+        title="Audit Log"
+        description="View moderation action history"
+        left={(props) => <List.Icon {...props} icon="clipboard-text-clock" />}
+        right={(props) => <List.Icon {...props} icon="chevron-right" />}
+        onPress={() => router.push(`/(main)/servers/${sid}/audit-log`)}
+        accessibilityRole="button"
+        accessibilityLabel="View audit log"
+      />
+
       {/* Danger Zone */}
       {isOwner ? (
         <>

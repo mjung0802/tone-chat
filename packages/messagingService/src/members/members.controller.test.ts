@@ -38,10 +38,15 @@ mock.module('../bans/serverBan.model.js', {
   namedExports: { ServerBan: { findOne: mockBanFindOne } },
 });
 
+const mockLogAuditEvent = mock.fn<AnyFn>(async () => ({}));
+mock.module('../auditLog/auditLog.model.js', {
+  namedExports: { logAuditEvent: mockLogAuditEvent },
+});
+
 const { joinServer, listMembers, getMember, updateMember, removeMember, muteMember, unmuteMember, promoteMember, demoteMember } = await import('./members.controller.js');
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as unknown as Request;
+  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
 }
 function makeRes(): TestResponse {
   const res = { statusCode: 200, _json: undefined } as TestResponse;
@@ -178,6 +183,7 @@ describe('removeMember', () => {
     mockServerFindById.mock.resetCalls();
     mockMemberFindOne.mock.resetCalls();
     mockMemberFindOneAndDelete.mock.resetCalls();
+    mockLogAuditEvent.mock.resetCalls();
   });
 
   it('allows self-leave (non-owner)', async () => {
@@ -217,6 +223,20 @@ describe('removeMember', () => {
       params: { serverId: 's1', userId: 'u2' },
     }), res);
     assert.equal(res.statusCode, 204);
+    assert.equal(mockLogAuditEvent.mock.callCount(), 1);
+    assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments.slice(0, 4), ['s1', 'kick', 'u1', 'u2']);
+  });
+
+  it('self-leave does not log audit event', async () => {
+    mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'other-user' }));
+    mockMemberFindOneAndDelete.mock.mockImplementation(async () => ({ userId: 'u1' }));
+    const res = makeRes();
+    await removeMember(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1', userId: 'u1' },
+    }), res);
+    assert.equal(res.statusCode, 204);
+    assert.equal(mockLogAuditEvent.mock.callCount(), 0);
   });
 
   it('mod cannot kick admin', async () => {
@@ -252,7 +272,7 @@ describe('removeMember', () => {
 });
 
 describe('muteMember', () => {
-  beforeEach(() => mockMemberFindOne.mock.resetCalls());
+  beforeEach(() => { mockMemberFindOne.mock.resetCalls(); mockLogAuditEvent.mock.resetCalls(); });
 
   it('rejects invalid duration', async () => {
     await assert.rejects(
@@ -283,6 +303,9 @@ describe('muteMember', () => {
     assert.equal(res.statusCode, 200);
     assert.ok(target.mutedUntil);
     assert.equal(target.save.mock.callCount(), 1);
+    assert.equal(mockLogAuditEvent.mock.callCount(), 1);
+    assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments.slice(0, 4), ['s1', 'mute', 'u1', 'u2']);
+    assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments[4], { duration: 60 });
   });
 
   it('rejects muting a higher-role member', async () => {
@@ -303,7 +326,7 @@ describe('muteMember', () => {
 });
 
 describe('unmuteMember', () => {
-  beforeEach(() => mockMemberFindOne.mock.resetCalls());
+  beforeEach(() => { mockMemberFindOne.mock.resetCalls(); mockLogAuditEvent.mock.resetCalls(); });
 
   it('unmutes target', async () => {
     const target = { role: 'member', userId: 'u2', mutedUntil: new Date(), save: mock.fn(async () => {}) };
@@ -319,11 +342,13 @@ describe('unmuteMember', () => {
 
     assert.equal(res.statusCode, 200);
     assert.equal(target.mutedUntil, null);
+    assert.equal(mockLogAuditEvent.mock.callCount(), 1);
+    assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments.slice(0, 4), ['s1', 'unmute', 'u1', 'u2']);
   });
 });
 
 describe('promoteMember', () => {
-  beforeEach(() => mockMemberFindOne.mock.resetCalls());
+  beforeEach(() => { mockMemberFindOne.mock.resetCalls(); mockLogAuditEvent.mock.resetCalls(); });
 
   it('admin promotes member to mod', async () => {
     const target = { role: 'member', userId: 'u2', save: mock.fn(async () => {}) };
@@ -339,6 +364,9 @@ describe('promoteMember', () => {
 
     assert.equal(target.role, 'mod');
     assert.equal(res.statusCode, 200);
+    assert.equal(mockLogAuditEvent.mock.callCount(), 1);
+    assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments.slice(0, 4), ['s1', 'promote', 'u1', 'u2']);
+    assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments[4], { fromRole: 'member', toRole: 'mod' });
   });
 
   it('owner promotes mod to admin', async () => {
@@ -355,6 +383,8 @@ describe('promoteMember', () => {
 
     assert.equal(target.role, 'admin');
     assert.equal(res.statusCode, 200);
+    assert.equal(mockLogAuditEvent.mock.callCount(), 1);
+    assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments[4], { fromRole: 'mod', toRole: 'admin' });
   });
 
   it('non-owner admin cannot promote mod to admin', async () => {
@@ -389,7 +419,7 @@ describe('promoteMember', () => {
 });
 
 describe('demoteMember', () => {
-  beforeEach(() => mockMemberFindOne.mock.resetCalls());
+  beforeEach(() => { mockMemberFindOne.mock.resetCalls(); mockLogAuditEvent.mock.resetCalls(); });
 
   it('owner demotes admin to mod', async () => {
     const target = { role: 'admin', userId: 'u2', save: mock.fn(async () => {}) };
@@ -405,6 +435,9 @@ describe('demoteMember', () => {
 
     assert.equal(target.role, 'mod');
     assert.equal(res.statusCode, 200);
+    assert.equal(mockLogAuditEvent.mock.callCount(), 1);
+    assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments.slice(0, 4), ['s1', 'demote', 'owner', 'u2']);
+    assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments[4], { fromRole: 'admin', toRole: 'mod' });
   });
 
   it('admin demotes mod to member', async () => {
@@ -421,6 +454,8 @@ describe('demoteMember', () => {
 
     assert.equal(target.role, 'member');
     assert.equal(res.statusCode, 200);
+    assert.equal(mockLogAuditEvent.mock.callCount(), 1);
+    assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments[4], { fromRole: 'mod', toRole: 'member' });
   });
 
   it('cannot demote owner', async () => {

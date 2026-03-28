@@ -8,6 +8,7 @@
 - **channels.api.ts** — `getChannels()`, `getChannel()`, `createChannel()`, `updateChannel()`, `deleteChannel()`
 - **members.api.ts** — `getMembers()`, `getMember()`, `joinServer()`, `updateMember()`, `removeMember()`, `muteMember()`, `unmuteMember()`, `promoteMember()`, `demoteMember()`, `banMember()`
 - **attachments.api.ts** — `uploadAttachment()` (filename in query param), `getAttachment()`
+- **auditLog.api.ts** — `getAuditLog()` (cursor pagination)
 - **bans.api.ts** — `getBans()`, `unbanUser()`
 - **invites.api.ts** — `getInvites()`, `createInvite()`, `revokeInvite()`, `joinViaCode()`
 - **users.api.ts** — `getMe()`, `updateMe()`, `getUser()`

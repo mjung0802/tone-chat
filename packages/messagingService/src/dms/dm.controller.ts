@@ -41,13 +41,13 @@ export async function listConversations(req: Request, res: Response): Promise<vo
 
   const lastMessages = conversationIds.length > 0
     ? await DirectMessage.aggregate<{ _id: string; lastMessage: Record<string, unknown> }>([
-      { $match: { conversationId: { $in: conversationIds.map(String) } } },
+      { $match: { conversationId: { $in: conversationIds } } },
       { $sort: { createdAt: -1 } },
       { $group: { _id: '$conversationId', lastMessage: { $first: '$$ROOT' } } },
     ])
     : [];
 
-  const lastMessageMap = new Map(lastMessages.map((doc) => [doc._id, doc.lastMessage]));
+  const lastMessageMap = new Map(lastMessages.map((doc) => [String(doc._id), doc.lastMessage]));
 
   const conversationsWithPreview = conversations.map((conv) => {
     const obj = conv.toObject();

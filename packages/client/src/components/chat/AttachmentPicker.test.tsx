@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent } from '@testing-library/react-native';
+import { fireEvent, waitFor } from '@testing-library/react-native';
 import { AttachmentPicker } from './AttachmentPicker';
 import { renderWithProviders } from '../../test-utils/renderWithProviders';
 
@@ -38,10 +38,9 @@ describe('AttachmentPicker', () => {
 
     fireEvent.press(getByLabelText('Attach file'));
 
-    // Wait for the async handler
-    await new Promise((r) => setTimeout(r, 0));
-
-    expect(onPick).toHaveBeenCalledWith(assets);
+    await waitFor(() => {
+      expect(onPick).toHaveBeenCalledWith(assets);
+    });
   });
 
   it('does not call onPick when user cancels', async () => {
@@ -57,7 +56,10 @@ describe('AttachmentPicker', () => {
 
     fireEvent.press(getByLabelText('Attach file'));
 
-    await new Promise((r) => setTimeout(r, 0));
+    // Let the async handler resolve — waitFor handles fake timers automatically
+    await waitFor(() => {
+      expect(DocumentPicker.getDocumentAsync).toHaveBeenCalled();
+    });
 
     expect(onPick).not.toHaveBeenCalled();
   });
