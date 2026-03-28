@@ -10,7 +10,7 @@ Express service on :3002 + PostgreSQL. Manages global user accounts, bcrypt auth
 | `db/` | Migration runner + SQL migration files |
 | `auth/` | Registration, login, refresh, email OTP verification |
 | `email/` | Nodemailer SMTP wrapper; dev console fallback |
-| `users/` | User profile read/update; batch lookup; email stripped on all responses |
+| `users/` | User profile read/update; batch lookup; email stripped on all responses; friend management (send/accept/remove requests, list friends, friendship status) |
 | `shared/` | `User`/`RefreshToken` types + `hashSha256` + middleware |
 
 ## Key Files

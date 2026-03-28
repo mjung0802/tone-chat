@@ -14,4 +14,5 @@
 - **users.api.ts** — `getMe()`, `updateMe()`, `getUser()`
 - **tones.api.ts** — `getCustomTones()`, `addCustomTone()`, `removeCustomTone()`
 - **dms.api.ts** — `getOrCreateConversation()`, `listConversations()`, `getConversation()`, `getDmMessages()` (cursor pagination), `sendDmMessage()`, `updateDmMessage()`, `reactToDmMessage()`; `getBlockedIds()`, `blockUser()`, `unblockUser()`
+- **friends.api.ts** — `getFriends()`, `getPendingRequests()`, `getFriendshipStatus(userId)`, `sendFriendRequest(userId)`, `acceptFriendRequest(userId)`, `removeFriend(userId)`
 - **client.test.ts** — unit tests for fetch client

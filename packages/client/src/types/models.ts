@@ -128,6 +128,25 @@ export interface Attachment {
   created_at: string;
 }
 
+export interface FriendEntry {
+  userId: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  since: string;
+}
+
+export interface FriendRequest {
+  userId: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  direction: 'incoming' | 'outgoing';
+  created_at: string;
+}
+
+export type FriendshipStatus = 'none' | 'pending_outgoing' | 'pending_incoming' | 'friends';
+
 export interface DirectConversation {
   _id: string;
   participantIds: [string, string];

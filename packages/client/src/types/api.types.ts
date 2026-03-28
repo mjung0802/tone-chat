@@ -1,4 +1,4 @@
-import type { User, Server, Channel, Message, ServerMember, ServerBan, Invite, Attachment, CustomToneDefinition, DirectConversation, DirectMessage, AuditLogEntry } from './models';
+import type { User, Server, Channel, Message, ServerMember, ServerBan, Invite, Attachment, CustomToneDefinition, DirectConversation, DirectMessage, AuditLogEntry, FriendEntry, FriendRequest, FriendshipStatus } from './models';
 
 export interface ApiError {
   error: {
@@ -168,3 +168,7 @@ export interface DirectConversationsResponse { conversations: DirectConversation
 export interface DirectMessageResponse { message: DirectMessage }
 export interface DirectMessagesResponse { messages: DirectMessage[] }
 export interface BlockedIdsResponse { blockedIds: string[] }
+export interface FriendsResponse { friends: FriendEntry[] }
+export interface PendingRequestsResponse { requests: FriendRequest[] }
+export interface FriendshipStatusResponse { status: FriendshipStatus }
+export interface FriendRequestResponse { status: 'pending' | 'accepted' }

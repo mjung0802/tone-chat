@@ -465,6 +465,63 @@ export async function mockTonesRoutes(
   );
 }
 
+export async function mockFriendsRoutes(
+  page: Page,
+  options: {
+    friends?: { userId: string; username: string; display_name: string | null; avatar_url: string | null; since: string }[];
+    pending?: { userId: string; username: string; display_name: string | null; avatar_url: string | null; direction: string; created_at: string }[];
+    status?: string;
+  } = {},
+): Promise<void> {
+  const { friends = [], pending = [], status = 'none' } = options;
+
+  await page.route(`${API}/users/me/friends/pending`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ requests: pending }),
+    });
+  });
+
+  await page.route(/\/api\/v1\/users\/me\/friends\/[^/]+\/status$/, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ status }),
+    });
+  });
+
+  await page.route(/\/api\/v1\/users\/me\/friends\/[^/]+\/accept$/, async (route) => {
+    await route.fulfill({ status: 204, body: '' });
+  });
+
+  await page.route(/\/api\/v1\/users\/me\/friends\/[^/]+$/, async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({ status: 'pending' }),
+      });
+    } else if (route.request().method() === 'DELETE') {
+      await route.fulfill({ status: 204, body: '' });
+    } else {
+      await route.continue();
+    }
+  });
+
+  await page.route(`${API}/users/me/friends`, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ friends }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+}
+
 export async function mockAuditLogRoutes(
   page: Page,
   entries = MOCK_AUDIT_LOG_ENTRIES,

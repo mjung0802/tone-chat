@@ -5,6 +5,7 @@ import { THEME_IDS } from '@/theme/presets';
 
 type ThemePreference = 'light' | 'dark' | 'system';
 type ToneDisplay = 'full' | 'reduced';
+type FriendsTab = 'friends' | 'pending';
 
 function createPersister<T extends string>(
   key: string,
@@ -62,6 +63,8 @@ interface UiState {
   colorTheme: ThemeId;
   isSidebarOpen: boolean;
   profileModal: ProfileModalState;
+  isFriendsViewOpen: boolean;
+  friendsTab: FriendsTab;
   setThemePreference: (pref: ThemePreference) => void;
   setToneDisplay: (pref: ToneDisplay) => void;
   setColorTheme: (id: ThemeId) => void;
@@ -69,6 +72,9 @@ interface UiState {
   setSidebarOpen: (open: boolean) => void;
   openProfileModal: (userId: string, serverId?: string | undefined) => void;
   closeProfileModal: () => void;
+  openFriendsView: () => void;
+  closeFriendsView: () => void;
+  setFriendsTab: (tab: FriendsTab) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -77,6 +83,8 @@ export const useUiStore = create<UiState>((set) => ({
   colorTheme: 'default',
   isSidebarOpen: true,
   profileModal: { visible: false, userId: null, serverId: null },
+  isFriendsViewOpen: false,
+  friendsTab: 'friends',
 
   setThemePreference: (pref: ThemePreference) => {
     set({ themePreference: pref });
@@ -107,6 +115,18 @@ export const useUiStore = create<UiState>((set) => ({
 
   closeProfileModal: () => {
     set({ profileModal: { visible: false, userId: null, serverId: null } });
+  },
+
+  openFriendsView: () => {
+    set({ isFriendsViewOpen: true });
+  },
+
+  closeFriendsView: () => {
+    set({ isFriendsViewOpen: false });
+  },
+
+  setFriendsTab: (tab: FriendsTab) => {
+    set({ friendsTab: tab });
   },
 }));
 

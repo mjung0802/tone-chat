@@ -9,6 +9,7 @@ import { useUser, useMe } from '@/hooks/useUser';
 import { useMembers, useMuteMember, useUnmuteMember, useKickMember, useBanMember } from '@/hooks/useMembers';
 import { useServer } from '@/hooks/useServers';
 import { useGetOrCreateConversation, useBlockedIds, useBlockUser, useUnblockUser } from '@/hooks/useDms';
+import { useFriendshipStatus, useSendFriendRequest, useAcceptFriendRequest, useDeclineFriendRequest, useRemoveFriend } from '@/hooks/useFriends';
 import { getBadgeLabel, getAvailableActions, isMemberMuted, type Role } from '@/utils/roles';
 
 export function UserProfileModal() {
@@ -33,6 +34,13 @@ export function UserProfileModal() {
   const blockUser = useBlockUser();
   const unblockUser = useUnblockUser();
   const getOrCreateConversation = useGetOrCreateConversation();
+
+  const isOtherUser = !!userId && userId !== me?.id;
+  const { data: friendshipStatus } = useFriendshipStatus(isOtherUser ? userId : null);
+  const sendFriendRequest = useSendFriendRequest();
+  const acceptFriendRequest = useAcceptFriendRequest();
+  const declineFriendRequest = useDeclineFriendRequest();
+  const removeFriend = useRemoveFriend();
 
   if (!visible || !userId) return null;
 
@@ -219,6 +227,55 @@ export function UserProfileModal() {
           </Dialog.Content>
 
           <Dialog.Actions>
+            {/* Friend action buttons */}
+            {isOtherUser && friendshipStatus === 'none' && (
+              <Button
+                onPress={() => sendFriendRequest.mutate(userId)}
+                loading={sendFriendRequest.isPending ?? false}
+                icon="account-plus"
+                accessibilityLabel="Add friend"
+              >
+                Add Friend
+              </Button>
+            )}
+            {isOtherUser && friendshipStatus === 'pending_outgoing' && (
+              <Button
+                disabled
+                icon="clock-outline"
+                accessibilityLabel="Friend request sent"
+              >
+                Request Sent
+              </Button>
+            )}
+            {isOtherUser && friendshipStatus === 'pending_incoming' && (
+              <Button
+                onPress={() => acceptFriendRequest.mutate(userId)}
+                loading={acceptFriendRequest.isPending ?? false}
+                icon="check"
+                accessibilityLabel="Accept friend request"
+              >
+                Accept
+              </Button>
+            )}
+            {isOtherUser && friendshipStatus === 'pending_incoming' && (
+              <Button
+                onPress={() => declineFriendRequest.mutate(userId)}
+                loading={declineFriendRequest.isPending ?? false}
+                accessibilityLabel="Decline friend request"
+              >
+                Decline
+              </Button>
+            )}
+            {isOtherUser && friendshipStatus === 'friends' && (
+              <Button
+                onPress={() => removeFriend.mutate(userId)}
+                loading={removeFriend.isPending ?? false}
+                icon="account-check"
+                accessibilityLabel="Remove friend"
+              >
+                Friends
+              </Button>
+            )}
             {/* Duplicate userId checks because Dialog.Actions adds props to children, which will cause issues with wrapping in a fragment */}
             {userId !== me?.id && (
               <Button

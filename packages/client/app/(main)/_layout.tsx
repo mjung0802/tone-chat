@@ -75,6 +75,30 @@ export default function MainLayout() {
     };
   }, [socket, currentConversationId, incrementDmUnread, showNotification, notificationPreference, queryClient]);
 
+  // Friend request notification handler
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleRequestReceived = (event: { requesterId: string; requesterName: string }) => {
+      void queryClient.invalidateQueries({ queryKey: ['friends', 'pending'] });
+      void queryClient.invalidateQueries({ queryKey: ['friends', 'status', event.requesterId] });
+    };
+
+    const handleRequestAccepted = (event: { accepterId: string; accepterName: string }) => {
+      void queryClient.invalidateQueries({ queryKey: ['friends'] });
+      void queryClient.invalidateQueries({ queryKey: ['friends', 'pending'] });
+      void queryClient.invalidateQueries({ queryKey: ['friends', 'status', event.accepterId] });
+    };
+
+    socket.on('friend:request_received', handleRequestReceived);
+    socket.on('friend:request_accepted', handleRequestAccepted);
+
+    return () => {
+      socket.off('friend:request_received', handleRequestReceived);
+      socket.off('friend:request_accepted', handleRequestAccepted);
+    };
+  }, [socket, queryClient]);
+
   return (
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.colors.background }}>
       <ServerRail />

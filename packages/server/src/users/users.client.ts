@@ -33,6 +33,30 @@ export function unblockUser(userId: string, targetId: string) {
   return serviceRequest(config.usersServiceUrl, `/users/me/blocks/${targetId}`, { method: 'DELETE', userId });
 }
 
+export function getFriends(userId: string) {
+  return serviceRequest(config.usersServiceUrl, '/users/me/friends', { userId });
+}
+
+export function getPendingRequests(userId: string) {
+  return serviceRequest(config.usersServiceUrl, '/users/me/friends/pending', { userId });
+}
+
+export function getFriendshipStatus(userId: string, targetId: string) {
+  return serviceRequest(config.usersServiceUrl, `/users/me/friends/${targetId}/status`, { userId });
+}
+
+export function sendFriendRequest(userId: string, targetId: string) {
+  return serviceRequest(config.usersServiceUrl, `/users/me/friends/${targetId}`, { method: 'POST', userId });
+}
+
+export function acceptFriendRequest(userId: string, targetId: string) {
+  return serviceRequest(config.usersServiceUrl, `/users/me/friends/${targetId}/accept`, { method: 'PATCH', userId });
+}
+
+export function removeFriend(userId: string, targetId: string) {
+  return serviceRequest(config.usersServiceUrl, `/users/me/friends/${targetId}`, { method: 'DELETE', userId });
+}
+
 export async function isBlockedBidirectional(userId: string, otherUserId: string): Promise<boolean> {
   const [aResult, bResult] = await Promise.all([
     getBlockedIds(userId),

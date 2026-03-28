@@ -9,4 +9,5 @@
 | `invites/` | CreateInviteForm, InviteCard |
 | `members/` | MemberList, MemberListItem, MemberActionDialogs |
 | `layout/` | ServerRail, ServerSidebar, Sidebar |
+| `friends/` | FriendsPage (tabbed container), FriendsList, FriendListItem, PendingRequestsList, PendingRequestItem |
 | `servers/` | CreateServerForm, CustomToneForm, ServerIcon, ServerListItem |
