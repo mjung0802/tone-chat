@@ -37,7 +37,11 @@ export function Sidebar({ currentUserId }: SidebarProps) {
 
   const handleFriendsPress = () => {
     openFriendsView();
-    router.push('/(main)/home');
+    const lastSegment = segments[segments.length - 1];
+    const isOnHomeIndex = lastSegment === 'home' || lastSegment === 'index';
+    if (!isOnHomeIndex) {
+      router.push('/(main)/home');
+    }
   };
 
   return (

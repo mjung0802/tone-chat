@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Badge, IconButton, useTheme } from 'react-native-paper';
-import { useRouter } from 'expo-router';
+import { useRouter, useSegments } from 'expo-router';
 import { ServerIcon } from '@/components/servers/ServerIcon';
 import { useServers } from '@/hooks/useServers';
 import { useNotificationStore, selectTotalDmUnread } from '@/stores/notificationStore';
@@ -11,6 +11,7 @@ import { DmRailAvatar } from '@/components/dms/DmRailAvatar';
 export function ServerRail() {
   const theme = useTheme();
   const router = useRouter();
+  const segments = useSegments();
   const { data: servers } = useServers();
   const dmUnreadCount = useNotificationStore(selectTotalDmUnread);
   const dmUnreadEntries = useNotificationStore((s) => s.dmUnreadEntries);
@@ -32,7 +33,11 @@ export function ServerRail() {
         <IconButton
           icon="home"
           size={28}
-          onPress={() => router.push('/(main)/home')}
+          onPress={() => {
+            const lastSegment = segments[segments.length - 1];
+            const isOnHomeIndex = lastSegment === 'home' || lastSegment === 'index';
+            if (!isOnHomeIndex) router.push('/(main)/home');
+          }}
           accessibilityLabel="Home — direct messages"
           accessibilityRole="button"
         />

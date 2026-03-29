@@ -1,6 +1,7 @@
 import { EmptyState } from '@/components/common/EmptyState';
 import { FriendsPage } from '@/components/friends/FriendsPage';
 import { useUiStore } from '@/stores/uiStore';
+import { Stack } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
 
 export default function HomeScreen() {
@@ -8,6 +9,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      <Stack.Screen options={{ title: 'Friends', headerBackVisible: false }} />
       {isFriendsViewOpen ? (
         <FriendsPage />
       ) : (
