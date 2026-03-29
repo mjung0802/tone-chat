@@ -18,7 +18,7 @@ Express 5 + Socket.IO 4 server on :4000. Verifies JWTs locally, proxies all clie
 | `messages/` | Message HTTP routes + Socket.IO handlers; emits `new_message`/`mention` events |
 | `servers/` | Server CRUD + custom tones proxy → messagingService |
 | `socket/` | Socket.IO setup, JWT auth, room join/leave, message handler registration |
-| `users/` | User profile proxy → usersService |
+| `users/` | User profile proxy + friend management proxy → usersService; emits `friend:request_received` / `friend:request_accepted` socket events |
 | `shared/` | `serviceRequest()` HTTP utility + auth/error middleware |
 
 ## Key Files

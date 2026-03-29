@@ -75,4 +75,6 @@ export interface ServerToClientEvents {
   'dm:typing': (event: { conversationId: string; userId: string }) => void;
   'dm:reaction_updated': (data: { message: DirectMessage }) => void;
   'dm:notification': (event: { conversationId: string; otherUserId: string; senderName: string; preview: string }) => void;
+  'friend:request_received': (event: { requesterId: string; requesterName: string }) => void;
+  'friend:request_accepted': (event: { accepterId: string; accepterName: string }) => void;
 }

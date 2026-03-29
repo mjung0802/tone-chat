@@ -1,14 +1,12 @@
-import { EmptyState } from '@/components/common/EmptyState';
+import { FriendsPage } from '@/components/friends/FriendsPage';
+import { Stack } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
 
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
-      <EmptyState
-        icon="message-outline"
-        title="No conversation selected"
-        description="Select a conversation from the list or find someone to message."
-      />
+      <Stack.Screen options={{ title: 'Friends', headerBackVisible: false }} />
+      <FriendsPage />
     </View>
   );
 }
