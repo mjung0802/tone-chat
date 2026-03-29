@@ -17,10 +17,10 @@ import { useSocketStore } from '@/stores/socketStore';
 import type { Attachment, Message, ServerMember } from '@/types/models';
 import { getAvailableActions, isMemberMuted, type Role } from '@/utils/roles';
 import type { TypingEvent } from '@/types/socket.types';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Banner } from 'react-native-paper';
+import { Banner, IconButton } from 'react-native-paper';
 
 const TYPING_TIMEOUT = 3000;
 
@@ -34,6 +34,7 @@ export default function ChannelScreen() {
 
   const userId = useAuthStore((s) => s.userId);
   const setCurrentChannelId = useNotificationStore((s) => s.setCurrentChannelId);
+  const router = useRouter();
 
   useEffect(() => {
     setCurrentChannelId(cid || null);
@@ -171,6 +172,10 @@ export default function ChannelScreen() {
   const currentMember = members?.find((m: ServerMember) => m.userId === userId);
   const actorRole = (currentMember?.role ?? 'member') as Role;
   const actorIsOwner = server?.ownerId === userId;
+  const isAdmin =
+    members?.some(
+      (m) => m.userId === userId && (m.role === 'admin' || server?.ownerId === m.userId),
+    ) ?? false;
 
   const modActionsMap = useMemo(() => {
     if (!members) return {};
@@ -250,7 +255,19 @@ export default function ChannelScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: channelData?.name ? `# ${channelData.name}` : '' }} />
+      <Stack.Screen
+        options={{
+          title: channelData?.name ? `# ${channelData.name}` : '',
+          headerRight: () =>
+            isAdmin ? (
+              <IconButton
+                icon="cog"
+                onPress={() => router.push(`/(main)/servers/${sid}/settings`)}
+                accessibilityLabel="Server settings"
+              />
+            ) : null,
+        }}
+      />
       <MessageList
         ref={messageListRef}
         messages={messages}
