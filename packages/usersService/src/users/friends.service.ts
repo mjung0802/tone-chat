@@ -125,23 +125,24 @@ export async function getFriends(userId: string): Promise<FriendEntry[]> {
 }
 
 export async function getPendingRequests(userId: string): Promise<FriendRequestEntry[]> {
-  // Outgoing: user_id = userId, status = pending
-  const outgoing = await sql<{ id: string; username: string; display_name: string | null; avatar_url: string | null; created_at: Date }[]>`
-    SELECT u.id, u.username, u.display_name, u.avatar_url, f.created_at
-    FROM friendships f
-    JOIN users u ON u.id = f.friend_id
-    WHERE f.user_id = ${userId} AND f.status = 'pending'
-    ORDER BY f.created_at DESC
-  `;
+  type PendingRow = { id: string; username: string; display_name: string | null; avatar_url: string | null; created_at: Date };
 
-  // Incoming: friend_id = userId, status = pending
-  const incoming = await sql<{ id: string; username: string; display_name: string | null; avatar_url: string | null; created_at: Date }[]>`
-    SELECT u.id, u.username, u.display_name, u.avatar_url, f.created_at
-    FROM friendships f
-    JOIN users u ON u.id = f.user_id
-    WHERE f.friend_id = ${userId} AND f.status = 'pending'
-    ORDER BY f.created_at DESC
-  `;
+  const [outgoing, incoming] = await Promise.all([
+    sql<PendingRow[]>`
+      SELECT u.id, u.username, u.display_name, u.avatar_url, f.created_at
+      FROM friendships f
+      JOIN users u ON u.id = f.friend_id
+      WHERE f.user_id = ${userId} AND f.status = 'pending'
+      ORDER BY f.created_at DESC
+    `,
+    sql<PendingRow[]>`
+      SELECT u.id, u.username, u.display_name, u.avatar_url, f.created_at
+      FROM friendships f
+      JOIN users u ON u.id = f.user_id
+      WHERE f.friend_id = ${userId} AND f.status = 'pending'
+      ORDER BY f.created_at DESC
+    `,
+  ]);
 
   return [
     ...incoming.map((row) => ({

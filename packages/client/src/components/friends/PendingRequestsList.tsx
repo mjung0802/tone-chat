@@ -1,6 +1,6 @@
 import React from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { usePendingRequests, useAcceptFriendRequest, useDeclineFriendRequest } from '@/hooks/useFriends';
+import { usePendingRequests, useAcceptFriendRequest, useRemoveFriend } from '@/hooks/useFriends';
 import { PendingRequestItem } from './PendingRequestItem';
 import { EmptyState } from '@/components/common/EmptyState';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
@@ -9,7 +9,7 @@ import type { FriendRequest } from '@/types/models';
 export function PendingRequestsList() {
   const { data: requests, isLoading } = usePendingRequests();
   const acceptRequest = useAcceptFriendRequest();
-  const declineRequest = useDeclineFriendRequest();
+  const declineRequest = useRemoveFriend();
 
   if (isLoading) {
     return <LoadingSpinner message="Loading requests..." />;

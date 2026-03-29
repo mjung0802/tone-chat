@@ -50,23 +50,13 @@ export function useAcceptFriendRequest() {
   });
 }
 
-export function useDeclineFriendRequest() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (userId: string) => friendsApi.removeFriend(userId),
-    onSuccess: (_data, userId) => {
-      void queryClient.invalidateQueries({ queryKey: ['friends', 'pending'] });
-      void queryClient.invalidateQueries({ queryKey: ['friends', 'status', userId] });
-    },
-  });
-}
-
 export function useRemoveFriend() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (userId: string) => friendsApi.removeFriend(userId),
     onSuccess: (_data, userId) => {
       void queryClient.invalidateQueries({ queryKey: ['friends'] });
+      void queryClient.invalidateQueries({ queryKey: ['friends', 'pending'] });
       void queryClient.invalidateQueries({ queryKey: ['friends', 'status', userId] });
     },
   });
