@@ -111,12 +111,8 @@ test.describe('Friends feature', () => {
     await mockFriendsRoutes(page);
 
     await page.goto('/');
-    // Navigate to home
+    // Navigate to home — friends page is shown by default
     await page.getByLabel('Home').click();
-    await expect(page.getByText('No conversation selected')).toBeVisible();
-
-    // Click Friends button in sidebar
-    await page.getByRole('button', { name: /Friends/ }).click();
     await expect(page.getByText('No friends yet')).toBeVisible();
   });
 
