@@ -31,6 +31,7 @@ const mockPush = jest.fn();
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
+  useSegments: () => [],
 }));
 
 jest.mock('@/hooks/useServers');

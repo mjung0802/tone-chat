@@ -1,13 +1,12 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SegmentedButtons, useTheme } from 'react-native-paper';
+import { SegmentedButtons } from 'react-native-paper';
 import { useUiStore } from '@/stores/uiStore';
 import { usePendingRequests } from '@/hooks/useFriends';
 import { FriendsList } from './FriendsList';
 import { PendingRequestsList } from './PendingRequestsList';
 
 export function FriendsPage() {
-  const theme = useTheme();
   const friendsTab = useUiStore((s) => s.friendsTab);
   const setFriendsTab = useUiStore((s) => s.setFriendsTab);
   const { data: pendingRequests } = usePendingRequests();
