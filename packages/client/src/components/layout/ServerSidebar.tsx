@@ -18,6 +18,7 @@ export function ServerSidebar() {
   const userId = useAuthStore((s) => s.userId);
 
   const serverId = pathname.match(/\/servers\/([^/]+)/)?.[1] ?? '';
+  const activeChannelId = pathname.match(/\/channels\/([^/]+)/)?.[1] ?? '';
   const isWide = width >= 768;
   const showSidebar = isWide || isSidebarOpen;
 
@@ -67,6 +68,7 @@ export function ServerSidebar() {
       <ChannelSidebar
         serverName={server.name}
         channels={channels ?? []}
+        activeChannelId={activeChannelId}
         onChannelPress={handleChannelPress}
         onCreateChannel={handleCreateChannel}
         canManage={isAdmin}

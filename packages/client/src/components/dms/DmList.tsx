@@ -1,6 +1,7 @@
 import React from 'react';
 import { FlatList, StyleSheet, type ListRenderItemInfo } from 'react-native';
 import { Text } from 'react-native-paper';
+import { usePathname } from 'expo-router';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { DmListItem } from './DmListItem';
@@ -13,6 +14,8 @@ interface DmListProps {
 }
 
 export function DmList({ currentUserId, onConversationPress }: DmListProps) {
+  const pathname = usePathname();
+  const activeConversationId = pathname.match(/\/home\/([^/]+)/)?.[1] ?? '';
   const { data: conversations, isLoading } = useDmConversations();
 
   if (isLoading) {
@@ -33,6 +36,7 @@ export function DmList({ currentUserId, onConversationPress }: DmListProps) {
     <DmListItem
       conversation={item}
       currentUserId={currentUserId}
+      isActive={item._id === activeConversationId}
       onPress={() => onConversationPress(item._id)}
     />
   );

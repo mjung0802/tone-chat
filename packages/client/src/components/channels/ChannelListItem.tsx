@@ -1,5 +1,5 @@
 import React from 'react';
-import { List } from 'react-native-paper';
+import { List, useTheme } from 'react-native-paper';
 import type { Channel } from '../../types/models';
 
 interface ChannelListItemProps {
@@ -9,6 +9,7 @@ interface ChannelListItemProps {
 }
 
 export function ChannelListItem({ channel, isActive, onPress }: ChannelListItemProps) {
+  const theme = useTheme();
   const icon = channel.type === 'voice' ? 'volume-high' : 'pound';
 
   return (
@@ -23,7 +24,7 @@ export function ChannelListItem({ channel, isActive, onPress }: ChannelListItemP
       accessibilityState={{ selected: isActive }}
       style={[
         { minHeight: 44 },
-        isActive ? { backgroundColor: 'rgba(0,0,0,0.08)' } : null,
+        isActive ? { backgroundColor: theme.colors.secondaryContainer, borderRadius: 8 } : null,
       ]}
     />
   );

@@ -8,10 +8,11 @@ import type { DirectConversation } from '@/types/models';
 interface DmListItemProps {
   conversation: DirectConversation;
   currentUserId: string;
+  isActive?: boolean | undefined;
   onPress: () => void;
 }
 
-export function DmListItem({ conversation, currentUserId, onPress }: DmListItemProps) {
+export function DmListItem({ conversation, currentUserId, isActive, onPress }: DmListItemProps) {
   const theme = useTheme();
 
   const otherUserId =
@@ -31,10 +32,12 @@ export function DmListItem({ conversation, currentUserId, onPress }: DmListItemP
       onPress={onPress}
       style={({ pressed }) => [
         styles.container,
-        pressed && { backgroundColor: theme.colors.surfaceVariant },
+        isActive && { backgroundColor: theme.colors.secondaryContainer, borderRadius: 8, marginHorizontal: 8 },
+        pressed && !isActive && { backgroundColor: theme.colors.surfaceVariant },
       ]}
       accessibilityRole="button"
       accessibilityLabel={`Conversation with ${displayName}`}
+      accessibilityState={{ selected: isActive ?? false }}
     >
       <View style={styles.avatarContainer}>
         <UserAvatar avatarAttachmentId={otherUser?.avatar_url} name={displayName} size={40} />

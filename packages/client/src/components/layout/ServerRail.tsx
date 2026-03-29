@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Badge, IconButton, useTheme } from 'react-native-paper';
-import { useRouter, useSegments } from 'expo-router';
+import { usePathname, useRouter, useSegments } from 'expo-router';
 import { ServerIcon } from '@/components/servers/ServerIcon';
 import { useServers } from '@/hooks/useServers';
 import { useNotificationStore, selectTotalDmUnread } from '@/stores/notificationStore';
@@ -11,7 +11,9 @@ import { DmRailAvatar } from '@/components/dms/DmRailAvatar';
 export function ServerRail() {
   const theme = useTheme();
   const router = useRouter();
+  const pathname = usePathname();
   const segments = useSegments();
+  const activeServerId = pathname.match(/\/servers\/([^/]+)/)?.[1] ?? '';
   const { data: servers } = useServers();
   const dmUnreadCount = useNotificationStore(selectTotalDmUnread);
   const dmUnreadEntries = useNotificationStore((s) => s.dmUnreadEntries);
@@ -80,6 +82,7 @@ export function ServerRail() {
               onPress={() => router.push(`/(main)/servers/${server._id}`)}
               accessibilityLabel={`${server.name} server`}
               accessibilityRole="button"
+              {...(server._id === activeServerId ? { mode: 'contained-tonal' as const } : {})}
               size={32}
             />
           </View>

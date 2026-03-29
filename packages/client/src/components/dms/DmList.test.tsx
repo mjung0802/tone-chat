@@ -6,6 +6,11 @@ import { renderWithProviders } from '@/test-utils/renderWithProviders';
 import type { DirectConversation } from '@/types/models';
 import type { UseQueryResult } from '@tanstack/react-query';
 
+let mockPathname = '/';
+
+jest.mock('expo-router', () => ({
+  usePathname: () => mockPathname,
+}));
 jest.mock('@/hooks/useDms');
 jest.mock('@/hooks/useUser', () => ({
   useUser: () => ({ data: undefined }),
@@ -62,6 +67,7 @@ function makeQueryResult<T>(
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockPathname = '/';
 });
 
 describe('DmList', () => {
@@ -264,5 +270,36 @@ describe('DmList', () => {
     fireEvent.press(getByRole('button'));
 
     expect(onConversationPress).toHaveBeenCalledWith('conv-1');
+  });
+
+  it('marks the active conversation as selected', () => {
+    const conversations = [
+      makeConversation({ _id: 'conv-1' }),
+      makeConversation({ _id: 'conv-2', participantIds: ['user-123', 'user-789'] as [string, string] }),
+    ];
+
+    jest.mocked(useDmsModule.useDmConversations).mockReturnValue(
+      makeQueryResult<DirectConversation[]>({
+        data: conversations,
+        isLoading: false,
+        isSuccess: true,
+        isPending: false,
+        isFetched: true,
+        isFetchedAfterMount: true,
+        status: 'success',
+        fetchStatus: 'idle',
+        dataUpdatedAt: Date.now(),
+      }),
+    );
+
+    mockPathname = '/home/conv-1';
+
+    const { getAllByRole } = renderWithProviders(
+      <DmList currentUserId="user-123" onConversationPress={jest.fn()} />,
+    );
+
+    const buttons = getAllByRole('button');
+    expect(buttons[0]!.props.accessibilityState).toEqual({ selected: true });
+    expect(buttons[1]!.props.accessibilityState).toEqual({ selected: false });
   });
 });

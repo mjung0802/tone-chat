@@ -28,9 +28,11 @@ import type { Server } from '@/types/models';
 import type { UseQueryResult } from '@tanstack/react-query';
 
 const mockPush = jest.fn();
+let mockPathname = '/';
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
+  usePathname: () => mockPathname,
   useSegments: () => [],
 }));
 
@@ -89,6 +91,7 @@ function makeQueryResult<T>(
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockPathname = '/';
 
   jest.mocked(useAuthModule.useLogout).mockReturnValue(jest.fn());
 
@@ -159,5 +162,40 @@ describe('ServerRail', () => {
     fireEvent.press(getByLabelText('Home — direct messages'));
 
     expect(mockPush).toHaveBeenCalledWith('/(main)/home');
+  });
+
+  it('highlights the active server icon', () => {
+    const servers = [
+      makeServer({ _id: 'server-1', name: 'Alpha' }),
+      makeServer({ _id: 'server-2', name: 'Beta' }),
+    ];
+
+    jest.mocked(useServersModule.useServers).mockReturnValue(
+      makeQueryResult<Server[]>({
+        data: servers,
+        isLoading: false,
+        isSuccess: true,
+        isPending: false,
+        isFetched: true,
+        isFetchedAfterMount: true,
+        status: 'success',
+        fetchStatus: 'idle',
+        dataUpdatedAt: Date.now(),
+      }),
+    );
+
+    mockPathname = '/servers/server-1/channels/ch-1';
+
+    const { getByLabelText, UNSAFE_getByProps } = renderWithProviders(<ServerRail />);
+
+    // Verify both buttons render
+    expect(getByLabelText('Alpha server')).toBeTruthy();
+    expect(getByLabelText('Beta server')).toBeTruthy();
+
+    // The active server's IconButton receives mode="contained-tonal" via spread
+    // which RN Paper applies as a tonal background. We verify the tree contains
+    // a contained-tonal IconButton (the inactive one has no mode prop).
+    const tonalButton = UNSAFE_getByProps({ mode: 'contained-tonal', size: 32 });
+    expect(tonalButton).toBeTruthy();
   });
 });
