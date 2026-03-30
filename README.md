@@ -1,48 +1,81 @@
-# Tone
+# Tone Chat
 
-A Discord-style chat app. Create servers, join channels, send messages in real time.
+A Discord-style chat app — create servers, channels, and send messages in real time. Self-hostable in one command.
+
+## Self-Hosting
+
+### Requirements
+
+- [Docker](https://docs.docker.com/get-docker/) (includes Docker Compose v2)
+- `openssl` (pre-installed on macOS/Linux; available via Git Bash on Windows)
+
+### Quick start
+
+```bash
+git clone https://github.com/mjung0802/tone-chat.git
+cd tone-chat
+bash setup.sh
+```
+
+The script will:
+1. Generate cryptographic secrets
+2. Ask for your domain (or use `:80` for local HTTP)
+3. Ask for optional SMTP settings (leave blank — OTPs print to console)
+4. Write `.env` and run `docker compose -f docker-compose.prod.yml up -d --build`
+
+Once running, open your browser to the configured domain. In the app, enter your server's URL on the connect screen to get started.
+
+### HTTPS / custom domain
+
+When you enter a real domain (e.g. `chat.example.com`) during setup, Caddy automatically obtains and renews a Let's Encrypt TLS certificate. Point your domain's A record to the server's IP before running setup.
+
+### Operations
+
+```bash
+# View logs
+docker compose -f docker-compose.prod.yml logs -f
+
+# Stop
+docker compose -f docker-compose.prod.yml down
+
+# Update to latest
+git pull
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  React Native Client  (packages/client)                 │
-│  Expo 55 + Expo Router v5 + React Native Paper          │
-└────────────────────┬────────────────────────────────────┘
-                     │ HTTP + Socket.IO
-┌────────────────────▼────────────────────────────────────┐
-│  BFF Server  (packages/server)  :4000                   │
-│  Express 5 + Socket.IO 4 + JWT auth                     │
-└────┬──────────────────┬──────────────────┬──────────────┘
-     │ HTTP             │ HTTP             │ HTTP
-┌────▼──────┐   ┌───────▼──────┐   ┌──────▼────────────┐
-│messaging  │   │  users       │   │  attachments      │
-│Service    │   │  Service     │   │  Service          │
-│:3001      │   │  :3002       │   │  :3003            │
-│           │   │              │   │                   │
-│ MongoDB   │   │  PostgreSQL  │   │  PostgreSQL       │
-│ :27017    │   │  :5432       │   │  :5433            │
-└───────────┘   └──────────────┘   │  MinIO :9000      │
-                                   └───────────────────┘
+React Native Client (packages/client)
+        | WebSocket + HTTP
+BFF Server (packages/server)  :4000   Express 5 + Socket.IO 4 + JWT auth
+        | HTTP
+  +---------------------+---------------------+--------------------+
+  | messagingService    | usersService        | attachmentsService |
+  | :3001  MongoDB      | :3002  PostgreSQL   | :3003  PostgreSQL  |
+  +---------------------+---------------------+  MinIO :9000       |
+                                                +--------------------+
 ```
-
-## Packages
 
 | Package              | Port | Database           | Purpose                                              |
 |----------------------|------|--------------------|------------------------------------------------------|
-| `tone-chat-client`   | ---— | -----------------— | React Native app (iOS, Android, Web)                 |
-| `tone-chat-server`   | 4000 | -----------------— | BFF — routes all client requests to backend services |
+| `tone-chat-client`   | —    | —                  | React Native app (iOS, Android, Web via Expo)        |
+| `tone-chat-server`   | 4000 | —                  | BFF — routes client requests, manages Socket.IO      |
 | `messagingservice`   | 3001 | MongoDB            | Servers, channels, messages, members, invites        |
 | `usersservice`       | 3002 | PostgreSQL         | Global user accounts, auth, token lifecycle          |
 | `attachmentsservice` | 3003 | PostgreSQL + MinIO | File uploads and attachment metadata                 |
 
-## Getting Started
+---
+
+## Development
 
 ### Prerequisites
 
 - Node.js 22+
-- pnpm
-- Docker (for messagingService dev environment)
+- pnpm (`npm install -g pnpm`)
+- Docker (for local databases)
 
 ### Install
 
@@ -50,87 +83,43 @@ A Discord-style chat app. Create servers, join channels, send messages in real t
 pnpm install
 ```
 
-## Running Services
-
-### BFF Server
+### Start all services
 
 ```bash
-pnpm --filter tone-chat-server dev
+docker compose up -d        # start MongoDB, PostgreSQL, MinIO, Mailpit
+pnpm --filter usersservice migrate
+pnpm --filter attachmentsservice migrate
+pnpm --filter tone-chat-server dev &
+pnpm --filter messagingservice dev &
+pnpm --filter usersservice dev &
+pnpm --filter attachmentsservice dev &
+pnpm --filter tone-chat-client web
 ```
 
-### messagingService (includes MongoDB via Docker)
+Email verification OTPs are caught by Mailpit at `http://localhost:8025` in dev mode (set `SMTP_HOST=localhost SMTP_PORT=1025` in `packages/usersService/.env`).
+
+### Running tests
 
 ```bash
-cd packages/messagingService
-docker-compose up
+pnpm test                         # all unit tests
+pnpm test:integration:up          # integration tests (needs Docker)
+pnpm --filter tone-chat-client test:e2e   # Playwright E2E
 ```
 
-Or run the service standalone (requires MongoDB already running):
+### Type checking and lint
 
 ```bash
-pnpm --filter messagingservice dev
-```
-
-### usersService
-
-```bash
-pnpm --filter usersservice migrate   # first time only
-pnpm --filter usersservice dev
-```
-
-### attachmentsService
-
-```bash
-pnpm --filter attachmentsservice migrate   # first time only
-pnpm --filter attachmentsservice dev
-```
-
-### Client
-
-```bash
-pnpm --filter tone-chat-client web       # Web
-pnpm --filter tone-chat-client android   # Android
-pnpm --filter tone-chat-client ios       # iOS
-```
-
-## Running Tests
-
-```bash
-# All packages
-pnpm test
-
-# Per package
-pnpm --filter tone-chat-server test
-pnpm --filter messagingservice test
-pnpm --filter usersservice test
-pnpm --filter attachmentsservice test
-pnpm --filter tone-chat-client test
-```
-
-### Client E2E (Playwright)
-
-```bash
-# First time: install Chromium
-pnpm --filter tone-chat-client exec playwright install chromium
-
-# Run all E2E tests
-pnpm --filter tone-chat-client test:e2e
-```
-
-## Type Checking
-
-```bash
-# All backend packages
 pnpm typecheck
-
-# Client
-pnpm --filter tone-chat-client typecheck
+pnpm lint
 ```
 
-## Tech Summary
+---
+
+## Tech stack
 
 - **Monorepo**: Lerna + pnpm workspaces
-- **Node**: 22+ required (uses native `fetch`, `--experimental-strip-types`)
-- **TypeScript**: strict across all packages; backend uses `nodenext` module resolution with `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`; client extends `expo/tsconfig.base`
-- **Services communicate via HTTP** using native `fetch()` — no extra HTTP client library
-- **Auth**: JWT access tokens (15 min) + rotating refresh tokens (7 days); BFF verifies tokens locally before forwarding requests
+- **Node**: 22+ (native `fetch`, `--experimental-strip-types`)
+- **TypeScript**: strict across all packages
+- **Client**: Expo 55, Expo Router v5, React Native Paper, TanStack Query v5, Zustand v5, Socket.IO v4
+- **Auth**: JWT access tokens (15 min) + rotating refresh tokens (7 days), per-instance scoping
+- **Reverse proxy**: Caddy with automatic HTTPS (Let's Encrypt)
