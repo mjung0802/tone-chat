@@ -30,7 +30,7 @@ describe('healthRouter GET /', () => {
 
     const req = makeReq();
     const res = makeRes();
-    handler(req, res as unknown as Response, (() => {}) as NextFunction);
+    handler(req, res as Response, (() => {}) as NextFunction);
 
     assert.equal(res.statusCode, 200);
     const body = res._json as { ok: boolean; version: string };
