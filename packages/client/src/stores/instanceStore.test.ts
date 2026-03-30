@@ -91,6 +91,7 @@ describe('instanceStore', () => {
       const state = useInstanceStore.getState();
       expect(state.instances).toEqual([]);
       expect(state.activeInstance).toBeNull();
+      expect(state.isHydrated).toBe(true);
     });
   });
 });

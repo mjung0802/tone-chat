@@ -67,8 +67,9 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
   },
 
   setActiveInstance: (url: string) => {
-    set({ activeInstance: url });
-    void persistInstances(get().instances, url);
+    const normalized = normalizeUrl(url);
+    set({ activeInstance: normalized });
+    void persistInstances(get().instances, normalized);
   },
 
   removeInstance: (url: string) => {
