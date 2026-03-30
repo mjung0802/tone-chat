@@ -48,6 +48,10 @@ All routes require `X-Internal-Key` and (where applicable) `X-User-Id` headers s
 | PATCH | `/users/me` | `{ user }` | Update profile; requires `X-User-Id` |
 | GET | `/users/:id` | `{ user }` | Look up any user by ID |
 
+## Auth Flow Documentation
+
+See [`docs/auth-flows.md`](../../docs/auth-flows.md) for a detailed mockup of all authentication flows including sequence diagrams, request/response shapes, error codes, and token storage notes.
+
 ## Auth
 
 Internal auth only — not internet-exposed. The BFF adds:
