@@ -83,6 +83,7 @@ describe('instanceStore', () => {
       const state = useInstanceStore.getState();
       expect(state.instances).toEqual(['https://a.com']);
       expect(state.activeInstance).toBe('https://a.com');
+      expect(state.isHydrated).toBe(true);
     });
 
     it('handles empty localStorage gracefully', async () => {
