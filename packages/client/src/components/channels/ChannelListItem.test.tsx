@@ -1,4 +1,5 @@
 import React from 'react';
+import { fireEvent } from '@testing-library/react-native';
 import { ChannelListItem } from './ChannelListItem';
 import { renderWithProviders } from '@/test-utils/renderWithProviders';
 import type { Channel } from '@/types/models';
@@ -55,7 +56,6 @@ describe('ChannelListItem', () => {
       <ChannelListItem channel={channel} onPress={onPress} />,
     );
 
-    const { fireEvent } = require('@testing-library/react-native');
     fireEvent.press(getByRole('button'));
 
     expect(onPress).toHaveBeenCalledWith(channel);
