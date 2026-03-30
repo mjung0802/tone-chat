@@ -5,16 +5,24 @@
       "origin": "http://localhost:19081",
       "localStorage": [
         {
-          "name": "accessToken",
-          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTAwMSIsImV4cCI6OTk5OTk5OTk5OX0.fakesignature"
-        },
-        {
-          "name": "refreshToken",
+          "name": "refreshToken:http://localhost:4000",
           "value": "mock-refresh-token-opaque-string"
         },
         {
-          "name": "emailVerified",
+          "name": "emailVerified:http://localhost:4000",
           "value": "true"
+        },
+        {
+          "name": "accessToken:http://localhost:4000",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyLTAwMSIsImV4cCI6OTk5OTk5OTk5OX0.fakesignature"
+        },
+        {
+          "name": "activeInstance",
+          "value": "http://localhost:4000"
+        },
+        {
+          "name": "instances",
+          "value": "[\"http://localhost:4000\"]"
         }
       ]
     }

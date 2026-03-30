@@ -1,8 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { mockAuthRoutes, mockSocketIO, mockServersRoutes, mockUsersRoutes } from './helpers/mocks';
+import { mockAuthRoutes, mockSocketIO, mockServersRoutes, mockUsersRoutes, seedActiveInstance } from './helpers/mocks';
 
 // All auth tests start unauthenticated
 test.use({ storageState: { cookies: [], origins: [] } });
+
+test.beforeEach(async ({ page }) => {
+  await seedActiveInstance(page);
+});
 
 test('login with valid credentials shows servers screen', async ({ page }) => {
   await mockAuthRoutes(page);

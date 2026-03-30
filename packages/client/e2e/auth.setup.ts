@@ -1,11 +1,12 @@
 import { test as setup, expect } from '@playwright/test';
-import { mockAuthRoutes, mockSocketIO, mockServersRoutes } from './helpers/mocks';
+import { mockAuthRoutes, mockSocketIO, mockServersRoutes, seedActiveInstance } from './helpers/mocks';
 
 setup('authenticate', async ({ page }) => {
   await mockAuthRoutes(page);
   await mockSocketIO(page);
   await mockServersRoutes(page);
 
+  await seedActiveInstance(page);
   await page.goto('/');
 
   await page.getByLabel('Email address').fill('test@example.com');

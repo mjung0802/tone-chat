@@ -13,6 +13,13 @@ import {
 
 const API = 'http://localhost:4000/api/v1';
 
+export async function seedActiveInstance(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    localStorage.setItem('activeInstance', 'http://localhost:4000');
+    localStorage.setItem('instances', JSON.stringify(['http://localhost:4000']));
+  });
+}
+
 export async function mockAuthRoutes(page: Page): Promise<void> {
   await page.route(`${API}/auth/login`, async (route) => {
     const body = route.request().postDataJSON() as { email?: string; password?: string };
