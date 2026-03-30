@@ -19,4 +19,7 @@ export function validateConfig(): void {
   if (DEV_DEFAULTS.includes(config.internalApiKey)) {
     throw new Error('INTERNAL_API_KEY must be set in production');
   }
+  if (config.allowedOrigins.some(o => o.includes('localhost:8081'))) {
+    throw new Error('ALLOWED_ORIGINS must be set in production (still contains localhost:8081)');
+  }
 }

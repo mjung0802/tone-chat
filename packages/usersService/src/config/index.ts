@@ -24,6 +24,6 @@ export function validateConfig(): void {
     throw new Error('INTERNAL_API_KEY must be set in production');
   }
   if (!config.smtpHost) {
-    throw new Error('SMTP_HOST must be set in production');
+    console.warn('⚠ SMTP not configured — verification codes will be printed to this console only');
   }
 }
