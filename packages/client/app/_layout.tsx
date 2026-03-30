@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { buildTheme } from '@/theme';
 import { useAuthStore } from '@/stores/authStore';
+import { useInstanceStore } from '@/stores/instanceStore';
 import { useUiStore, hydrateUiStore } from '@/stores/uiStore';
 import { hydrateNotificationPreference } from '@/stores/notificationStore';
 import { configureAuth } from '@/api/client';
@@ -34,6 +35,9 @@ configureAuth({
 
 function AppContent() {
   const theme = useTheme();
+  const instanceIsHydrated = useInstanceStore((s) => s.isHydrated);
+  const activeInstance = useInstanceStore((s) => s.activeInstance);
+  const hydrateInstance = useInstanceStore((s) => s.hydrate);
   const isHydrated = useAuthStore((s) => s.isHydrated);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const emailVerified = useAuthStore((s) => s.emailVerified);
@@ -45,33 +49,42 @@ function AppContent() {
   useSocketConnection();
 
   useEffect(() => {
-    void hydrate();
+    void hydrateInstance().then(() => void hydrate());
     void hydrateUiStore();
     void hydrateNotificationPreference();
-  }, [hydrate]);
+  }, [hydrateInstance, hydrate]);
 
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!instanceIsHydrated) return;
     const segs = segments as string[];
+    const inConnectScreen = segs[0] === 'connect';
+
+    if (!activeInstance) {
+      if (!inConnectScreen) router.replace('/connect');
+      return;
+    }
+
+    if (!isHydrated) return;
     const inAuthGroup = segs[0] === '(auth)';
     const inVerifyScreen = segs[1] === 'verify-email';
 
-    if (isAuthenticated && emailVerified && inAuthGroup) {
+    if (isAuthenticated && emailVerified && (inAuthGroup || inConnectScreen)) {
       router.replace('/(main)/servers');
     } else if (isAuthenticated && !emailVerified && !inVerifyScreen) {
       router.replace('/(auth)/verify-email');
     } else if (!isAuthenticated && !inAuthGroup) {
       router.replace('/(auth)/login');
     }
-  }, [isAuthenticated, emailVerified, isHydrated, segments, router]);
+  }, [activeInstance, instanceIsHydrated, isAuthenticated, emailVerified, isHydrated, segments, router]);
 
-  if (!isHydrated) {
+  if (!instanceIsHydrated) {
     return <LoadingSpinner message="Loading..." />;
   }
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.colors.background } }}>
       <Stack.Screen name="+not-found" />
+      <Stack.Screen name="connect" />
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(main)" />
     </Stack>
