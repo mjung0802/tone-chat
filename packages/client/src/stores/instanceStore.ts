@@ -34,17 +34,30 @@ async function persistInstances(instances: string[], activeInstance: string | nu
   }
 }
 
+function parseInstances(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.every((item) => typeof item === 'string')) {
+      return parsed as string[];
+    }
+  } catch {
+    // corrupted storage — fall through to empty
+  }
+  return [];
+}
+
 async function loadInstances(): Promise<{ instances: string[]; activeInstance: string | null }> {
   if (Platform.OS === 'web') {
-    const raw = localStorage.getItem('instances');
-    const instances = raw ? (JSON.parse(raw) as string[]) : [];
-    const activeInstance = localStorage.getItem('activeInstance');
+    const instances = parseInstances(localStorage.getItem('instances'));
+    const stored = localStorage.getItem('activeInstance');
+    const activeInstance = stored && instances.includes(stored) ? stored : null;
     return { instances, activeInstance };
   }
   const SecureStore = await import('expo-secure-store');
-  const raw = await SecureStore.getItemAsync('instances');
-  const instances = raw ? (JSON.parse(raw) as string[]) : [];
-  const activeInstance = await SecureStore.getItemAsync('activeInstance');
+  const instances = parseInstances(await SecureStore.getItemAsync('instances'));
+  const stored = await SecureStore.getItemAsync('activeInstance');
+  const activeInstance = stored && instances.includes(stored) ? stored : null;
   return { instances, activeInstance };
 }
 
@@ -73,9 +86,10 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
   },
 
   removeInstance: (url: string) => {
+    const normalized = normalizeUrl(url);
     const { instances, activeInstance } = get();
-    const updated = instances.filter((u) => u !== url);
-    const newActive = activeInstance === url ? null : activeInstance;
+    const updated = instances.filter((u) => u !== normalized);
+    const newActive = activeInstance === normalized ? null : activeInstance;
     set({ instances: updated, activeInstance: newActive });
     void persistInstances(updated, newActive);
   },

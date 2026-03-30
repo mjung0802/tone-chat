@@ -66,6 +66,13 @@ describe('instanceStore', () => {
       expect(useInstanceStore.getState().activeInstance).toBeNull();
     });
 
+    it('removes URL even when trailing slash is passed', () => {
+      useInstanceStore.getState().addInstance('https://a.com');
+      useInstanceStore.getState().removeInstance('https://a.com/');
+      expect(useInstanceStore.getState().instances).toEqual([]);
+      expect(useInstanceStore.getState().activeInstance).toBeNull();
+    });
+
     it('keeps activeInstance if a different URL was removed', () => {
       useInstanceStore.getState().addInstance('https://a.com');
       useInstanceStore.getState().addInstance('https://b.com');
