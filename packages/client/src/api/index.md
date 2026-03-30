@@ -1,6 +1,6 @@
 # api/
 
-- **client.ts** — `get()`, `post()`, `patch()`, `put()`, `del()`, `uploadRaw()`, `configureAuth()` — fetch wrapper: auto-injects JWT, 401→refresh→retry, single in-flight refresh deduplication. Base URL: `http://localhost:4000/api/v1`
+- **client.ts** — `get()`, `post()`, `patch()`, `put()`, `del()`, `uploadRaw()`, `configureAuth()` — fetch wrapper: auto-injects JWT, 401→refresh→retry, single in-flight refresh deduplication. Base URL read from `instanceStore.activeInstance` at fetch time (not hardcoded).
 - **errors.ts** — `getAuthErrorMessage()` — maps API error codes/status to user-friendly text
 - **auth.api.ts** — `register()`, `login()`, `refresh()`, `verifyEmail()`, `resendVerification()`
 - **messages.api.ts** — `getMessages()` (cursor pagination), `sendMessage()`, `updateMessage()`, `toggleReaction()`

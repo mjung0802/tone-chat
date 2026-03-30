@@ -123,6 +123,7 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
 - JWT access tokens (15 min) + refresh tokens (7 day, rotated). BFF verifies JWTs locally.
 - BFF passes `X-User-Id` + `X-Internal-Key` headers to backend services (not internet-exposed).
 - Socket.IO auth via JWT in handshake `auth` field.
+- **Per-instance token scoping**: tokens are keyed by instance URL (`accessToken:https://…`, `refreshToken:https://…`). Switching `activeInstance` in `instanceStore` swaps the active token set — tokens from one server are never sent to a different server.
 
 ### Email Verification
 - Registration sends a 6-digit OTP to the user's email. Users must verify before full access.
@@ -146,6 +147,7 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
 
 ### API Routes (BFF)
 All routes prefixed `/api/v1`. Auth routes → usersService. Server/channel/message/member routes → messagingService. Attachment routes → attachmentsService.
+- `GET /api/v1/health` — unauthenticated; returns `{ ok: true, version: "1.0.0" }`. Used by the connect screen to verify a URL is a Tone deployment before saving it.
 
 ### Role Hierarchy & Moderation
 - Four-tier hierarchy: `member` (0) → `mod` (1) → `admin` (2) → `owner` (3, implicit via `server.ownerId`).
@@ -176,9 +178,9 @@ All backend packages use strict TypeScript with `nodenext` module resolution, `n
 **Stack**: Expo 55, Expo Router v4, React Native Paper v5 (MD3), TanStack Query v5, Zustand v5, socket.io-client v4.
 
 **Structure**:
-- `app/` — Expo Router file-based screens: `(auth)/` (login, register), `(main)/` (drawer with servers, channels, profile, invites)
-- `src/api/` — `client.ts` (fetch wrapper with auto-auth, 401→refresh→retry) + domain modules (`auth`, `users`, `servers`, `channels`, `messages`, `members`, `invites`, `attachments`)
-- `src/stores/` — Zustand: `authStore` (JWT + SecureStore persistence), `socketStore` (Socket.IO lifecycle), `uiStore` (theme, sidebar), `notificationStore` (mention notifications, channel-aware suppression)
+- `app/` — Expo Router file-based screens: `(auth)/` (login, register), `(main)/` (drawer with servers, channels, profile, invites), `connect.tsx` (deployment picker — shown when no `activeInstance` is set)
+- `src/api/` — `client.ts` (fetch wrapper with auto-auth, 401→refresh→retry) + domain modules (`auth`, `users`, `servers`, `channels`, `messages`, `members`, `invites`, `attachments`). Base URL is dynamic: `getBaseUrl()` reads `instanceStore.getState().activeInstance` at fetch time — not hardcoded.
+- `src/stores/` — Zustand: `authStore` (JWT + SecureStore persistence), `instanceStore` (saved deployment URLs, `activeInstance`, `isHydrated` flag; persisted to localStorage/SecureStore), `socketStore` (Socket.IO lifecycle), `uiStore` (theme, sidebar), `notificationStore` (mention notifications, channel-aware suppression)
 - `src/hooks/` — TanStack Query hooks per domain. `useMessages` uses `useInfiniteQuery` (cursor pagination). `useSocket` manages room join/leave and injects `new_message` events into query cache.
 - `src/components/` — `chat/`, `servers/`, `channels/`, `members/`, `invites/`, `common/`
 - `src/theme/` — WCAG 2.1 AA color palette (4.5:1 contrast), light/dark, min 16px body text
@@ -192,7 +194,29 @@ All backend packages use strict TypeScript with `nodenext` module resolution, `n
 - **Why separate usersService from messagingService**: messagingService stores server-scoped user data (admin status, per-server settings); usersService stores global identity/accounts.
 - **Why separate attachmentsService**: Async processing and cross-server resource sharing — attachments don't belong to one server.
 - **MinIO for attachments**: Self-hosted S3-compatible storage. Uses `@aws-sdk/client-s3` so migration to real AWS S3 requires zero code changes.
+- **Why per-instance auth scoping**: users can connect the client to multiple self-hosted deployments. Tokens are keyed by instance URL so switching deployments never leaks credentials to an unintended server.
+- **Why dynamic BFF URL**: `client.ts` and `socketStore` read `instanceStore.activeInstance` at runtime so the same client build can talk to any self-hosted deployment without recompilation.
 - Node.js 22+ is required (`"engines": {"node": ">=22.0.0"}`).
+
+## Self-Hosting / Production
+
+Production deployment is handled by three files at the repo root:
+
+- **`docker-compose.prod.yml`**: Full stack (caddy, bff, messaging, users, attachments, mongo, users-db, attachments-db, minio, minio-init). All services on internal `tone-net` network; only Caddy exposes ports 80/443.
+- **`Caddyfile`**: Reverse-proxies `/api/*` and `/socket.io/*` to the BFF; serves the Expo web build static files from `/srv/client` with SPA fallback. `{$DOMAIN}` is injected from the environment.
+- **`setup.sh`**: One-command first-time setup — generates secrets, prompts for domain and SMTP, writes `.env`, runs `docker compose -f docker-compose.prod.yml up -d --build`.
+
+Each service has a multi-stage Dockerfile at `packages/<service>/Dockerfile`. All use `pnpm@10.29.2` (pinned), run as `USER node` (non-root), and use the repo root as build context (`context: .` in docker-compose). `.dockerignore` at repo root excludes `**/node_modules`, `**/dist`, `.git`.
+
+usersService and attachmentsService run DB migrations on startup via:
+```sh
+node dist/db/migrate.js && exec node dist/index.js
+```
+(`exec` makes Node PID 1 so it receives Docker signals correctly for graceful shutdown.)
+
+When `DOMAIN` is a real hostname, Caddy provisions a Let's Encrypt TLS certificate automatically. Use `DOMAIN=:80` for plain HTTP.
+
+`NODE_ENV=production` on all service containers activates `validateConfig()` guards. SMTP is optional — if unconfigured, usersService logs a warning and prints OTPs to the console instead of emailing.
 
 ## Security
 

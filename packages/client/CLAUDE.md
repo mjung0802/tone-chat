@@ -29,7 +29,8 @@ pnpm test:e2e:ui          # Playwright UI mode
 
 ```
 app/                          # Expo Router screens (file-based routing)
-  _layout.tsx                 # Root: QueryClient + Paper + AuthGate
+  _layout.tsx                 # Root: hydrates instanceStore then authStore; redirects to /connect if no activeInstance
+  connect.tsx                 # Deployment picker — health-check ping, add/switch instances; shown when no activeInstance
   (auth)/                     # Unauthenticated screens
     login.tsx, register.tsx
   (main)/                     # Authenticated screens (Drawer navigator)
@@ -50,8 +51,9 @@ src/
     client.ts                 # fetch wrapper: auto-auth, 401→refresh→retry
     {auth,users,servers,channels,messages,members,invites,attachments}.api.ts
   stores/
-    authStore.ts              # JWT tokens, SecureStore/localStorage persistence
-    socketStore.ts            # Socket.IO connection lifecycle
+    instanceStore.ts          # Saved deployment URLs + activeInstance; hydrate before authStore
+    authStore.ts              # JWT tokens scoped per instance URL; SecureStore/localStorage persistence
+    socketStore.ts            # Socket.IO connection lifecycle; reads BFF URL from instanceStore
     uiStore.ts                # Theme preference, sidebar state
     notificationStore.ts      # Mention notification state, channel-aware suppression
   hooks/
@@ -117,7 +119,7 @@ loading={isLoading ?? false}    // not loading={isLoading}
 
 ## API Client (`src/api/client.ts`)
 
-- Base URL: `http://localhost:4000/api/v1` (the BFF)
+- Base URL is **dynamic**: `getBaseUrl()` reads `instanceStore.getState().activeInstance` at fetch time — not hardcoded. Falls back to `http://localhost:4000` when no instance is set.
 - Auto-injects `Authorization: Bearer <token>` from auth store
 - On 401: attempts token refresh via `/auth/refresh`, retries the original request once, or forces logout
 - Deduplicates concurrent refresh attempts (single in-flight refresh promise)
@@ -126,12 +128,14 @@ loading={isLoading ?? false}    // not loading={isLoading}
 
 ## Auth Flow
 
-1. Login/register → store `accessToken` (JWT, 15 min) + `refreshToken` (opaque, 7 days)
-2. Tokens persist to `expo-secure-store` (native) / `localStorage` (web)
-3. On app launch, `authStore.hydrate()` loads tokens and validates expiry
-4. Socket.IO connects with `auth: { token }` in handshake
-5. API client auto-refreshes expired access tokens transparently
-6. After registration, the user must verify their email via a 6-digit OTP before gaining full access. The BFF exposes `POST /auth/verify-email` and `POST /auth/resend-verification`.
+1. On app launch, `instanceStore.hydrate()` runs first — if no `activeInstance`, user is redirected to `connect.tsx`
+2. Login/register → store `accessToken` (JWT, 15 min) + `refreshToken` (opaque, 7 days)
+3. Tokens are **scoped per instance URL** — storage keys: `accessToken:https://…`, `refreshToken:https://…`. Switching `activeInstance` calls `loadInstanceTokens(url)` to swap the active token set without discarding other instances' tokens.
+4. Tokens persist to `expo-secure-store` (native) / `localStorage` (web)
+5. On app launch, `authStore.hydrate()` loads tokens for the current `activeInstance`
+6. Socket.IO connects with `auth: { token }` in handshake; reconnects automatically when `activeInstance` changes
+7. API client auto-refreshes expired access tokens transparently
+8. After registration, the user must verify their email via a 6-digit OTP before gaining full access. The BFF exposes `POST /auth/verify-email` and `POST /auth/resend-verification`.
 
 ## Socket.IO Integration
 
