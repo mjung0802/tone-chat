@@ -7,6 +7,7 @@ import {
   mockMembersRoutes,
   mockAttachmentRoute,
   mockInvitesRoutes,
+  mockMessagesRoutes,
 } from './helpers/mocks';
 import { MOCK_ATTACHMENT_ICON, MOCK_MEMBERS, MOCK_SERVER } from './helpers/fixtures';
 
@@ -56,6 +57,7 @@ test('non-admin is redirected away from settings page', async ({ page }) => {
 test('admin can see settings gear icon', async ({ page }) => {
   await mockServersRoutes(page);
   await mockMembersRoutes(page);
+  await mockMessagesRoutes(page);
   await page.goto(`/servers/${MOCK_SERVER._id}`);
 
   await expect(page.getByLabel('Server settings')).toBeVisible();
@@ -64,6 +66,7 @@ test('admin can see settings gear icon', async ({ page }) => {
 test('non-admin cannot see settings gear icon', async ({ page }) => {
   await mockServersRoutes(page, [NON_ADMIN_SERVER]);
   await mockMembersRoutes(page, NON_ADMIN_MEMBERS);
+  await mockMessagesRoutes(page);
   await page.goto(`/servers/${MOCK_SERVER._id}`);
 
   await expect(page.getByLabel('Server settings')).not.toBeVisible();
