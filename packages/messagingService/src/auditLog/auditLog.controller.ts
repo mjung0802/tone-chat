@@ -12,7 +12,7 @@ export async function listAuditLog(req: Request, res: Response): Promise<void> {
   }
 
   const entries = await AuditLog.find(filter)
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, _id: -1 })
     .limit(limit);
 
   res.json({ entries });
