@@ -36,8 +36,11 @@ When you enter a real domain (e.g. `chat.example.com`) during setup, Caddy autom
 ### Operations
 
 ```bash
-# View logs
+# View logs (includes verification codes if SMTP not configured)
 docker compose -f docker-compose.prod.yml logs -f
+
+# View only users service logs (for verification codes)
+docker compose -f docker-compose.prod.yml logs -f users
 
 # Stop
 docker compose -f docker-compose.prod.yml down
@@ -46,6 +49,8 @@ docker compose -f docker-compose.prod.yml down
 git pull
 docker compose -f docker-compose.prod.yml up -d --build
 ```
+
+> **Note:** Without SMTP configured, email verification codes are printed to the users service logs. For production deployments, configure SMTP in `.env` to send actual emails. See [DEPLOYMENT.md](DEPLOYMENT.md) for SMTP provider examples.
 
 ---
 

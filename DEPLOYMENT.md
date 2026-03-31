@@ -239,9 +239,24 @@ chmod 600 .env
   - With domain: `https://chat.yourdomain.com`
   - HTTP only: `http://your-server-ip:8080`
 
-- **SMTP** (optional):
-  - Leave blank to print verification codes to console
-  - Configure with your SMTP provider for production email
+- **SMTP** (optional but recommended for production):
+  - **Without SMTP**: Verification codes print to console logs (`docker compose logs users`)
+  - **With SMTP**: Users receive verification codes via email
+  
+  **Popular SMTP providers:**
+  - **Gmail**: `smtp.gmail.com:587` (use [App Password](https://support.google.com/accounts/answer/185833))
+  - **SendGrid**: `smtp.sendgrid.net:587` (API key as password)
+  - **AWS SES**: `email-smtp.us-east-1.amazonaws.com:587` (SMTP credentials)
+  - **Mailgun**: `smtp.mailgun.org:587` (SMTP credentials)
+  
+  **Example Gmail configuration:**
+  ```bash
+  SMTP_HOST=smtp.gmail.com
+  SMTP_PORT=587
+  SMTP_USER=yourapp@gmail.com
+  SMTP_PASS=your-app-password
+  SMTP_FROM=yourapp@gmail.com
+  ```
 
 ## Step 4: Pull and Start Services
 
