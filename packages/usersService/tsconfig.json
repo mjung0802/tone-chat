@@ -3,9 +3,12 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
+    "noEmit": false,
+    "allowImportingTsExtensions": false,
     "paths": {
       "@/*": ["./src/*"]
     }
   },
   "include": ["src", "../../test-types.d.ts"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.integration.test.ts"]
 }
