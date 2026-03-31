@@ -382,6 +382,26 @@ describe('MessageBubble', () => {
     expect(queryByTestId('user-avatar')).toBeNull();
   });
 
+  it('hides avatar and author name when isContinuation is true', () => {
+    const msg = makeMessage();
+    const { queryByTestId, queryByText } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Alice" authorAvatarId="att-1" isContinuation={true} />,
+    );
+
+    expect(queryByTestId('user-avatar')).toBeNull();
+    expect(queryByText('Alice')).toBeNull();
+  });
+
+  it('shows avatar and author name when isContinuation is false', () => {
+    const msg = makeMessage();
+    const { getByTestId, getByText } = renderWithProviders(
+      <MessageBubble message={msg} isOwn={false} authorName="Alice" authorAvatarId="att-1" isContinuation={false} />,
+    );
+
+    expect(getByTestId('user-avatar')).toBeTruthy();
+    expect(getByText('Alice')).toBeTruthy();
+  });
+
   // --- Mod Button Hover Row Tests ---
   // Note: Actual mod buttons render only on hover (web-only). Unit tests verify the
   // hover placeholder area renders when mod callbacks are provided, and that it
