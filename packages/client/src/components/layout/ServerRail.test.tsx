@@ -22,6 +22,7 @@ function makeNotificationState(dmUnreadEntries: NotificationState['dmUnreadEntri
     setNotificationPreference: jest.fn(),
   };
 }
+import * as useInvitesModule from '@/hooks/useInvites';
 import * as useAuthModule from '@/hooks/useAuth';
 import { renderWithProviders } from '@/test-utils/renderWithProviders';
 import type { Server } from '@/types/models';
@@ -38,6 +39,7 @@ jest.mock('expo-router', () => ({
 
 jest.mock('@/hooks/useServers');
 jest.mock('@/hooks/useAuth');
+jest.mock('@/hooks/useInvites');
 jest.mock('@/stores/notificationStore', () => ({
   ...jest.requireActual('@/stores/notificationStore'),
   useNotificationStore: jest.fn(),
@@ -95,6 +97,25 @@ beforeEach(() => {
 
   jest.mocked(useAuthModule.useLogout).mockReturnValue(jest.fn());
 
+  jest.mocked(useInvitesModule.useJoinViaCode).mockReturnValue({
+    mutate: jest.fn(),
+    mutateAsync: jest.fn(),
+    reset: jest.fn(),
+    data: undefined,
+    error: null,
+    isError: false,
+    isIdle: true,
+    isPending: false,
+    isSuccess: false,
+    status: 'idle',
+    variables: undefined,
+    context: undefined,
+    failureCount: 0,
+    failureReason: null,
+    isPaused: false,
+    submittedAt: 0,
+  } as ReturnType<typeof useInvitesModule.useJoinViaCode>);
+
   jest.mocked(notificationStore.useNotificationStore).mockImplementation((selector) => {
     return selector(makeNotificationState({}));
   });
@@ -118,6 +139,11 @@ describe('ServerRail', () => {
   it('renders the home button', () => {
     const { getByLabelText } = renderWithProviders(<ServerRail />);
     expect(getByLabelText('Home — direct messages')).toBeTruthy();
+  });
+
+  it('renders the join server button', () => {
+    const { getByLabelText } = renderWithProviders(<ServerRail />);
+    expect(getByLabelText('Join server via invite code')).toBeTruthy();
   });
 
   it('renders a server icon button for each server', () => {

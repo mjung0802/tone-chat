@@ -1,6 +1,6 @@
 # Tone Chat
 
-A Discord-style chat app — create servers, channels, and send messages in real time. Self-hostable in one command.
+A tone-based chat app — create servers, channels, and send messages in real time. Self-hostable in one command.
 
 ## Self-Hosting
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Badge, IconButton, useTheme } from 'react-native-paper';
 import { usePathname, useRouter, useSegments } from 'expo-router';
@@ -7,6 +7,7 @@ import { useServers } from '@/hooks/useServers';
 import { useNotificationStore, selectTotalDmUnread } from '@/stores/notificationStore';
 import { useLogout } from '@/hooks/useAuth';
 import { DmRailAvatar } from '@/components/dms/DmRailAvatar';
+import { JoinServerDialog } from '@/components/servers/JoinServerDialog';
 
 export function ServerRail() {
   const theme = useTheme();
@@ -18,6 +19,7 @@ export function ServerRail() {
   const dmUnreadCount = useNotificationStore(selectTotalDmUnread);
   const dmUnreadEntries = useNotificationStore((s) => s.dmUnreadEntries);
   const logout = useLogout();
+  const [joinDialogVisible, setJoinDialogVisible] = useState(false);
 
   const dmEntries = Object.entries(dmUnreadEntries)
     .filter(([, e]) => e.count > 0)
@@ -96,6 +98,15 @@ export function ServerRail() {
           accessibilityLabel="Create server"
           accessibilityRole="button"
         />
+
+        {/* Join server button */}
+        <IconButton
+          icon="link-plus"
+          size={28}
+          onPress={() => setJoinDialogVisible(true)}
+          accessibilityLabel="Join server via invite code"
+          accessibilityRole="button"
+        />
       </ScrollView>
 
       {/* Bottom actions */}
@@ -115,6 +126,15 @@ export function ServerRail() {
           accessibilityRole="button"
         />
       </View>
+
+      <JoinServerDialog
+        visible={joinDialogVisible}
+        onDismiss={() => setJoinDialogVisible(false)}
+        onJoined={(serverId) => {
+          setJoinDialogVisible(false);
+          router.push(`/(main)/servers/${serverId}`);
+        }}
+      />
     </View>
   );
 }

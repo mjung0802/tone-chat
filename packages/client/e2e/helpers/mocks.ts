@@ -419,6 +419,34 @@ export async function mockInvitesRoutes(page: Page): Promise<void> {
   });
 }
 
+export async function mockJoinViaCodeRoute(
+  page: Page,
+  server = MOCK_SERVER,
+): Promise<void> {
+  await page.route(`${API}/invites/*/join`, async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          member: {
+            _id: 'member-new',
+            serverId: server._id,
+            userId: MOCK_USER.id,
+            role: 'member',
+            joinedAt: new Date().toISOString(),
+            username: MOCK_USER.username,
+            display_name: MOCK_USER.display_name,
+          },
+          server,
+        }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+}
+
 export async function mockTonesRoutes(
   page: Page,
   customTones: Array<{ key: string; label: string; emoji: string; colorLight: string; colorDark: string; textStyle: string }> = [],
