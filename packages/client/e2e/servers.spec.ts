@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { mockSocketIO, mockServersRoutes, mockChannelsRoutes, mockUsersRoutes } from './helpers/mocks';
+import { mockSocketIO, mockServersRoutes, mockChannelsRoutes, mockUsersRoutes, mockJoinViaCodeRoute } from './helpers/mocks';
 import { MOCK_CHANNEL, MOCK_SERVER, MOCK_SERVER_TWO, MOCK_CHANNEL_TWO } from './helpers/fixtures';
 
 test.beforeEach(async ({ page }) => {
@@ -32,6 +32,24 @@ test('navigates to channel view on server press', async ({ page }) => {
   // Click the server list item (not the sidebar icon)
   await page.getByRole('button', { name: 'Test Server server, A test server' }).click();
 
+  await expect(page.getByText(MOCK_CHANNEL.name)).toBeVisible();
+});
+
+test('join server dialog accepts invite code and navigates to server', async ({ page }) => {
+  await mockServersRoutes(page);
+  await mockChannelsRoutes(page);
+  await mockJoinViaCodeRoute(page);
+
+  await page.goto('/');
+
+  // Open the join server dialog
+  await page.getByRole('button', { name: 'Join server via invite code' }).click();
+
+  // Fill in the invite code and submit
+  await page.getByRole('textbox', { name: 'Invite code' }).fill('test-invite-code');
+  await page.getByRole('button', { name: 'Join server', exact: true }).click();
+
+  // Should navigate to the joined server's channel view
   await expect(page.getByText(MOCK_CHANNEL.name)).toBeVisible();
 });
 

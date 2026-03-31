@@ -36,7 +36,6 @@ export default function ProfileScreen() {
   const [displayName, setDisplayName] = useState('');
   const [pronouns, setPronouns] = useState('');
   const [bio, setBio] = useState('');
-  const [status, setStatus] = useState('');
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
@@ -44,7 +43,6 @@ export default function ProfileScreen() {
       setDisplayName(user.display_name ?? '');
       setPronouns(user.pronouns ?? '');
       setBio(user.bio ?? '');
-      setStatus(user.status ?? '');
       setInitialized(true);
     }
   }, [user, initialized]);
@@ -65,7 +63,6 @@ export default function ProfileScreen() {
     if (displayName.trim()) data['display_name'] = displayName.trim();
     if (pronouns.trim()) data['pronouns'] = pronouns.trim();
     if (bio.trim()) data['bio'] = bio.trim();
-    if (status.trim()) data['status'] = status.trim();
     updateProfile.mutate(data, { onSuccess: () => setShowSuccess(true) });
   };
 
@@ -160,15 +157,6 @@ export default function ProfileScreen() {
         value={pronouns}
         onChangeText={setPronouns}
         accessibilityLabel="Pronouns"
-        style={styles.input}
-      />
-
-      <TextInput
-        label="Status"
-        value={status}
-        onChangeText={setStatus}
-        maxLength={20}
-        accessibilityLabel="Status"
         style={styles.input}
       />
 

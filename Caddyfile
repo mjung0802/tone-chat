@@ -1,0 +1,13 @@
+{$DOMAIN} {
+    handle /api/* {
+        reverse_proxy bff:4000
+    }
+    handle /socket.io/* {
+        reverse_proxy bff:4000
+    }
+    handle {
+        root * /srv/client
+        try_files {path} /index.html
+        file_server
+    }
+}

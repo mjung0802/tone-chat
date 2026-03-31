@@ -35,7 +35,6 @@ export interface UpdateUserRequest {
   pronouns?: string | undefined;
   avatar_url?: string | undefined;
   bio?: string | undefined;
-  status?: string | undefined;
 }
 
 export interface CreateServerRequest {

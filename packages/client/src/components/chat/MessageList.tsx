@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
+import React, { useCallback, useMemo, useRef, useImperativeHandle, forwardRef } from 'react';
 import { FlatList, StyleSheet, type ListRenderItemInfo } from 'react-native';
 import { MessageBubble } from './MessageBubble';
 import { LoadingSpinner } from '../common/LoadingSpinner';
@@ -27,6 +27,8 @@ interface MessageListProps {
   modActionsMap?: Record<string, { onMute?: (() => void) | undefined; onUnmute?: (() => void) | undefined; onKick?: (() => void) | undefined; onBan?: (() => void) | undefined }> | undefined;
   serverId?: string | undefined;
 }
+
+const CONTINUATION_THRESHOLD_MS = 5 * 60 * 1000;
 
 export const MessageList = forwardRef<MessageListHandle, MessageListProps>(function MessageList(props, ref) {
   const {
@@ -59,8 +61,21 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
     },
   }), [messages]);
 
+  const continuationFlags = useMemo(() => {
+    const flags = new Array<boolean>(messages.length);
+    for (let i = 0; i < messages.length; i++) {
+      const prev = messages[i + 1];
+      const msg = messages[i]!;
+      flags[i] =
+        prev !== undefined &&
+        prev.authorId === msg.authorId &&
+        new Date(msg.createdAt).getTime() - new Date(prev.createdAt).getTime() < CONTINUATION_THRESHOLD_MS;
+    }
+    return flags;
+  }, [messages]);
+
   const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<Message>) => (
+    ({ item, index }: ListRenderItemInfo<Message>) => (
       <MessageBubble
         message={item}
         isOwn={item.authorId === currentUserId}
@@ -81,9 +96,10 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
         onKick={modActionsMap?.[item.authorId]?.onKick}
         onBan={modActionsMap?.[item.authorId]?.onBan}
         serverId={serverId}
+        isContinuation={continuationFlags[index]}
       />
     ),
-    [currentUserId, authorNames, authorAvatars, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId, customTones, modActionsMap, serverId],
+    [continuationFlags, currentUserId, authorNames, authorAvatars, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId, customTones, modActionsMap, serverId],
   );
 
   const keyExtractor = useCallback((item: Message) => item._id, []);

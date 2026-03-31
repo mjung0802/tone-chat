@@ -5,6 +5,7 @@ import {
   mockResendVerificationRoute,
   mockSocketIO,
   mockServersRoutes,
+  seedActiveInstance,
 } from './helpers/mocks';
 
 // All tests use unauthenticated context
@@ -33,7 +34,6 @@ async function gotoVerifyEmailScreen(page: Parameters<typeof mockUnverifiedLogin
           display_name: 'Test User',
           pronouns: null,
           avatar_url: null,
-          status: 'online',
           bio: null,
           created_at: '2024-01-01T00:00:00.000Z',
           updated_at: '2024-01-01T00:00:00.000Z',
@@ -42,6 +42,7 @@ async function gotoVerifyEmailScreen(page: Parameters<typeof mockUnverifiedLogin
     });
   });
 
+  await seedActiveInstance(page);
   await page.goto('/');
   await page.getByLabel('Email address').fill('unverified@example.com');
   await page.getByRole('textbox', { name: 'Password' }).fill('password123');

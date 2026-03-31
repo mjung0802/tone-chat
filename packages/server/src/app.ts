@@ -15,6 +15,7 @@ import { serverInvitesRouter, joinRouter } from './invites/invites.routes.js';
 import { bansRouter } from './bans/bans.routes.js';
 import { auditLogRouter } from './auditLog/auditLog.routes.js';
 import { dmsRouter } from './dms/dms.routes.js';
+import { healthRouter } from './health/health.routes.js';
 
 export const app = express();
 
@@ -25,10 +26,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Health check
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
-});
+app.use('/api/v1/health', healthRouter);
 
 // Public auth routes (no JWT required)
 app.use('/api/v1/auth', authRouter);

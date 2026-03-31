@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Platform } from 'react-native';
 import { getMe } from '../api/users.api';
+import { useInstanceStore } from './instanceStore';
 
 interface AuthState {
   accessToken: string | null;
@@ -27,53 +28,82 @@ function parseJwtPayload(token: string): { sub?: string; exp?: number } | null {
   }
 }
 
+function makeKeys(instance: string): { accessKey: string; refreshKey: string; emailVerifiedKey: string } {
+  return {
+    accessKey: `accessToken:${instance}`,
+    refreshKey: `refreshToken:${instance}`,
+    emailVerifiedKey: `emailVerified:${instance}`,
+  };
+}
+
 // SECURITY: On web, tokens are stored in localStorage which is vulnerable to XSS.
 // Native platforms use expo-secure-store (encrypted keychain/keystore).
 // Mitigation: helmet CSP headers restrict script injection on the BFF.
 // Future: migrate web storage to httpOnly cookies for refresh tokens.
-async function persistTokens(accessToken: string | null, refreshToken: string | null, emailVerified: boolean) {
+// Tokens are scoped per instance URL to prevent cross-server token leakage.
+async function persistTokens(instance: string, accessToken: string | null, refreshToken: string | null, emailVerified: boolean) {
+  const { accessKey, refreshKey, emailVerifiedKey } = makeKeys(instance);
   if (Platform.OS === 'web') {
     if (accessToken) {
-      localStorage.setItem('accessToken', accessToken);
+      localStorage.setItem(accessKey, accessToken);
     } else {
-      localStorage.removeItem('accessToken');
+      localStorage.removeItem(accessKey);
     }
     if (refreshToken) {
-      localStorage.setItem('refreshToken', refreshToken);
+      localStorage.setItem(refreshKey, refreshToken);
     } else {
-      localStorage.removeItem('refreshToken');
+      localStorage.removeItem(refreshKey);
     }
-    localStorage.setItem('emailVerified', emailVerified ? 'true' : 'false');
+    localStorage.setItem(emailVerifiedKey, emailVerified ? 'true' : 'false');
   } else {
     const SecureStore = await import('expo-secure-store');
     if (accessToken) {
-      await SecureStore.setItemAsync('accessToken', accessToken);
+      await SecureStore.setItemAsync(accessKey, accessToken);
     } else {
-      await SecureStore.deleteItemAsync('accessToken');
+      await SecureStore.deleteItemAsync(accessKey);
     }
     if (refreshToken) {
-      await SecureStore.setItemAsync('refreshToken', refreshToken);
+      await SecureStore.setItemAsync(refreshKey, refreshToken);
     } else {
-      await SecureStore.deleteItemAsync('refreshToken');
+      await SecureStore.deleteItemAsync(refreshKey);
     }
-    await SecureStore.setItemAsync('emailVerified', emailVerified ? 'true' : 'false');
+    await SecureStore.setItemAsync(emailVerifiedKey, emailVerified ? 'true' : 'false');
   }
 }
 
-async function loadTokens(): Promise<{ accessToken: string | null; refreshToken: string | null; emailVerified: boolean }> {
+async function loadTokensForInstance(instance: string): Promise<{ accessToken: string | null; refreshToken: string | null; emailVerified: boolean }> {
+  const { accessKey, refreshKey, emailVerifiedKey } = makeKeys(instance);
   if (Platform.OS === 'web') {
     return {
-      accessToken: localStorage.getItem('accessToken'),
-      refreshToken: localStorage.getItem('refreshToken'),
-      emailVerified: localStorage.getItem('emailVerified') === 'true',
+      accessToken: localStorage.getItem(accessKey),
+      refreshToken: localStorage.getItem(refreshKey),
+      emailVerified: localStorage.getItem(emailVerifiedKey) === 'true',
     };
   }
   const SecureStore = await import('expo-secure-store');
-  return {
-    accessToken: await SecureStore.getItemAsync('accessToken'),
-    refreshToken: await SecureStore.getItemAsync('refreshToken'),
-    emailVerified: (await SecureStore.getItemAsync('emailVerified')) === 'true',
-  };
+  const [accessToken, refreshToken, emailVerifiedRaw] = await Promise.all([
+    SecureStore.getItemAsync(accessKey),
+    SecureStore.getItemAsync(refreshKey),
+    SecureStore.getItemAsync(emailVerifiedKey),
+  ]);
+  return { accessToken, refreshToken, emailVerified: emailVerifiedRaw === 'true' };
+}
+
+/**
+ * Loads tokens for the given instance URL and updates the auth store state.
+ * Resets auth state to blank if no tokens are found for that instance.
+ */
+export async function loadInstanceTokens(instance: string): Promise<void> {
+  const { accessToken, refreshToken, emailVerified } = await loadTokensForInstance(instance);
+  const payload = accessToken ? parseJwtPayload(accessToken) : null;
+  useAuthStore.setState({
+    accessToken,
+    refreshToken,
+    userId: payload?.sub ?? null,
+    emailVerified,
+    isAuthenticated: false,
+    isHydrated: false,
+  });
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -94,13 +124,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       emailVerified: emailVerified !== undefined ? emailVerified : state.emailVerified,
     }));
     const resolvedEmailVerified = emailVerified !== undefined ? emailVerified : get().emailVerified;
-    void persistTokens(accessToken, refreshToken, resolvedEmailVerified);
+    const instance = useInstanceStore.getState().activeInstance;
+    if (instance) {
+      void persistTokens(instance, accessToken, refreshToken, resolvedEmailVerified);
+    }
   },
 
   setEmailVerified: (verified: boolean) => {
     set({ emailVerified: verified });
     const state = get();
-    void persistTokens(state.accessToken, state.refreshToken, verified);
+    const instance = useInstanceStore.getState().activeInstance;
+    if (instance) {
+      void persistTokens(instance, state.accessToken, state.refreshToken, verified);
+    }
   },
 
   clearAuth: () => {
@@ -111,11 +147,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isAuthenticated: false,
       emailVerified: false,
     });
-    void persistTokens(null, null, false);
+    const instance = useInstanceStore.getState().activeInstance;
+    if (instance) {
+      void persistTokens(instance, null, null, false);
+    }
   },
 
   hydrate: async () => {
-    const { accessToken, refreshToken, emailVerified } = await loadTokens();
+    const instance = useInstanceStore.getState().activeInstance;
+
+    if (!instance) {
+      set({ isHydrated: true });
+      return;
+    }
+
+    const { accessToken, refreshToken, emailVerified } = await loadTokensForInstance(instance);
 
     if (!accessToken && !refreshToken) {
       set({ isHydrated: true });

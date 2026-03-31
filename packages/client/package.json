@@ -11,6 +11,7 @@
     "ios": "expo start --ios",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "build:web": "expo export --platform web --output-dir dist",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

@@ -1,9 +1,9 @@
 import { QueryClient } from '@tanstack/react-query';
 import { act, renderHook } from '@testing-library/react-native';
 import { useSocketStore } from '../stores/socketStore';
-import { makeMessage } from '../test-utils/fixtures';
+import { makeMessage, makeMember } from '../test-utils/fixtures';
 import { createHookWrapper, createTestQueryClient } from '../test-utils/renderWithProviders';
-import type { MessagesResponse } from '../types/api.types';
+import type { MembersResponse, MessagesResponse } from '../types/api.types';
 import type { TypingEvent } from '../types/socket.types';
 import { useChannelSocket, useTypingEmit } from './useSocket';
 
@@ -263,6 +263,41 @@ describe('useChannelSocket', () => {
     act(() => handler!({ message: newMsg }));
 
     expect(onNewMessage).toHaveBeenCalledWith('user-42');
+  });
+
+  describe('members cache invalidation on new_message', () => {
+    function setupWithMembers() {
+      queryClient.setQueryData<MembersResponse>(
+        ['servers', 'server-1', 'members'],
+        { members: [makeMember({ userId: 'user-123' })] },
+      );
+      queryClient.setQueryData<CacheData>(
+        ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
+        { pages: [{ messages: [] }], pageParams: [undefined] },
+      );
+
+      renderHook(() => useChannelSocket('server-1', 'channel-1'), {
+        wrapper: createHookWrapper(queryClient),
+      });
+
+      return findHandler(mockSocket, 'new_message')!;
+    }
+
+    it('invalidates when author is unknown', () => {
+      const handler = setupWithMembers();
+      act(() => handler({ message: makeMessage({ _id: 'msg-new', authorId: 'user-new' }) }));
+
+      const state = queryClient.getQueryState(['servers', 'server-1', 'members']);
+      expect(state?.isInvalidated).toBe(true);
+    });
+
+    it('does not invalidate when author is known', () => {
+      const handler = setupWithMembers();
+      act(() => handler({ message: makeMessage({ _id: 'msg-known', authorId: 'user-123' }) }));
+
+      const state = queryClient.getQueryState(['servers', 'server-1', 'members']);
+      expect(state?.isInvalidated).toBe(false);
+    });
   });
 
   it('cleans up all event listeners on unmount', () => {

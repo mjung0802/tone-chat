@@ -22,7 +22,19 @@ after(async () => {
 });
 
 beforeEach(async () => {
-  await sql`TRUNCATE users, credentials, refresh_tokens, email_verification_tokens, user_blocks, friendships CASCADE`;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await sql`TRUNCATE users, credentials, refresh_tokens, email_verification_tokens, user_blocks, friendships CASCADE`;
+      return;
+    } catch (err: unknown) {
+      const isDeadlock = (err as { code?: string }).code === '40P01';
+      if (attempt < 2 && isDeadlock) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        continue;
+      }
+      throw err;
+    }
+  }
 });
 
 describe('POST /auth/register', () => {

@@ -8,12 +8,8 @@ jest.mock('./MessageBubble', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Text } = require('react-native');
   return {
-    MessageBubble: ({ message, onImagePress }: { message: { _id: string; content: string }; onImagePress?: unknown }) => {
-      return (
-        <Text testID={`bubble-${message._id}`} onPress={() => (onImagePress as (() => void) | undefined)?.()}>
-          {message.content}
-        </Text>
-      );
+    MessageBubble: ({ message, onImagePress, isContinuation }: { message: { _id: string; content: string }; onImagePress?: unknown; isContinuation?: boolean }) => {
+      return (<Text testID={`bubble-${message._id}`} accessibilityHint={isContinuation ? 'continuation' : 'first'} onPress={() => (onImagePress as (() => void) | undefined)?.()}>{message.content}</Text>);
     },
   };
 });
@@ -97,5 +93,64 @@ describe('MessageList', () => {
     );
 
     expect(getByTestId('loading-spinner')).toBeTruthy();
+  });
+
+  describe('message grouping (isContinuation)', () => {
+    const T0 = '2025-01-01T00:00:00.000Z';
+    const T1 = '2025-01-01T00:02:00.000Z'; // 2 min after T0 (within threshold)
+    const T2 = '2025-01-01T00:10:00.000Z'; // 10 min after T0 (beyond threshold)
+
+    it('marks second message as continuation when same author within 5 min', () => {
+      // messages array is newest-first (after channel screen reverse)
+      const messages = [
+        makeMessage({ _id: 'msg-2', authorId: 'user-a', createdAt: T1 }),
+        makeMessage({ _id: 'msg-1', authorId: 'user-a', createdAt: T0 }),
+      ];
+
+      const { getByTestId } = renderWithProviders(
+        <MessageList messages={messages} currentUserId="user-123" />,
+      );
+
+      expect(getByTestId('bubble-msg-2').props.accessibilityHint).toBe('continuation');
+      expect(getByTestId('bubble-msg-1').props.accessibilityHint).toBe('first');
+    });
+
+    it('does not mark as continuation when authors differ', () => {
+      const messages = [
+        makeMessage({ _id: 'msg-2', authorId: 'user-b', createdAt: T1 }),
+        makeMessage({ _id: 'msg-1', authorId: 'user-a', createdAt: T0 }),
+      ];
+
+      const { getByTestId } = renderWithProviders(
+        <MessageList messages={messages} currentUserId="user-123" />,
+      );
+
+      expect(getByTestId('bubble-msg-2').props.accessibilityHint).toBe('first');
+      expect(getByTestId('bubble-msg-1').props.accessibilityHint).toBe('first');
+    });
+
+    it('does not mark as continuation when same author but gap > 5 min', () => {
+      const messages = [
+        makeMessage({ _id: 'msg-2', authorId: 'user-a', createdAt: T2 }),
+        makeMessage({ _id: 'msg-1', authorId: 'user-a', createdAt: T0 }),
+      ];
+
+      const { getByTestId } = renderWithProviders(
+        <MessageList messages={messages} currentUserId="user-123" />,
+      );
+
+      expect(getByTestId('bubble-msg-2').props.accessibilityHint).toBe('first');
+      expect(getByTestId('bubble-msg-1').props.accessibilityHint).toBe('first');
+    });
+
+    it('first message in list is never a continuation', () => {
+      const messages = [makeMessage({ _id: 'msg-1', authorId: 'user-a', createdAt: T0 })];
+
+      const { getByTestId } = renderWithProviders(
+        <MessageList messages={messages} currentUserId="user-123" />,
+      );
+
+      expect(getByTestId('bubble-msg-1').props.accessibilityHint).toBe('first');
+    });
   });
 });

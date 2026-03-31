@@ -13,6 +13,13 @@ import {
 
 const API = 'http://localhost:4000/api/v1';
 
+export async function seedActiveInstance(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    localStorage.setItem('activeInstance', 'http://localhost:4000');
+    localStorage.setItem('instances', JSON.stringify(['http://localhost:4000']));
+  });
+}
+
 export async function mockAuthRoutes(page: Page): Promise<void> {
   await page.route(`${API}/auth/login`, async (route) => {
     const body = route.request().postDataJSON() as { email?: string; password?: string };
@@ -409,6 +416,34 @@ export async function mockInvitesRoutes(page: Page): Promise<void> {
       contentType: 'application/json',
       body: JSON.stringify({ invites: [] }),
     });
+  });
+}
+
+export async function mockJoinViaCodeRoute(
+  page: Page,
+  server = MOCK_SERVER,
+): Promise<void> {
+  await page.route(`${API}/invites/*/join`, async (route) => {
+    if (route.request().method() === 'POST') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          member: {
+            _id: 'member-new',
+            serverId: server._id,
+            userId: MOCK_USER.id,
+            role: 'member',
+            joinedAt: new Date().toISOString(),
+            username: MOCK_USER.username,
+            display_name: MOCK_USER.display_name,
+          },
+          server,
+        }),
+      });
+    } else {
+      await route.continue();
+    }
   });
 }
 

@@ -6,7 +6,6 @@ export interface User {
   display_name: string | null;
   pronouns: string | null;
   avatar_url: string | null;
-  status: string;
   bio: string | null;
   created_at: Date;
   updated_at: Date;

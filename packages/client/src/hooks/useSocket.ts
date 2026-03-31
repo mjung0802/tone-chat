@@ -5,6 +5,7 @@ import { useSocketStore } from '../stores/socketStore';
 import { useAuthStore } from '../stores/authStore';
 import { injectMessage, updateMessageInCache } from './useMessages';
 import type { Message } from '../types/models';
+import type { MembersResponse } from '../types/api.types';
 import type { TypingEvent } from '../types/socket.types';
 
 export function useSocketConnection() {
@@ -50,6 +51,15 @@ export function useChannelSocket(
 
     const handleNewMessage = (data: { message: Message }) => {
       injectMessage(queryClient, data.message);
+      const membersKey = ['servers', serverId, 'members'] as const;
+      const cachedMembers = queryClient.getQueryData<MembersResponse>(membersKey);
+      if (
+        cachedMembers &&
+        !cachedMembers.members.some((m) => m.userId === data.message.authorId) &&
+        !queryClient.getQueryState(membersKey)?.isInvalidated
+      ) {
+        void queryClient.invalidateQueries({ queryKey: membersKey });
+      }
       onNewMessage?.(data.message.authorId);
       AccessibilityInfo.announceForAccessibility('New message received');
     };

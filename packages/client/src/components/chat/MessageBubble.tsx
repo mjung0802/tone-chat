@@ -58,6 +58,7 @@ interface MessageBubbleProps {
   onKick?: (() => void) | undefined;
   onBan?: (() => void) | undefined;
   serverId?: string | undefined;
+  isContinuation?: boolean | undefined;
 }
 
 function formatTime(dateStr: string): string {
@@ -85,6 +86,7 @@ export const MessageBubble = memo(function MessageBubble({
   onKick,
   onBan,
   serverId,
+  isContinuation,
 }: MessageBubbleProps) {
   const theme = useTheme();
   const [hovered, setHovered] = useState(false);
@@ -139,6 +141,7 @@ export const MessageBubble = memo(function MessageBubble({
 
   const containerStyle = [
     styles.container,
+    isContinuation && styles.containerContinuation,
     highlighted && { backgroundColor: theme.colors.tertiaryContainer + '40' },
   ];
 
@@ -150,7 +153,7 @@ export const MessageBubble = memo(function MessageBubble({
       accessibilityRole="text"
       accessibilityLabel={`${authorName ?? 'Unknown'} said: ${message.content}. ${formatTime(message.createdAt)}${message.editedAt ? ', edited' : ''}${attachmentLabel}${toneDef ? `, tone: ${toneDef.label}` : ''}`}
     >
-      {authorName ? (
+      {authorName && !isContinuation ? (
         <Pressable
           style={styles.avatarColumn}
           onPress={handleAuthorPress}
@@ -163,7 +166,7 @@ export const MessageBubble = memo(function MessageBubble({
         <View style={styles.avatarSpacer} />
       )}
       <View style={styles.messageContent}>
-      {authorName ? (
+      {authorName && !isContinuation ? (
         <View style={styles.authorRow}>
           <Pressable
             onPress={handleAuthorPress}
@@ -329,6 +332,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 2,
     maxWidth: '80%',
+  },
+  containerContinuation: {
+    paddingVertical: 1,
   },
   messageRow: {
     flexDirection: 'row',

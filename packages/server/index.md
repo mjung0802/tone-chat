@@ -7,6 +7,7 @@ Express 5 + Socket.IO 4 server on :4000. Verifies JWTs locally, proxies all clie
 | Directory | Purpose |
 |-----------|---------|
 | `config/` | Environment config + production validation |
+| `health/` | Unauthenticated `GET /api/v1/health` endpoint for client deployment discovery |
 | `attachments/` | Proxy routes + HTTP client → attachmentsService |
 | `auth/` | Auth proxy routes + rate limiting → usersService |
 | `auditLog/` | Audit log proxy → messagingService; enriches entries with usernames |
@@ -22,7 +23,8 @@ Express 5 + Socket.IO 4 server on :4000. Verifies JWTs locally, proxies all clie
 | `shared/` | `serviceRequest()` HTTP utility + auth/error middleware |
 
 ## Key Files
-- `src/app.ts` — Express app with all routers mounted under `/api/v1`
+- `src/app.ts` — Express app with all routers mounted under `/api/v1`; includes health router
+- `src/health/health.routes.ts` — `GET /api/v1/health` → `{ ok: true, version }`, no auth required
 - `src/index.ts` — HTTP server entrypoint, Socket.IO setup, config validation
 - `src/shared/serviceClient.ts` — all inter-service HTTP calls go through this
 - `src/messages/messages.socket.ts` — Socket.IO `send_message` handler with full validation

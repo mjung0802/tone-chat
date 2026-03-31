@@ -1,6 +1,7 @@
 import type { ApiError } from '../types/api.types';
+import { useInstanceStore, DEFAULT_INSTANCE_URL } from '../stores/instanceStore';
 
-const BASE_URL = 'http://localhost:4000/api/v1';
+const getBaseUrl = () => (useInstanceStore.getState().activeInstance ?? DEFAULT_INSTANCE_URL) + '/api/v1';
 
 let getAccessToken: () => string | null = () => null;
 let getRefreshToken: () => string | null = () => null;
@@ -51,7 +52,7 @@ async function attemptRefresh(): Promise<boolean> {
         return false;
       }
 
-      const res = await fetch(`${BASE_URL}/auth/refresh`, {
+      const res = await fetch(`${getBaseUrl()}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken }),
@@ -99,7 +100,7 @@ async function request<T>(
     headers['Content-Type'] = 'application/json';
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${getBaseUrl()}${path}`, {
     ...options,
     headers,
   });
