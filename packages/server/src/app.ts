@@ -26,11 +26,6 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Health check
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
-});
-
 app.use('/api/v1/health', healthRouter);
 
 // Public auth routes (no JWT required)

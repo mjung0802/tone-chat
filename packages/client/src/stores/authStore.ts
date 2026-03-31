@@ -81,11 +81,12 @@ async function loadTokensForInstance(instance: string): Promise<{ accessToken: s
     };
   }
   const SecureStore = await import('expo-secure-store');
-  return {
-    accessToken: await SecureStore.getItemAsync(accessKey),
-    refreshToken: await SecureStore.getItemAsync(refreshKey),
-    emailVerified: (await SecureStore.getItemAsync(emailVerifiedKey)) === 'true',
-  };
+  const [accessToken, refreshToken, emailVerifiedRaw] = await Promise.all([
+    SecureStore.getItemAsync(accessKey),
+    SecureStore.getItemAsync(refreshKey),
+    SecureStore.getItemAsync(emailVerifiedKey),
+  ]);
+  return { accessToken, refreshToken, emailVerified: emailVerifiedRaw === 'true' };
 }
 
 /**

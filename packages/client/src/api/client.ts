@@ -1,7 +1,7 @@
 import type { ApiError } from '../types/api.types';
-import { useInstanceStore } from '../stores/instanceStore';
+import { useInstanceStore, DEFAULT_INSTANCE_URL } from '../stores/instanceStore';
 
-const getBaseUrl = () => (useInstanceStore.getState().activeInstance ?? 'http://localhost:4000') + '/api/v1';
+const getBaseUrl = () => (useInstanceStore.getState().activeInstance ?? DEFAULT_INSTANCE_URL) + '/api/v1';
 
 let getAccessToken: () => string | null = () => null;
 let getRefreshToken: () => string | null = () => null;

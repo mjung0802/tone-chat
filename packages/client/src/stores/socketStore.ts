@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { io, type Socket } from 'socket.io-client';
 import type { ClientToServerEvents, ServerToClientEvents } from '../types/socket.types';
-import { useInstanceStore } from './instanceStore';
+import { useInstanceStore, DEFAULT_INSTANCE_URL } from './instanceStore';
 
 type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -13,7 +13,7 @@ interface SocketState {
   updateToken: (token: string) => void;
 }
 
-const getSocketUrl = () => useInstanceStore.getState().activeInstance ?? 'http://localhost:4000';
+const getSocketUrl = () => useInstanceStore.getState().activeInstance ?? DEFAULT_INSTANCE_URL;
 
 export const useSocketStore = create<SocketState>((set, get) => {
   // Subscribe to instanceStore: reconnect if activeInstance changes while connected

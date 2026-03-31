@@ -11,7 +11,9 @@ interface InstanceState {
   hydrate: () => Promise<void>;
 }
 
-function normalizeUrl(url: string): string {
+export const DEFAULT_INSTANCE_URL = 'http://localhost:4000';
+
+export function normalizeUrl(url: string): string {
   return url.replace(/\/+$/, '');
 }
 
@@ -55,8 +57,11 @@ async function loadInstances(): Promise<{ instances: string[]; activeInstance: s
     return { instances, activeInstance };
   }
   const SecureStore = await import('expo-secure-store');
-  const instances = parseInstances(await SecureStore.getItemAsync('instances'));
-  const stored = await SecureStore.getItemAsync('activeInstance');
+  const [instancesRaw, stored] = await Promise.all([
+    SecureStore.getItemAsync('instances'),
+    SecureStore.getItemAsync('activeInstance'),
+  ]);
+  const instances = parseInstances(instancesRaw);
   const activeInstance = stored && instances.includes(stored) ? stored : null;
   return { instances, activeInstance };
 }

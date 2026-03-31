@@ -1,17 +1,10 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, Text, HelperText, List, Divider, useTheme, ActivityIndicator } from 'react-native-paper';
-import { useRouter } from 'expo-router';
-import { useInstanceStore } from '@/stores/instanceStore';
-import { useAuthStore } from '@/stores/authStore';
-
-function normalizeUrl(url: string): string {
-  return url.replace(/\/+$/, '');
-}
+import { useInstanceStore, normalizeUrl } from '@/stores/instanceStore';
 
 export default function ConnectScreen() {
   const theme = useTheme();
-  const router = useRouter();
   const [url, setUrl] = useState('');
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +12,6 @@ export default function ConnectScreen() {
   const instances = useInstanceStore((s) => s.instances);
   const addInstance = useInstanceStore((s) => s.addInstance);
   const setActiveInstance = useInstanceStore((s) => s.setActiveInstance);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const handleConnect = async () => {
     const normalized = normalizeUrl(url.trim());
@@ -38,16 +30,6 @@ export default function ConnectScreen() {
     }
     setIsChecking(false);
     addInstance(normalized);
-    router.replace('/(auth)/login');
-  };
-
-  const handleSwitchInstance = (instanceUrl: string) => {
-    setActiveInstance(instanceUrl);
-    if (isAuthenticated) {
-      router.replace('/(main)/servers');
-    } else {
-      router.replace('/(auth)/login');
-    }
   };
 
   return (
@@ -117,7 +99,7 @@ export default function ConnectScreen() {
                 key={instance}
                 title={instance}
                 left={(props) => <List.Icon {...props} icon="server" />}
-                onPress={() => handleSwitchInstance(instance)}
+                onPress={() => setActiveInstance(instance)}
                 accessibilityLabel={`Connect to ${instance}`}
                 accessibilityRole="button"
                 style={styles.instanceRow}
