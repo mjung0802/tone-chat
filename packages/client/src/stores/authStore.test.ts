@@ -11,7 +11,7 @@ const INSTANCE_A = 'https://chat.example.com';
 const INSTANCE_B = 'https://other.example.com';
 
 const STUB_USER_RESPONSE: UserResponse = {
-  user: { id: 'user-123', username: 'test', email: 'test@test.com', email_verified: true, display_name: null, pronouns: null, avatar_url: null, status: 'online', bio: null, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
+  user: { id: 'user-123', username: 'test', email: 'test@test.com', email_verified: true, display_name: null, pronouns: null, avatar_url: null, bio: null, created_at: '2024-01-01T00:00:00Z', updated_at: '2024-01-01T00:00:00Z' },
 };
 
 // With Platform.OS='web' (set in jest.setup.ts), authStore uses localStorage

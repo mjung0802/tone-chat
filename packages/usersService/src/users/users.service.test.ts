@@ -75,7 +75,7 @@ describe('updateUser', () => {
 
   it('throws NO_UPDATES when all values are undefined', async () => {
     await assert.rejects(
-      () => updateUser('u1', { display_name: undefined, pronouns: undefined, avatar_url: undefined, bio: undefined, status: undefined }),
+      () => updateUser('u1', { display_name: undefined, pronouns: undefined, avatar_url: undefined, bio: undefined }),
       (error) => assertErrorCode(error, 'NO_UPDATES'),
     );
   });

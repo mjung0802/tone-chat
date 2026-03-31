@@ -15,7 +15,7 @@ export async function getUserById(id: string): Promise<User> {
   return user;
 }
 
-const ALLOWED_UPDATE_FIELDS = new Set(['display_name', 'pronouns', 'avatar_url', 'bio', 'status'] as const);
+const ALLOWED_UPDATE_FIELDS = new Set(['display_name', 'pronouns', 'avatar_url', 'bio'] as const);
 type AllowedUpdateField = (typeof ALLOWED_UPDATE_FIELDS extends Set<infer T> ? T : never);
 
 function isAllowedUpdateField(field: string): field is AllowedUpdateField {
@@ -24,7 +24,7 @@ function isAllowedUpdateField(field: string): field is AllowedUpdateField {
 
 export async function updateUser(
   id: string,
-  updates: { [K in 'display_name' | 'pronouns' | 'avatar_url' | 'bio' | 'status']?: User[K] | undefined },
+  updates: { [K in 'display_name' | 'pronouns' | 'avatar_url' | 'bio']?: User[K] | undefined },
 ): Promise<User> {
   const safeUpdates: Record<string, string | null> = {};
 

@@ -26,8 +26,8 @@ export async function patchMe(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const { display_name, pronouns, avatar_url, bio, status } = req.body as Record<string, string | undefined>;
-  const user = await updateUser(userId, { display_name, pronouns, avatar_url, bio, status });
+  const { display_name, pronouns, avatar_url, bio } = req.body as Record<string, string | undefined>;
+  const user = await updateUser(userId, { display_name, pronouns, avatar_url, bio });
   res.json({ user: stripPrivateFields(user) });
 }
 

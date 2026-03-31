@@ -34,7 +34,6 @@ async function gotoVerifyEmailScreen(page: Parameters<typeof mockUnverifiedLogin
           display_name: 'Test User',
           pronouns: null,
           avatar_url: null,
-          status: 'online',
           bio: null,
           created_at: '2024-01-01T00:00:00.000Z',
           updated_at: '2024-01-01T00:00:00.000Z',
