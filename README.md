@@ -23,7 +23,11 @@ The script will:
 3. Ask for optional SMTP settings (leave blank — OTPs print to console)
 4. Write `.env` and run `docker compose -f docker-compose.prod.yml up -d --build`
 
-Once running, open your browser to the configured domain. In the app, enter your server's URL on the connect screen to get started.
+Once running, open your browser to:
+- **Local/HTTP mode**: `http://localhost:8080`
+- **Custom domain**: `https://yourdomain.com` (or `http://yourdomain.com:8080` without DNS)
+
+In the app, enter your server's URL on the connect screen to get started.
 
 ### HTTPS / custom domain
 

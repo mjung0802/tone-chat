@@ -5,7 +5,7 @@ services:
       dockerfile: packages/client/Dockerfile
     ports:
       - "8080:80"
-      - "443:443"
+      - "8443:443"
     environment:
       - DOMAIN=${DOMAIN}
     volumes:
