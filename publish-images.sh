@@ -6,13 +6,13 @@ REGISTRY_USER="${DOCKER_REGISTRY_USER:-madaley1}"
 REPOSITORY="tone-chat"
 VERSION_SUFFIX="${VERSION:-latest}"
 
-# Image mappings: local_name -> tag_name
-declare -A IMAGES=(
-  ["tone-chat-bff"]="bff"
-  ["tone-chat-users"]="users"
-  ["tone-chat-messaging"]="messaging"
-  ["tone-chat-attachments"]="attachments"
-  ["tone-chat-caddy"]="caddy"
+# Image mappings: "local_name:tag_name"
+IMAGES=(
+  "tone-chat-bff:bff"
+  "tone-chat-users:users"
+  "tone-chat-messaging:messaging"
+  "tone-chat-attachments:attachments"
+  "tone-chat-caddy:caddy"
 )
 
 echo "🚀 Publishing Tone Chat Images"
@@ -23,8 +23,8 @@ echo "Version: $VERSION_SUFFIX"
 echo ""
 
 echo "📦 Images to publish:"
-for local_image in "${!IMAGES[@]}"; do
-  tag="${IMAGES[$local_image]}"
+for image_pair in "${IMAGES[@]}"; do
+  tag="${image_pair##*:}"
   if [[ "$VERSION_SUFFIX" == "latest" ]]; then
     echo "  - $REGISTRY_USER/$REPOSITORY:$tag"
   else
@@ -41,8 +41,9 @@ fi
 
 echo ""
 echo "🏷️  Tagging images..."
-for local_image in "${!IMAGES[@]}"; do
-  tag="${IMAGES[$local_image]}"
+for image_pair in "${IMAGES[@]}"; do
+  local_image="${image_pair%%:*}"
+  tag="${image_pair##*:}"
   if [[ "$VERSION_SUFFIX" == "latest" ]]; then
     target_tag="$REGISTRY_USER/$REPOSITORY:$tag"
   else
@@ -59,8 +60,8 @@ docker login
 
 echo ""
 echo "⬆️  Pushing images..."
-for local_image in "${!IMAGES[@]}"; do
-  tag="${IMAGES[$local_image]}"
+for image_pair in "${IMAGES[@]}"; do
+  tag="${image_pair##*:}"
   if [[ "$VERSION_SUFFIX" == "latest" ]]; then
     target_tag="$REGISTRY_USER/$REPOSITORY:$tag"
   else
@@ -75,8 +76,8 @@ echo ""
 echo "✅ All images published successfully!"
 echo ""
 echo "📋 Published images:"
-for local_image in "${!IMAGES[@]}"; do
-  tag="${IMAGES[$local_image]}"
+for image_pair in "${IMAGES[@]}"; do
+  tag="${image_pair##*:}"
   if [[ "$VERSION_SUFFIX" == "latest" ]]; then
     echo "  $REGISTRY_USER/$REPOSITORY:$tag"
   else
