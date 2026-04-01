@@ -38,3 +38,7 @@ export function removeCustomTone(userId: string, serverId: string, toneKey: stri
 export function transferOwnership(userId: string, serverId: string, body: Record<string, unknown>) {
   return serviceRequest(base(), `/servers/${serverId}/transfer`, { method: 'POST', userId, body });
 }
+
+export function updateInviteSettings(userId: string, serverId: string, body: Record<string, unknown>) {
+  return serviceRequest(base(), `/servers/${serverId}/invite-settings`, { method: 'PATCH', userId, body });
+}

@@ -48,3 +48,8 @@ serversRouter.delete('/:serverId/tones/:toneKey', async (req: AuthRequest, res) 
   const result = await client.removeCustomTone(req.userId!, req.params['serverId'] as string, req.params['toneKey'] as string);
   res.status(result.status).end();
 });
+
+serversRouter.patch('/:serverId/invite-settings', async (req: AuthRequest, res) => {
+  const result = await client.updateInviteSettings(req.userId!, req.params['serverId'] as string, req.body as Record<string, unknown>);
+  res.status(result.status).json(result.data);
+});

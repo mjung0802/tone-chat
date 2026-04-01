@@ -15,6 +15,11 @@ serverInvitesRouter.get('/', async (req: AuthRequest, res) => {
   res.status(result.status).json(result.data);
 });
 
+serverInvitesRouter.get('/default', async (req: AuthRequest, res) => {
+  const result = await client.getDefaultInvite(req.userId!, req.params['serverId'] as string);
+  res.status(result.status).json(result.data);
+});
+
 serverInvitesRouter.delete('/:code', async (req: AuthRequest, res) => {
   const result = await client.revokeInvite(req.userId!, req.params['serverId'] as string, req.params['code'] as string);
   res.status(result.status).json(result.data);
