@@ -69,11 +69,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
     paddingVertical: 8,
     minHeight: 63,
   },
   title: {
     flex: 1,
+    paddingHorizontal: 12,
   },
 });
