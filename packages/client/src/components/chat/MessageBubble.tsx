@@ -140,6 +140,10 @@ export const MessageBubble = memo(function MessageBubble({
 
   const hasReactions = (message.reactions?.length ?? 0) > 0;
 
+  const contentDescription = message.serverInvite != null && !message.content
+    ? `invited you to join ${message.serverInvite.serverName}`
+    : `said: ${message.content}`;
+
   const containerStyle = [
     styles.container,
     isContinuation && styles.containerContinuation,
@@ -152,7 +156,7 @@ export const MessageBubble = memo(function MessageBubble({
       onPointerLeave={Platform.OS === 'web' ? () => setHovered(false) : undefined}
       style={[containerStyle, styles.messageRow]}
       accessibilityRole="text"
-      accessibilityLabel={`${authorName ?? 'Unknown'} said: ${message.content}. ${formatTime(message.createdAt)}${message.editedAt ? ', edited' : ''}${attachmentLabel}${toneDef ? `, tone: ${toneDef.label}` : ''}`}
+      accessibilityLabel={`${authorName ?? 'Unknown'} ${contentDescription}. ${formatTime(message.createdAt)}${message.editedAt ? ', edited' : ''}${attachmentLabel}${toneDef ? `, tone: ${toneDef.label}` : ''}`}
     >
       {authorName && !isContinuation ? (
         <Pressable

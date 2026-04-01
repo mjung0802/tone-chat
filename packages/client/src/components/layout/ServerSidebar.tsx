@@ -35,7 +35,7 @@ export function ServerSidebar() {
       (m) => m.userId === userId && (m.role === 'admin' || server.ownerId === m.userId),
     ) ?? false;
 
-  const canInvite = isAdmin || (server.allowMemberInvites ?? true);
+  const canInvite = !!members && (isAdmin || (server.allowMemberInvites ?? true));
 
   const handleChannelPress = (channel: Channel) => {
     router.push(`/(main)/servers/${serverId}/channels/${channel._id}`);

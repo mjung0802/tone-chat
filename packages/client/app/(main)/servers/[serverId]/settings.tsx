@@ -19,7 +19,7 @@ import { getRoleLevel, type Role } from '@/utils/roles';
 import * as DocumentPicker from 'expo-document-picker';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import {
   ActivityIndicator,
   Button,
@@ -28,6 +28,7 @@ import {
   Icon,
   IconButton,
   List,
+  Switch,
   Text,
   TextInput,
   useTheme,
