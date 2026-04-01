@@ -8,7 +8,7 @@
 - **useMembers.ts** — `useMembers()`, `useMember()`, `useJoinServer()`, `useUpdateMember()`, `useRemoveMember()`, `useKickMember()`, `useMuteMember()`, `useUnmuteMember()`, `usePromoteMember()`, `useDemoteMember()`, `useBanMember()`
 - **useAuditLog.ts** — `useAuditLog()` (useInfiniteQuery, cursor pagination, 50/page)
 - **useBans.ts** — `useBans()`, `useUnban()`
-- **useInvites.ts** — `useInvites()`, `useCreateInvite()`, `useRevokeInvite()`, `useJoinViaCode()`
+- **useInvites.ts** — `useInvites()`, `useDefaultInvite()`, `useCreateInvite()`, `useRevokeInvite()`, `useJoinViaCode()`
 - **useAttachments.ts** — `useUpload()` (mutation), `useAttachment()` (staleTime: Infinity)
 - **useTones.ts** — `useCustomTones()`, `useAddCustomTone()`, `useRemoveCustomTone()`
 - **useUser.ts** — `useMe()`, `useUser()`, `useUpdateProfile()`

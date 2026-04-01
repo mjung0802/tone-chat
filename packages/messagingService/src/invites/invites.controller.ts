@@ -10,7 +10,16 @@ export async function getDefaultInvite(req: Request, res: Response): Promise<voi
   const userId = req.headers['x-user-id'] as string;
   const { serverId } = req.params as { serverId: string };
 
-  const server = await Server.findById(serverId);
+  const [server, existingInvite] = await Promise.all([
+    Server.findById(serverId),
+    Invite.findOne({
+      serverId,
+      revoked: false,
+      expiresAt: { $exists: false },
+      maxUses: { $exists: false },
+    }),
+  ]);
+
   if (!server) {
     throw new AppError('SERVER_NOT_FOUND', 'Server not found', 404);
   }
@@ -23,17 +32,7 @@ export async function getDefaultInvite(req: Request, res: Response): Promise<voi
     }
   }
 
-  // Find existing permanent, non-revoked invite
-  let invite = await Invite.findOne({
-    serverId,
-    revoked: false,
-    expiresAt: { $exists: false },
-    maxUses: { $exists: false },
-  });
-
-  if (!invite) {
-    invite = await Invite.create({ serverId, createdBy: userId });
-  }
+  const invite = existingInvite ?? await Invite.create({ serverId, createdBy: userId });
 
   res.json({ invite });
 }

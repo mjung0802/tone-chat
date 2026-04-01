@@ -35,6 +35,12 @@ export interface Channel {
   updatedAt: string;
 }
 
+export interface ServerInvitePayload {
+  code: string;
+  serverId: string;
+  serverName: string;
+}
+
 export interface Message {
   _id: string;
   channelId: string;
@@ -47,7 +53,7 @@ export interface Message {
   replyTo?: { messageId: string; authorId: string; authorName: string; content: string } | undefined;
   mentions?: string[] | undefined;
   tone?: string | undefined;
-  serverInvite?: { code: string; serverId: string; serverName: string } | undefined;
+  serverInvite?: ServerInvitePayload | undefined;
   createdAt: string;
 }
 
@@ -168,6 +174,6 @@ export interface DirectMessage {
   reactions: { emoji: string; userIds: string[] }[];
   tone: string | null;
   editedAt: string | null;
-  serverInvite?: { code: string; serverId: string; serverName: string } | undefined;
+  serverInvite?: ServerInvitePayload | undefined;
   createdAt: string;
 }

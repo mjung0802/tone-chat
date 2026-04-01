@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
 import { Portal, Dialog, Button, Text, ActivityIndicator, IconButton, useTheme } from 'react-native-paper';
 import * as Clipboard from 'expo-clipboard';
 import { useDefaultInvite } from '../../hooks/useInvites';
 import { useFriends } from '../../hooks/useFriends';
 import { useMembers } from '../../hooks/useMembers';
-import { getOrCreateConversation, sendDmMessage } from '../../api/dms.api';
+import { useGetOrCreateConversation } from '../../hooks/useDms';
+import { sendDmMessage } from '../../api/dms.api';
 
 interface InviteModalProps {
   visible: boolean;
@@ -26,12 +27,15 @@ export function InviteModal({ visible, onDismiss, serverId, serverName }: Invite
   const { data: friends, isLoading: friendsLoading } = useFriends();
   const { data: members, isLoading: membersLoading } = useMembers(serverId);
 
-  const isLoadingFriends = friendsLoading || membersLoading;
-  const eligibleFriends = (!friends || !members) ? [] : friends.filter(
-    (f) => !members.some((m) => m.userId === f.userId),
-  );
+  const getOrCreate = useGetOrCreateConversation();
 
-  // Reset state when modal opens
+  const isLoadingFriends = friendsLoading || membersLoading;
+  const eligibleFriends = useMemo(() => {
+    if (!friends || !members) return [];
+    const memberIds = new Set(members.map((m) => m.userId));
+    return friends.filter((f) => !memberIds.has(f.userId));
+  }, [friends, members]);
+
   React.useEffect(() => {
     if (visible) {
       setSentSet(new Set());
@@ -41,7 +45,6 @@ export function InviteModal({ visible, onDismiss, serverId, serverName }: Invite
     }
   }, [visible]);
 
-  // Cleanup copy timer on unmount
   React.useEffect(() => {
     return () => {
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
@@ -60,7 +63,7 @@ export function InviteModal({ visible, onDismiss, serverId, serverName }: Invite
     if (!invite) return;
     setSendingSet((prev) => new Set(prev).add(friendUserId));
     try {
-      const result = await getOrCreateConversation(friendUserId);
+      const result = await getOrCreate.mutateAsync(friendUserId);
       await sendDmMessage(result.conversation._id, {
         serverInvite: { code: invite.code, serverId, serverName },
       });
@@ -134,7 +137,7 @@ export function InviteModal({ visible, onDismiss, serverId, serverName }: Invite
           )}
 
           {errorMessage !== null ? (
-            <Text variant="bodySmall" style={{ marginTop: 8, color: theme.colors.error }}>{errorMessage}</Text>
+            <Text variant="bodySmall" style={[styles.errorText, { color: theme.colors.error }]}>{errorMessage}</Text>
           ) : null}
         </Dialog.Content>
         <Dialog.Actions>
@@ -184,5 +187,8 @@ const styles = StyleSheet.create({
   friendName: {
     flex: 1,
     marginRight: 8,
+  },
+  errorText: {
+    marginTop: 8,
   },
 });

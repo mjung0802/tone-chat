@@ -48,7 +48,7 @@ export function ServerInviteCard({ serverName, serverId, code }: ServerInviteCar
       <View style={styles.content}>
         <Text variant="bodyMedium" style={styles.label}>
           You've been invited to join{' '}
-          <Text variant="bodyMedium" style={{ fontWeight: 'bold' }}>
+          <Text variant="bodyMedium" style={styles.bold}>
             {serverName}
           </Text>
         </Text>
@@ -63,7 +63,7 @@ export function ServerInviteCard({ serverName, serverId, code }: ServerInviteCar
           {alreadyMember ? 'Already a member' : 'Join Server'}
         </Button>
         {errorMessage !== null ? (
-          <Text variant="bodySmall" style={{ color: theme.colors.error }}>{errorMessage}</Text>
+          <Text variant="bodySmall" style={{ color: theme.colors.error }} accessibilityRole="alert">{errorMessage}</Text>
         ) : null}
       </View>
     </Surface>
@@ -85,5 +85,8 @@ const styles = StyleSheet.create({
   },
   button: {
     alignSelf: 'flex-start',
+  },
+  bold: {
+    fontWeight: 'bold',
   },
 });
