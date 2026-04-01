@@ -239,24 +239,59 @@ chmod 600 .env
   - With domain: `https://chat.yourdomain.com`
   - HTTP only: `http://your-server-ip:8080`
 
-- **SMTP** (optional but recommended for production):
+- **SMTP** (optional but **recommended for production**):
   - **Without SMTP**: Verification codes print to console logs (`docker compose logs users`)
   - **With SMTP**: Users receive verification codes via email
   
-  **Popular SMTP providers:**
-  - **Gmail**: `smtp.gmail.com:587` (use [App Password](https://support.google.com/accounts/answer/185833))
-  - **SendGrid**: `smtp.sendgrid.net:587` (API key as password)
-  - **AWS SES**: `email-smtp.us-east-1.amazonaws.com:587` (SMTP credentials)
-  - **Mailgun**: `smtp.mailgun.org:587` (SMTP credentials)
+  **Recommended: SendGrid** (https://sendgrid.com)
+  - **Why SendGrid**: 100 emails/day free, excellent deliverability, simple setup
+  - Create a free account at https://signup.sendgrid.com/
+  - Generate an API key at Settings → API Keys
+  - Use `apikey` as the username (literal string)
   
-  **Example Gmail configuration:**
+  **SendGrid configuration (recommended):**
   ```bash
-  SMTP_HOST=smtp.gmail.com
+  SMTP_HOST=smtp.sendgrid.net
   SMTP_PORT=587
-  SMTP_USER=yourapp@gmail.com
-  SMTP_PASS=your-app-password
-  SMTP_FROM=yourapp@gmail.com
+  SMTP_USER=apikey
+  SMTP_PASS=SG.your-sendgrid-api-key-here
+  SMTP_FROM=noreply@yourdomain.com
   ```
+  
+  **Alternative providers:**
+  - **Gmail**: `smtp.gmail.com:587` (500/day limit, requires [App Password](https://support.google.com/accounts/answer/185833))
+  - **AWS SES**: `email-smtp.region.amazonaws.com:587` (best for high volume)
+  - **Mailgun**: `smtp.mailgun.org:587` (100/day free with trial)
+
+### Complete .env Example (with SendGrid)
+
+Here's a complete example `.env` file with SendGrid configured:
+
+```bash
+# === Secrets (auto-generated) ===
+JWT_SECRET='secret'
+INTERNAL_API_KEY='apikey'
+DB_PASSWORD='pass'
+S3_ACCESS_KEY='accessKey'
+S3_SECRET_KEY='secretKey'
+
+# === Deployment ===
+DOMAIN=chat.yourdomain.com
+ALLOWED_ORIGINS=https://chat.yourdomain.com
+
+# === SMTP (SendGrid - Recommended) ===
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_USER=apikey
+SMTP_PASS=SG.xxxxxxxxxxxxxxxxxx.yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+SMTP_FROM=noreply@yourdomain.com
+```
+
+**Replace these values:**
+- All secret values (JWT_SECRET, INTERNAL_API_KEY, etc.) with output from `openssl rand -hex 32`
+- `chat.yourdomain.com` with your actual domain
+- `SG.xxx...yyy` with your SendGrid API key
+- `noreply@yourdomain.com` with your sender email
 
 ## Step 4: Pull and Start Services
 
