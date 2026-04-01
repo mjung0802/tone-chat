@@ -40,6 +40,16 @@ jest.mock('./ReactionChips', () => {
   };
 });
 
+jest.mock('../invites/ServerInviteCard', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View } = require('react-native');
+  return {
+    ServerInviteCard: ({ serverName, code }: { serverName: string; serverId: string; code: string }) => {
+      return <View testID={`server-invite-card-${code}`} accessibilityLabel={serverName} />;
+    },
+  };
+});
+
 describe('MessageBubble', () => {
   it('renders message content', () => {
     const msg = makeMessage({ content: 'Test message' });
