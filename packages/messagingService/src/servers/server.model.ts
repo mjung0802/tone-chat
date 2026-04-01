@@ -6,6 +6,7 @@ export interface IServer extends Document {
   icon?: string;
   description?: string;
   visibility: 'public' | 'private';
+  allowMemberInvites: boolean;
   customTones: {
     key: string;
     label: string;
@@ -25,6 +26,7 @@ const serverSchema = new Schema<IServer>(
     icon: { type: String },
     description: { type: String },
     visibility: { type: String, enum: ['public', 'private'], default: 'private' },
+    allowMemberInvites: { type: Boolean, default: true },
     customTones: {
       type: [{
         key: { type: String, required: true },

@@ -9,8 +9,8 @@ interface ChannelSidebarProps {
   channels: Channel[];
   activeChannelId?: string | undefined;
   onChannelPress: (channel: Channel) => void;
-  onCreateChannel?: (() => void) | undefined;
-  canManage?: boolean | undefined;
+  onInvite?: (() => void) | undefined;
+  canInvite?: boolean | undefined;
 }
 
 export function ChannelSidebar({
@@ -18,8 +18,8 @@ export function ChannelSidebar({
   channels,
   activeChannelId,
   onChannelPress,
-  onCreateChannel,
-  canManage,
+  onInvite,
+  canInvite,
 }: ChannelSidebarProps) {
   const theme = useTheme();
 
@@ -37,13 +37,13 @@ export function ChannelSidebar({
         <Text variant="titleMedium" numberOfLines={1} style={styles.title}>
           {serverName}
         </Text>
-        {canManage && onCreateChannel ? (
+        {canInvite && onInvite ? (
           <IconButton
-            icon="plus"
+            icon="account-plus"
             size={20}
-            onPress={onCreateChannel}
-            accessibilityLabel="Create channel"
-            accessibilityHint="Opens the create channel form"
+            onPress={onInvite}
+            accessibilityLabel="Invite people"
+            accessibilityHint="Opens the invite modal"
           />
         ) : null}
       </View>
@@ -69,11 +69,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
     paddingVertical: 8,
     minHeight: 63,
   },
   title: {
     flex: 1,
+    paddingHorizontal: 12,
   },
 });

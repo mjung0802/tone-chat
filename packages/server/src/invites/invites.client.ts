@@ -18,3 +18,7 @@ export function revokeInvite(userId: string, serverId: string, code: string) {
 export function joinViaInvite(userId: string, code: string) {
   return serviceRequest(base(), `/invites/${code}/join`, { method: 'POST', userId });
 }
+
+export function getDefaultInvite(userId: string, serverId: string) {
+  return serviceRequest(base(), `/servers/${serverId}/invites/default`, { userId });
+}

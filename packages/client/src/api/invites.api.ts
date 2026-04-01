@@ -10,6 +10,10 @@ export function getInvites(serverId: string) {
   return get<InvitesResponse>(`/servers/${serverId}/invites`);
 }
 
+export function getDefaultInvite(serverId: string) {
+  return get<InviteResponse>(`/servers/${serverId}/invites/default`);
+}
+
 export function createInvite(serverId: string, data?: CreateInviteRequest) {
   return post<InviteResponse>(`/servers/${serverId}/invites`, data);
 }

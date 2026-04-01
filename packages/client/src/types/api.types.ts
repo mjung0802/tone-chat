@@ -1,4 +1,4 @@
-import type { User, Server, Channel, Message, ServerMember, ServerBan, Invite, Attachment, CustomToneDefinition, DirectConversation, DirectMessage, AuditLogEntry, FriendEntry, FriendRequest, FriendshipStatus } from './models';
+import type { User, Server, Channel, Message, ServerMember, ServerBan, Invite, Attachment, CustomToneDefinition, DirectConversation, DirectMessage, AuditLogEntry, FriendEntry, FriendRequest, FriendshipStatus, ServerInvitePayload } from './models';
 
 export interface ApiError {
   error: {
@@ -157,6 +157,11 @@ export interface SendDmRequest {
   replyToId?: string | undefined;
   mentions?: string[] | undefined;
   tone?: string | undefined;
+  serverInvite?: ServerInvitePayload | undefined;
+}
+
+export interface UpdateInviteSettingsRequest {
+  allowMemberInvites: boolean;
 }
 
 export interface UpdateDmRequest { content: string }

@@ -3,6 +3,7 @@ import { View, Pressable, Platform, StyleSheet, useColorScheme } from 'react-nat
 import { Text, Icon, IconButton, useTheme } from 'react-native-paper';
 import { AttachmentBubble } from './AttachmentBubble';
 import { ReactionChips } from './ReactionChips';
+import { ServerInviteCard } from '../invites/ServerInviteCard';
 import { UserAvatar } from '../common/UserAvatar';
 import type { Message, Attachment, CustomToneDefinition } from '../../types/models';
 import { resolveTone } from '../../tone/toneRegistry';
@@ -139,6 +140,10 @@ export const MessageBubble = memo(function MessageBubble({
 
   const hasReactions = (message.reactions?.length ?? 0) > 0;
 
+  const contentDescription = message.serverInvite != null && !message.content
+    ? `invited you to join ${message.serverInvite.serverName}`
+    : `said: ${message.content}`;
+
   const containerStyle = [
     styles.container,
     isContinuation && styles.containerContinuation,
@@ -151,7 +156,7 @@ export const MessageBubble = memo(function MessageBubble({
       onPointerLeave={Platform.OS === 'web' ? () => setHovered(false) : undefined}
       style={[containerStyle, styles.messageRow]}
       accessibilityRole="text"
-      accessibilityLabel={`${authorName ?? 'Unknown'} said: ${message.content}. ${formatTime(message.createdAt)}${message.editedAt ? ', edited' : ''}${attachmentLabel}${toneDef ? `, tone: ${toneDef.label}` : ''}`}
+      accessibilityLabel={`${authorName ?? 'Unknown'} ${contentDescription}. ${formatTime(message.createdAt)}${message.editedAt ? ', edited' : ''}${attachmentLabel}${toneDef ? `, tone: ${toneDef.label}` : ''}`}
     >
       {authorName && !isContinuation ? (
         <Pressable
@@ -236,6 +241,13 @@ export const MessageBubble = memo(function MessageBubble({
               </View>
             ) : contentBlock;
           })()}
+          {message.serverInvite != null && (
+            <ServerInviteCard
+              serverName={message.serverInvite.serverName}
+              serverId={message.serverInvite.serverId}
+              code={message.serverInvite.code}
+            />
+          )}
           {toneDef ? (
             <Text style={{
               color: toneColor,

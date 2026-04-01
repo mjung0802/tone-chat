@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as serversApi from '../api/servers.api';
-import type { CreateServerRequest, UpdateServerRequest, TransferOwnershipRequest } from '../types/api.types';
+import type { CreateServerRequest, UpdateServerRequest, TransferOwnershipRequest, UpdateInviteSettingsRequest } from '../types/api.types';
 
 export function useServers() {
   return useQuery({
@@ -62,6 +62,17 @@ export function useTransferOwnership(serverId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['servers', serverId] });
       void queryClient.invalidateQueries({ queryKey: ['servers', serverId, 'members'] });
+    },
+  });
+}
+
+export function useUpdateInviteSettings(serverId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UpdateInviteSettingsRequest) => serversApi.updateInviteSettings(serverId, data),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['servers', serverId], data);
     },
   });
 }
