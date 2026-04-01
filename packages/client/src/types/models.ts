@@ -19,6 +19,7 @@ export interface Server {
   description?: string;
   visibility: 'public' | 'private';
   customTones?: CustomToneDefinition[] | undefined;
+  allowMemberInvites?: boolean | undefined;
   createdAt: string;
   updatedAt: string;
 }
@@ -46,6 +47,7 @@ export interface Message {
   replyTo?: { messageId: string; authorId: string; authorName: string; content: string } | undefined;
   mentions?: string[] | undefined;
   tone?: string | undefined;
+  serverInvite?: { code: string; serverId: string; serverName: string } | undefined;
   createdAt: string;
 }
 
@@ -166,5 +168,6 @@ export interface DirectMessage {
   reactions: { emoji: string; userIds: string[] }[];
   tone: string | null;
   editedAt: string | null;
+  serverInvite?: { code: string; serverId: string; serverName: string } | undefined;
   createdAt: string;
 }

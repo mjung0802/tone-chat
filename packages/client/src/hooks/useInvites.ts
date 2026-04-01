@@ -43,3 +43,12 @@ export function useJoinViaCode() {
     },
   });
 }
+
+export function useDefaultInvite(serverId: string) {
+  return useQuery({
+    queryKey: ['defaultInvite', serverId],
+    queryFn: () => invitesApi.getDefaultInvite(serverId),
+    enabled: !!serverId,
+    select: (data) => data.invite,
+  });
+}

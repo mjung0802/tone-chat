@@ -145,6 +145,7 @@ export interface MemberResponse { member: ServerMember }
 export interface MembersResponse { members: ServerMember[] }
 export interface InviteResponse { invite: Invite }
 export interface InvitesResponse { invites: Invite[] }
+export interface DefaultInviteResponse { invite: Invite }
 export interface AttachmentResponse { attachment: Attachment }
 export interface BansResponse { bans: ServerBan[] }
 export interface AuditLogResponse { entries: AuditLogEntry[] }
@@ -157,6 +158,11 @@ export interface SendDmRequest {
   replyToId?: string | undefined;
   mentions?: string[] | undefined;
   tone?: string | undefined;
+  serverInvite?: { code: string; serverId: string; serverName: string } | undefined;
+}
+
+export interface UpdateInviteSettingsRequest {
+  allowMemberInvites: boolean;
 }
 
 export interface UpdateDmRequest { content: string }

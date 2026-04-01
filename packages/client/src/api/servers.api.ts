@@ -5,6 +5,7 @@ import type {
   CreateServerRequest,
   UpdateServerRequest,
   TransferOwnershipRequest,
+  UpdateInviteSettingsRequest,
 } from '../types/api.types';
 
 export function getServers() {
@@ -29,4 +30,8 @@ export function deleteServer(serverId: string) {
 
 export function transferOwnership(serverId: string, data: TransferOwnershipRequest) {
   return post<ServerResponse>(`/servers/${serverId}/transfer`, data);
+}
+
+export function updateInviteSettings(serverId: string, data: UpdateInviteSettingsRequest) {
+  return patch<ServerResponse>(`/servers/${serverId}/invite-settings`, data);
 }

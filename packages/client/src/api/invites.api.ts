@@ -2,12 +2,17 @@ import { get, post, del } from './client';
 import type {
   InviteResponse,
   InvitesResponse,
+  DefaultInviteResponse,
   CreateInviteRequest,
   JoinInviteResponse,
 } from '../types/api.types';
 
 export function getInvites(serverId: string) {
   return get<InvitesResponse>(`/servers/${serverId}/invites`);
+}
+
+export function getDefaultInvite(serverId: string) {
+  return get<DefaultInviteResponse>(`/servers/${serverId}/invites/default`);
 }
 
 export function createInvite(serverId: string, data?: CreateInviteRequest) {
