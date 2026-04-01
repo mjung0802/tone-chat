@@ -14,6 +14,11 @@ export interface IDirectMessage extends Document {
   mentions: string[];
   reactions: { emoji: string; userIds: string[] }[];
   tone: string | null;
+  serverInvite?: {
+    code: string;
+    serverId: string;
+    serverName: string;
+  };
   editedAt: Date | null;
   createdAt: Date;
 }
@@ -39,6 +44,14 @@ const directMessageSchema = new Schema<IDirectMessage>(
       default: [],
     },
     tone: { type: String, default: null },
+    serverInvite: {
+      type: {
+        code: { type: String, required: true },
+        serverId: { type: String, required: true },
+        serverName: { type: String, required: true },
+      },
+      _id: false,
+    },
     editedAt: { type: Date, default: null },
   },
   { timestamps: { createdAt: true, updatedAt: false } },
