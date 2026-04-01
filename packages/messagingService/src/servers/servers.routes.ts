@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createServer, getServer, listServers, updateServer, deleteServer, transferOwnership } from './servers.controller.js';
+import { createServer, getServer, listServers, updateServer, deleteServer, transferOwnership, updateInviteSettings } from './servers.controller.js';
 import { requireMember } from '../shared/middleware/requireMember.js';
 import { requireRole } from '../shared/middleware/requireRole.js';
 import { listCustomTones, addCustomTone, removeCustomTone } from './customTones.controller.js';
@@ -13,6 +13,8 @@ serversRouter.patch('/:serverId', requireMember, updateServer);
 serversRouter.delete('/:serverId', requireMember, deleteServer);
 
 serversRouter.post('/:serverId/transfer', requireMember, transferOwnership);
+
+serversRouter.patch('/:serverId/invite-settings', requireRole('admin'), updateInviteSettings);
 
 serversRouter.get('/:serverId/tones', requireMember, listCustomTones);
 serversRouter.post('/:serverId/tones', requireRole('admin'), addCustomTone);

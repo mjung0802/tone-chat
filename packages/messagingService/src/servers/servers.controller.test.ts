@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
+import type { IServer } from './server.model.js';
 
 type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
 type TestResponse = Response & { statusCode: number; _json: unknown };
@@ -41,10 +42,16 @@ mock.module('../members/serverMember.model.js', {
   },
 });
 
-const { createServer, getServer, listServers, updateServer, deleteServer } = await import('./servers.controller.js');
+const { createServer, getServer, listServers, updateServer, deleteServer, updateInviteSettings } = await import('./servers.controller.js');
 
 function makeReq(overrides: RequestOverrides = {}): Request {
   return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
+}
+
+function makeReqWithServer(server: unknown, overrides: RequestOverrides = {}): Request {
+  const req = makeReq(overrides);
+  req.server = server as IServer;
+  return req;
 }
 function makeRes(): TestResponse {
   const res = { statusCode: 200, _json: undefined } as TestResponse;
@@ -207,5 +214,39 @@ describe('deleteServer', () => {
     await deleteServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), res);
     assert.equal(res.statusCode, 204);
     assert.equal(mockDeleteOne.mock.callCount(), 1);
+  });
+});
+
+describe('updateInviteSettings', () => {
+  it('valid boolean true → saves and returns 200 with server', async () => {
+    const saveFn = mock.fn<AnyFn>(async () => undefined);
+    const server = { allowMemberInvites: false, save: saveFn };
+    const req = makeReqWithServer(server, { body: { allowMemberInvites: true } });
+    const res = makeRes();
+    await updateInviteSettings(req, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(server.allowMemberInvites, true);
+    assert.equal(saveFn.mock.callCount(), 1);
+    assert.deepEqual((res._json as { server: unknown }).server, server);
+  });
+
+  it('valid boolean false → saves and returns 200 with server', async () => {
+    const saveFn = mock.fn<AnyFn>(async () => undefined);
+    const server = { allowMemberInvites: true, save: saveFn };
+    const req = makeReqWithServer(server, { body: { allowMemberInvites: false } });
+    const res = makeRes();
+    await updateInviteSettings(req, res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(server.allowMemberInvites, false);
+    assert.equal(saveFn.mock.callCount(), 1);
+  });
+
+  it('non-boolean value → 400 INVALID_FIELDS', async () => {
+    const server = { allowMemberInvites: true, save: mock.fn<AnyFn>(async () => undefined) };
+    const req = makeReqWithServer(server, { body: { allowMemberInvites: 'true' } });
+    const res = makeRes();
+    await updateInviteSettings(req, res);
+    assert.equal(res.statusCode, 400);
+    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_FIELDS');
   });
 });

@@ -314,6 +314,53 @@ describe('sendDmMessage', () => {
     await sendDmMessage(req, res);
     assert.equal(res.statusCode, 201);
   });
+
+  it('serverInvite only (no content, no attachments) → 201', async () => {
+    const conv = makeConversation(['u1', 'u2']);
+    const createdMsg = { _id: 'msg1', serverInvite: { code: 'abc', serverId: 's1', serverName: 'TestServer' } };
+    mockMsgCreate.mock.mockImplementation(async () => createdMsg);
+    mockConvFindByIdAndUpdate.mock.mockImplementation(async () => null);
+    const req = makeReq({
+      userId: 'u1',
+      params: { conversationId: 'conv1' },
+      body: { serverInvite: { code: 'abc', serverId: 's1', serverName: 'TestServer' } },
+      conversation: conv,
+    });
+    const res = makeRes();
+    await sendDmMessage(req, res);
+    assert.equal(res.statusCode, 201);
+    assert.deepEqual((res._json as { message: unknown }).message, createdMsg);
+  });
+
+  it('invalid serverInvite shape (missing fields) → 400 INVALID_SERVER_INVITE', async () => {
+    const conv = makeConversation(['u1', 'u2']);
+    const req = makeReq({
+      userId: 'u1',
+      params: { conversationId: 'conv1' },
+      body: { serverInvite: { code: 'abc' } },
+      conversation: conv,
+    });
+    const res = makeRes();
+    await sendDmMessage(req, res);
+    assert.equal(res.statusCode, 400);
+    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_SERVER_INVITE');
+  });
+
+  it('serverInvite + content → 201', async () => {
+    const conv = makeConversation(['u1', 'u2']);
+    const createdMsg = { _id: 'msg1', content: 'check this out', serverInvite: { code: 'abc', serverId: 's1', serverName: 'TestServer' } };
+    mockMsgCreate.mock.mockImplementation(async () => createdMsg);
+    mockConvFindByIdAndUpdate.mock.mockImplementation(async () => null);
+    const req = makeReq({
+      userId: 'u1',
+      params: { conversationId: 'conv1' },
+      body: { content: 'check this out', serverInvite: { code: 'abc', serverId: 's1', serverName: 'TestServer' } },
+      conversation: conv,
+    });
+    const res = makeRes();
+    await sendDmMessage(req, res);
+    assert.equal(res.statusCode, 201);
+  });
 });
 
 // ─── editDmMessage ────────────────────────────────────────────────────────────

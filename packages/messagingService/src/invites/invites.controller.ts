@@ -6,6 +6,38 @@ import { ServerBan } from '../bans/serverBan.model.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
 import { getRoleLevel, type Role } from '../shared/roles.js';
 
+export async function getDefaultInvite(req: Request, res: Response): Promise<void> {
+  const userId = req.headers['x-user-id'] as string;
+  const { serverId } = req.params as { serverId: string };
+
+  const server = await Server.findById(serverId);
+  if (!server) {
+    throw new AppError('SERVER_NOT_FOUND', 'Server not found', 404);
+  }
+
+  if (!server.allowMemberInvites) {
+    const isOwner = server.ownerId === userId;
+    const memberLevel = getRoleLevel((req.member!.role ?? 'member') as Role, isOwner);
+    if (memberLevel < getRoleLevel('admin', false)) {
+      throw new AppError('FORBIDDEN', 'Only admins can create invites when member invites are disabled', 403);
+    }
+  }
+
+  // Find existing permanent, non-revoked invite
+  let invite = await Invite.findOne({
+    serverId,
+    revoked: false,
+    expiresAt: { $exists: false },
+    maxUses: { $exists: false },
+  });
+
+  if (!invite) {
+    invite = await Invite.create({ serverId, createdBy: userId });
+  }
+
+  res.json({ invite });
+}
+
 export async function createInvite(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
   const { serverId } = req.params;

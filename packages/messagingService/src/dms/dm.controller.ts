@@ -83,19 +83,40 @@ export async function sendDmMessage(req: Request, res: Response): Promise<void> 
   const { conversationId } = req.params;
   const conversation = req.conversation!;
 
-  const { content, attachmentIds, replyToId, mentions: rawMentions, tone: rawTone } = req.body as {
+  const { content, attachmentIds, replyToId, mentions: rawMentions, tone: rawTone, serverInvite: rawServerInvite } = req.body as {
     content?: unknown;
     attachmentIds?: unknown;
     replyToId?: unknown;
     mentions?: unknown;
     tone?: unknown;
+    serverInvite?: unknown;
   };
 
   // Validate content / attachments — one required
   const hasContent = typeof content === 'string' && content.length > 0;
   const hasAttachments = Array.isArray(attachmentIds) && attachmentIds.length > 0;
-  if (!hasContent && !hasAttachments) {
-    res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'content or attachments required', status: 400 } });
+
+  // Validate serverInvite if provided
+  let serverInvite: { code: string; serverId: string; serverName: string } | undefined;
+  if (rawServerInvite !== undefined && rawServerInvite !== null) {
+    if (
+      typeof rawServerInvite !== 'object' ||
+      typeof (rawServerInvite as Record<string, unknown>)['code'] !== 'string' ||
+      ((rawServerInvite as Record<string, unknown>)['code'] as string).length === 0 ||
+      typeof (rawServerInvite as Record<string, unknown>)['serverId'] !== 'string' ||
+      ((rawServerInvite as Record<string, unknown>)['serverId'] as string).length === 0 ||
+      typeof (rawServerInvite as Record<string, unknown>)['serverName'] !== 'string' ||
+      ((rawServerInvite as Record<string, unknown>)['serverName'] as string).length === 0
+    ) {
+      res.status(400).json({ error: { code: 'INVALID_SERVER_INVITE', message: 'serverInvite must have string fields: code, serverId, serverName', status: 400 } });
+      return;
+    }
+    serverInvite = rawServerInvite as { code: string; serverId: string; serverName: string };
+  }
+
+  const hasServerInvite = serverInvite !== undefined;
+  if (!hasContent && !hasAttachments && !hasServerInvite) {
+    res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'content, attachments, or serverInvite required', status: 400 } });
     return;
   }
 
@@ -192,6 +213,7 @@ export async function sendDmMessage(req: Request, res: Response): Promise<void> 
     mentions,
     ...(replyTo ? { replyTo } : {}),
     ...(tone ? { tone } : {}),
+    ...(serverInvite != null ? { serverInvite } : {}),
   });
 
   // Update lastMessageAt on conversation

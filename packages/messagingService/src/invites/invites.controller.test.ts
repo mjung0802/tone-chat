@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
+import type { IServerMember } from '../members/serverMember.model.js';
 
 const mockInviteCreate = mock.fn<AnyFn>();
 const mockInviteFind = mock.fn<AnyFn>();
@@ -36,7 +37,7 @@ mock.module('../bans/serverBan.model.js', {
   namedExports: { ServerBan: { findOne: mockBanFindOne } },
 });
 
-const { createInvite, listInvites, revokeInvite, joinViaInvite } = await import('./invites.controller.js');
+const { createInvite, listInvites, revokeInvite, joinViaInvite, getDefaultInvite } = await import('./invites.controller.js');
 
 type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
 type TestResponse = Response & { statusCode: number; _json: unknown; end: () => TestResponse };
@@ -50,6 +51,13 @@ function assertErrorCode(error: unknown, code: string): true {
 
 function makeReq(overrides: RequestOverrides = {}): Request {
   return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
+}
+
+function makeReqWithMember(overrides: RequestOverrides & { memberRole?: 'admin' | 'mod' | 'member' } = {}): Request {
+  const { memberRole, ...rest } = overrides;
+  const req = makeReq(rest);
+  req.member = { role: memberRole ?? 'member' } as IServerMember;
+  return req;
 }
 function makeRes(): TestResponse {
   const res = { statusCode: 200, _json: undefined } as TestResponse;
@@ -142,6 +150,95 @@ describe('revokeInvite', () => {
     await revokeInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1', code: 'abc' } }), res);
     assert.equal(res.statusCode, 200);
     assert.deepEqual((res._json as { invite: unknown }).invite, invite);
+  });
+});
+
+describe('getDefaultInvite', () => {
+  beforeEach(() => {
+    mockServerFindById.mock.resetCalls();
+    mockInviteFindOne.mock.resetCalls();
+    mockInviteCreate.mock.resetCalls();
+  });
+
+  it('allowMemberInvites true + regular member → 200, returns invite', async () => {
+    const existingInvite = { code: 'abc', serverId: 's1' };
+    mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'owner', allowMemberInvites: true }));
+    mockInviteFindOne.mock.mockImplementation(async () => existingInvite);
+
+    const res = makeRes();
+    await getDefaultInvite(makeReqWithMember({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1' },
+      memberRole: 'member',
+    }), res);
+
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual((res._json as { invite: unknown }).invite, existingInvite);
+    assert.equal(mockInviteCreate.mock.callCount(), 0);
+  });
+
+  it('allowMemberInvites false + regular member → 403', async () => {
+    mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'owner', allowMemberInvites: false }));
+
+    await assert.rejects(
+      () => getDefaultInvite(makeReqWithMember({
+        headers: { 'x-user-id': 'u1' },
+        params: { serverId: 's1' },
+        memberRole: 'member',
+      }), makeRes()),
+      (error) => assertErrorCode(error, 'FORBIDDEN'),
+    );
+  });
+
+  it('allowMemberInvites false + admin → 200', async () => {
+    const existingInvite = { code: 'abc', serverId: 's1' };
+    mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'owner', allowMemberInvites: false }));
+    mockInviteFindOne.mock.mockImplementation(async () => existingInvite);
+
+    const res = makeRes();
+    await getDefaultInvite(makeReqWithMember({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1' },
+      memberRole: 'admin',
+    }), res);
+
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual((res._json as { invite: unknown }).invite, existingInvite);
+  });
+
+  it('returns existing invite when one already exists (no duplicate creation)', async () => {
+    const existingInvite = { code: 'existing', serverId: 's1' };
+    mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'owner', allowMemberInvites: true }));
+    mockInviteFindOne.mock.mockImplementation(async () => existingInvite);
+
+    const res = makeRes();
+    await getDefaultInvite(makeReqWithMember({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1' },
+      memberRole: 'member',
+    }), res);
+
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual((res._json as { invite: unknown }).invite, existingInvite);
+    assert.equal(mockInviteCreate.mock.callCount(), 0);
+  });
+
+  it('creates new invite when none exist', async () => {
+    const newInvite = { code: 'new123', serverId: 's1' };
+    mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'owner', allowMemberInvites: true }));
+    mockInviteFindOne.mock.mockImplementation(async () => null);
+    mockInviteCreate.mock.mockImplementation(async () => newInvite);
+
+    const res = makeRes();
+    await getDefaultInvite(makeReqWithMember({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1' },
+      memberRole: 'member',
+    }), res);
+
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual((res._json as { invite: unknown }).invite, newInvite);
+    assert.equal(mockInviteCreate.mock.callCount(), 1);
   });
 });
 

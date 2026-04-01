@@ -102,6 +102,21 @@ export async function transferOwnership(req: Request, res: Response): Promise<vo
   res.json({ server });
 }
 
+export async function updateInviteSettings(req: Request, res: Response): Promise<void> {
+  const server = req.server!;
+
+  const { allowMemberInvites } = req.body as { allowMemberInvites?: unknown };
+  if (typeof allowMemberInvites !== 'boolean') {
+    res.status(400).json({ error: { code: 'INVALID_FIELDS', message: 'allowMemberInvites must be a boolean', status: 400 } });
+    return;
+  }
+
+  server.allowMemberInvites = allowMemberInvites;
+  await server.save();
+
+  res.json({ server });
+}
+
 export async function deleteServer(req: Request, res: Response): Promise<void> {
   const userId = req.headers['x-user-id'] as string;
   const server = await Server.findById(req.params['serverId']);
