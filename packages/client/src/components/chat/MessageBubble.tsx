@@ -3,6 +3,7 @@ import { View, Pressable, Platform, StyleSheet, useColorScheme } from 'react-nat
 import { Text, Icon, IconButton, useTheme } from 'react-native-paper';
 import { AttachmentBubble } from './AttachmentBubble';
 import { ReactionChips } from './ReactionChips';
+import { ServerInviteCard } from '../invites/ServerInviteCard';
 import { UserAvatar } from '../common/UserAvatar';
 import type { Message, Attachment, CustomToneDefinition } from '../../types/models';
 import { resolveTone } from '../../tone/toneRegistry';
@@ -236,6 +237,13 @@ export const MessageBubble = memo(function MessageBubble({
               </View>
             ) : contentBlock;
           })()}
+          {message.serverInvite != null && (
+            <ServerInviteCard
+              serverName={message.serverInvite.serverName}
+              serverId={message.serverInvite.serverId}
+              code={message.serverInvite.code}
+            />
+          )}
           {toneDef ? (
             <Text style={{
               color: toneColor,

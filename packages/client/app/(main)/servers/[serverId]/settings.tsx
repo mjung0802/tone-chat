@@ -12,14 +12,14 @@ import { useCreateInvite, useInvites, useRevokeInvite } from '@/hooks/useInvites
 import { useCustomTones, useAddCustomTone, useRemoveCustomTone } from '@/hooks/useTones';
 import { CustomToneForm } from '@/components/servers/CustomToneForm';
 import { useMembers, useMuteMember, useUnmuteMember, usePromoteMember, useDemoteMember, useBanMember, useKickMember } from '@/hooks/useMembers';
-import { useDeleteServer, useServer, useUpdateServer, useTransferOwnership } from '@/hooks/useServers';
+import { useDeleteServer, useServer, useUpdateServer, useTransferOwnership, useUpdateInviteSettings } from '@/hooks/useServers';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
 import { getRoleLevel, type Role } from '@/utils/roles';
 import * as DocumentPicker from 'expo-document-picker';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import {
   ActivityIndicator,
   Button,
@@ -65,6 +65,7 @@ export default function ServerSettingsScreen() {
   );
 
   const updateServer = useUpdateServer(sid);
+  const updateInviteSettings = useUpdateInviteSettings(sid);
   const deleteServer = useDeleteServer(sid);
   const createChannel = useCreateChannel(sid);
   const createInvite = useCreateInvite(sid);
@@ -288,6 +289,14 @@ export default function ServerSettingsScreen() {
 
       {/* Invites */}
       <Text variant="titleLarge" style={styles.section}>Invites</Text>
+      <View style={styles.settingRow}>
+        <Text variant="bodyMedium">Allow members to invite others</Text>
+        <Switch
+          value={server.allowMemberInvites ?? true}
+          onValueChange={(value) => updateInviteSettings.mutate({ allowMemberInvites: value })}
+          disabled={updateInviteSettings.isPending}
+        />
+      </View>
       {invites?.map((invite) => (
         <InviteCard
           key={invite._id}
@@ -426,6 +435,12 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: 12,
     alignSelf: 'flex-start',
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
   subdued: {
     opacity: 0.7,

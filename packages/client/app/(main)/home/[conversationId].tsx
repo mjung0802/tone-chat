@@ -29,6 +29,7 @@ function dmToMessage(dm: DirectMessage): Message {
     replyTo: dm.replyTo,
     mentions: dm.mentions,
     ...(dm.tone != null ? { tone: dm.tone } : {}),
+    ...(dm.serverInvite != null ? { serverInvite: dm.serverInvite } : {}),
     createdAt: dm.createdAt,
   };
 }
