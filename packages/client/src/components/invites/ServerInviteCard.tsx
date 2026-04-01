@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Surface, Button, Text, useTheme } from 'react-native-paper';
 import { useRouter } from 'expo-router';
-import { joinViaCode } from '../../api/invites.api';
 import { ApiClientError } from '../../api/client';
+import { useJoinViaCode } from '../../hooks/useInvites';
 
 interface ServerInviteCardProps {
   serverName: string;
@@ -14,21 +14,29 @@ interface ServerInviteCardProps {
 export function ServerInviteCard({ serverName, serverId, code }: ServerInviteCardProps) {
   const theme = useTheme();
   const router = useRouter();
-  const [isPending, setIsPending] = useState(false);
   const [alreadyMember, setAlreadyMember] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleJoin = async () => {
-    setIsPending(true);
-    try {
-      await joinViaCode(code);
-      router.push(`/(main)/servers/${serverId}` as Parameters<typeof router.push>[0]);
-    } catch (err) {
-      if (err instanceof ApiClientError && err.status === 409) {
-        setAlreadyMember(true);
-      }
-    } finally {
-      setIsPending(false);
-    }
+  const { mutate: joinViaCode, isPending } = useJoinViaCode();
+
+  const handleJoin = () => {
+    setErrorMessage(null);
+    joinViaCode(code, {
+      onSuccess: () => {
+        router.push(`/(main)/servers/${serverId}` as Parameters<typeof router.push>[0]);
+      },
+      onError: (err) => {
+        if (err instanceof ApiClientError && err.status === 409) {
+          setAlreadyMember(true);
+        } else if (err instanceof ApiClientError && err.status === 403) {
+          setErrorMessage('You are banned from this server.');
+        } else if (err instanceof ApiClientError && err.status === 404) {
+          setErrorMessage('This invite is no longer valid.');
+        } else {
+          setErrorMessage('Something went wrong. Please try again.');
+        }
+      },
+    });
   };
 
   return (
@@ -39,14 +47,14 @@ export function ServerInviteCard({ serverName, serverId, code }: ServerInviteCar
     >
       <View style={styles.content}>
         <Text variant="bodyMedium" style={styles.label}>
-          You&apos;ve been invited to join{' '}
+          You've been invited to join{' '}
           <Text variant="bodyMedium" style={{ fontWeight: 'bold' }}>
             {serverName}
           </Text>
         </Text>
         <Button
           mode="contained"
-          onPress={() => { void handleJoin(); }}
+          onPress={handleJoin}
           loading={isPending}
           disabled={isPending || alreadyMember}
           style={styles.button}
@@ -54,6 +62,9 @@ export function ServerInviteCard({ serverName, serverId, code }: ServerInviteCar
         >
           {alreadyMember ? 'Already a member' : 'Join Server'}
         </Button>
+        {errorMessage !== null ? (
+          <Text variant="bodySmall" style={{ color: theme.colors.error }}>{errorMessage}</Text>
+        ) : null}
       </View>
     </Surface>
   );
