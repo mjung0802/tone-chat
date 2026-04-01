@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
 import { Portal, Dialog, Button, Text, ActivityIndicator, IconButton, useTheme } from 'react-native-paper';
 import * as Clipboard from 'expo-clipboard';
@@ -21,7 +21,7 @@ export function InviteModal({ visible, onDismiss, serverId, serverName }: Invite
   const [sentSet, setSentSet] = useState<Set<string>>(new Set());
   const [sendingSet, setSendingSet] = useState<Set<string>>(new Set());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const copyTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: invite, isLoading: inviteLoading } = useDefaultInvite(serverId);
   const { data: friends, isLoading: friendsLoading } = useFriends();
@@ -36,7 +36,7 @@ export function InviteModal({ visible, onDismiss, serverId, serverName }: Invite
     return friends.filter((f) => !memberIds.has(f.userId));
   }, [friends, members]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (visible) {
       setSentSet(new Set());
       setSendingSet(new Set());
@@ -45,7 +45,7 @@ export function InviteModal({ visible, onDismiss, serverId, serverName }: Invite
     }
   }, [visible]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
     };
