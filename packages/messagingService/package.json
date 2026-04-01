@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test --experimental-test-module-mocks \"src/**/!(*.integration).test.ts\"",
     "test:integration": "tsx --env-file=.env.test --test --test-concurrency=1 \"src/**/*.integration.test.ts\""

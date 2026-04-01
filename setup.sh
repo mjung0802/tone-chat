@@ -80,7 +80,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 echo ""
 if [ "$DOMAIN" = ":80" ]; then
-  echo "Done! Visit http://localhost to open Tone Chat."
+  echo "Done! Visit http://localhost:8080 to open Tone Chat."
 else
   echo "Done! Visit https://${DOMAIN} to open Tone Chat."
 fi

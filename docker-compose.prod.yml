@@ -1,11 +1,14 @@
 services:
   caddy:
-    image: caddy:2-alpine
+    build:
+      context: .
+      dockerfile: packages/client/Dockerfile
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"
+      - "8443:443"
+    environment:
+      - DOMAIN=${DOMAIN}
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
