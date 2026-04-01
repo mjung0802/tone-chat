@@ -51,6 +51,41 @@ const colorThemePersister = createPersister<ThemeId>(
   'default',
 );
 
+function createJsonPersister<T>(
+  key: string,
+  defaultValue: T,
+): { persist: (value: T) => Promise<void>; load: () => Promise<T> } {
+  return {
+    async persist(value: T): Promise<void> {
+      const json = JSON.stringify(value);
+      if (Platform.OS === 'web') {
+        localStorage.setItem(key, json);
+      } else {
+        const SecureStore = await import('expo-secure-store');
+        await SecureStore.setItemAsync(key, json);
+      }
+    },
+    async load(): Promise<T> {
+      try {
+        if (Platform.OS === 'web') {
+          const raw = localStorage.getItem(key);
+          return raw ? (JSON.parse(raw) as T) : defaultValue;
+        }
+        const SecureStore = await import('expo-secure-store');
+        const raw = await SecureStore.getItemAsync(key);
+        return raw ? (JSON.parse(raw) as T) : defaultValue;
+      } catch {
+        return defaultValue;
+      }
+    },
+  };
+}
+
+const lastViewedPersister = createJsonPersister<Record<string, string>>(
+  'lastViewedChannels',
+  {},
+);
+
 interface ProfileModalState {
   visible: boolean;
   userId: string | null;
@@ -75,6 +110,8 @@ interface UiState {
   openFriendsView: () => void;
   closeFriendsView: () => void;
   setFriendsTab: (tab: FriendsTab) => void;
+  lastViewedChannels: Record<string, string>;
+  setLastViewedChannel: (serverId: string, channelId: string) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -85,6 +122,7 @@ export const useUiStore = create<UiState>((set) => ({
   profileModal: { visible: false, userId: null, serverId: null },
   isFriendsViewOpen: false,
   friendsTab: 'friends',
+  lastViewedChannels: {},
 
   setThemePreference: (pref: ThemePreference) => {
     set({ themePreference: pref });
@@ -128,6 +166,15 @@ export const useUiStore = create<UiState>((set) => ({
   setFriendsTab: (tab: FriendsTab) => {
     set({ friendsTab: tab });
   },
+
+  setLastViewedChannel: (serverId: string, channelId: string) => {
+    set((state) => {
+      if (state.lastViewedChannels[serverId] === channelId) return state;
+      const updated = { ...state.lastViewedChannels, [serverId]: channelId };
+      void lastViewedPersister.persist(updated);
+      return { lastViewedChannels: updated };
+    });
+  },
 }));
 
 export async function hydrateTheme(): Promise<void> {
@@ -146,10 +193,11 @@ export async function hydrateColorTheme(): Promise<void> {
 }
 
 export async function hydrateUiStore(): Promise<void> {
-  const [themePreference, toneDisplay, colorTheme] = await Promise.all([
+  const [themePreference, toneDisplay, colorTheme, lastViewedChannels] = await Promise.all([
     themePersister.load(),
     toneDisplayPersister.load(),
     colorThemePersister.load(),
+    lastViewedPersister.load(),
   ]);
-  useUiStore.setState({ themePreference, toneDisplay, colorTheme });
+  useUiStore.setState({ themePreference, toneDisplay, colorTheme, lastViewedChannels });
 }

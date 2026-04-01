@@ -13,6 +13,7 @@ import { useMessages, useSendMessage } from '@/hooks/useMessages';
 import { useChannelSocket, useTypingEmit } from '@/hooks/useSocket';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
+import { useUiStore } from '@/stores/uiStore';
 import { useSocketStore } from '@/stores/socketStore';
 import type { Attachment, Message, ServerMember } from '@/types/models';
 import { getAvailableActions, isMemberMuted, type Role } from '@/utils/roles';
@@ -34,12 +35,14 @@ export default function ChannelScreen() {
 
   const userId = useAuthStore((s) => s.userId);
   const setCurrentChannelId = useNotificationStore((s) => s.setCurrentChannelId);
+  const setLastViewedChannel = useUiStore((s) => s.setLastViewedChannel);
   const router = useRouter();
 
   useEffect(() => {
     setCurrentChannelId(cid || null);
+    if (sid && cid) setLastViewedChannel(sid, cid);
     return () => setCurrentChannelId(null);
-  }, [cid, setCurrentChannelId]);
+  }, [cid, sid, setCurrentChannelId, setLastViewedChannel]);
 
   const { data: channelData } = useChannel(sid, cid);
   const { data: server } = useServer(sid);

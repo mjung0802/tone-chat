@@ -187,6 +187,16 @@ export const MOCK_CHANNEL_TWO = {
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
 
+export const MOCK_CHANNEL_SECONDARY = {
+  _id: 'channel-003',
+  serverId: 'server-001',
+  name: 'off-topic',
+  type: 'text' as const,
+  position: 1,
+  createdAt: '2024-01-01T00:00:00.000Z',
+  updatedAt: '2024-01-01T00:00:00.000Z',
+};
+
 export const MOCK_AUDIT_LOG_ENTRIES = [
   {
     _id: 'audit-001',
