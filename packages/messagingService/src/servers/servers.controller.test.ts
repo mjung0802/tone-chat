@@ -244,9 +244,9 @@ describe('updateInviteSettings', () => {
   it('non-boolean value → 400 INVALID_FIELDS', async () => {
     const server = { allowMemberInvites: true, save: mock.fn<AnyFn>(async () => undefined) };
     const req = makeReqWithServer(server, { body: { allowMemberInvites: 'true' } });
-    const res = makeRes();
-    await updateInviteSettings(req, res);
-    assert.equal(res.statusCode, 400);
-    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_FIELDS');
+    await assert.rejects(
+      () => updateInviteSettings(req, makeRes()),
+      (error) => assertErrorCode(error, 'INVALID_FIELDS'),
+    );
   });
 });

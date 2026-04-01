@@ -206,6 +206,35 @@ describe('getDefaultInvite', () => {
     assert.deepEqual((res._json as { invite: unknown }).invite, existingInvite);
   });
 
+  it('allowMemberInvites false + owner (userId matches ownerId) → 200', async () => {
+    const existingInvite = { code: 'abc', serverId: 's1' };
+    mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'u1', allowMemberInvites: false }));
+    mockInviteFindOne.mock.mockImplementation(async () => existingInvite);
+
+    const res = makeRes();
+    await getDefaultInvite(makeReqWithMember({
+      headers: { 'x-user-id': 'u1' },
+      params: { serverId: 's1' },
+      memberRole: 'member',
+    }), res);
+
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual((res._json as { invite: unknown }).invite, existingInvite);
+  });
+
+  it('allowMemberInvites false + mod → 403', async () => {
+    mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'owner', allowMemberInvites: false }));
+
+    await assert.rejects(
+      () => getDefaultInvite(makeReqWithMember({
+        headers: { 'x-user-id': 'u1' },
+        params: { serverId: 's1' },
+        memberRole: 'mod',
+      }), makeRes()),
+      (error) => assertErrorCode(error, 'FORBIDDEN'),
+    );
+  });
+
   it('returns existing invite when one already exists (no duplicate creation)', async () => {
     const existingInvite = { code: 'existing', serverId: 's1' };
     mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'owner', allowMemberInvites: true }));

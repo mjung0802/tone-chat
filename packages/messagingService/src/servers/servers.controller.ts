@@ -107,8 +107,7 @@ export async function updateInviteSettings(req: Request, res: Response): Promise
 
   const { allowMemberInvites } = req.body as { allowMemberInvites?: unknown };
   if (typeof allowMemberInvites !== 'boolean') {
-    res.status(400).json({ error: { code: 'INVALID_FIELDS', message: 'allowMemberInvites must be a boolean', status: 400 } });
-    return;
+    throw new AppError('INVALID_FIELDS', 'allowMemberInvites must be a boolean', 400);
   }
 
   server.allowMemberInvites = allowMemberInvites;

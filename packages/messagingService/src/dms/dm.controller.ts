@@ -106,7 +106,8 @@ export async function sendDmMessage(req: Request, res: Response): Promise<void> 
       typeof (rawServerInvite as Record<string, unknown>)['serverId'] !== 'string' ||
       ((rawServerInvite as Record<string, unknown>)['serverId'] as string).length === 0 ||
       typeof (rawServerInvite as Record<string, unknown>)['serverName'] !== 'string' ||
-      ((rawServerInvite as Record<string, unknown>)['serverName'] as string).length === 0
+      ((rawServerInvite as Record<string, unknown>)['serverName'] as string).length === 0 ||
+      ((rawServerInvite as Record<string, unknown>)['serverName'] as string).length > 100
     ) {
       res.status(400).json({ error: { code: 'INVALID_SERVER_INVITE', message: 'serverInvite must have string fields: code, serverId, serverName', status: 400 } });
       return;
