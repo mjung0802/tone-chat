@@ -1,6 +1,6 @@
 import React, { memo, useState } from 'react';
-import { View, Pressable, Platform, StyleSheet, useColorScheme } from 'react-native';
-import { Text, Icon, IconButton, useTheme } from 'react-native-paper';
+import { View, Pressable, Platform, StyleSheet, useColorScheme, TextInput } from 'react-native';
+import { Text, Icon, IconButton, useTheme, Button } from 'react-native-paper';
 import { AttachmentBubble } from './AttachmentBubble';
 import { ReactionChips } from './ReactionChips';
 import { ServerInviteCard } from '../invites/ServerInviteCard';
@@ -58,6 +58,8 @@ interface MessageBubbleProps {
   onUnmute?: (() => void) | undefined;
   onKick?: (() => void) | undefined;
   onBan?: (() => void) | undefined;
+  onSaveEdit?: ((messageId: string, content: string) => void) | undefined;
+  onDelete?: ((message: Message) => void) | undefined;
   serverId?: string | undefined;
   isContinuation?: boolean | undefined;
 }
@@ -86,11 +88,15 @@ export const MessageBubble = memo(function MessageBubble({
   onUnmute,
   onKick,
   onBan,
+  onSaveEdit,
+  onDelete,
   serverId,
   isContinuation,
 }: MessageBubbleProps) {
   const theme = useTheme();
   const [hovered, setHovered] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState('');
   const toneDisplay = useUiStore((s) => s.toneDisplay);
   const openProfileModal = useUiStore((s) => s.openProfileModal);
   const colorScheme = useColorScheme();
@@ -217,6 +223,43 @@ export const MessageBubble = memo(function MessageBubble({
             </Pressable>
           ) : null}
           {(() => {
+            if (isEditing) {
+              return (
+                <View>
+                  <TextInput
+                    value={editContent}
+                    onChangeText={setEditContent}
+                    multiline
+                    autoFocus
+                    style={[styles.editInput, { color: effectiveTextColor, borderColor: theme.colors.primary }]}
+                    accessibilityLabel="Edit message content"
+                  />
+                  <View style={styles.editActions}>
+                    <Button
+                      mode="text"
+                      compact
+                      onPress={() => setIsEditing(false)}
+                      accessibilityLabel="Cancel edit"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      mode="contained"
+                      compact
+                      onPress={() => {
+                        onSaveEdit?.(message._id, editContent);
+                        setIsEditing(false);
+                      }}
+                      disabled={!editContent.trim()}
+                      accessibilityLabel="Save edit"
+                    >
+                      Save
+                    </Button>
+                  </View>
+                </View>
+              );
+            }
+
             const contentBlock = (
               <>
                 {message.content ? (
@@ -259,7 +302,7 @@ export const MessageBubble = memo(function MessageBubble({
             </Text>
           ) : null}
         </View>
-        {(onAddReaction || onReply || onMute || onUnmute || onKick || onBan) ? (
+        {(onAddReaction || onReply || onMute || onUnmute || onKick || onBan || (isOwn && (onSaveEdit || onDelete))) ? (
           <View style={styles.hoverButtonPlaceholder}>
             {hovered ? (
               <View style={styles.hoverButtonRow}>
@@ -317,6 +360,26 @@ export const MessageBubble = memo(function MessageBubble({
                     onPress={onBan}
                     accessibilityLabel="Ban user"
                     style={[styles.hoverReactionButton, { backgroundColor: theme.colors.surface }]}
+                  />
+                ) : null}
+                {isOwn && onSaveEdit ? (
+                  <IconButton
+                    icon="pencil"
+                    size={18}
+                    onPress={() => { setEditContent(message.content); setIsEditing(true); }}
+                    accessibilityLabel="Edit message"
+                    style={[styles.hoverReactionButton, { backgroundColor: theme.colors.surface }]}
+                    testID="hover-edit-button"
+                  />
+                ) : null}
+                {isOwn && onDelete ? (
+                  <IconButton
+                    icon="trash-can"
+                    size={18}
+                    onPress={() => onDelete(message)}
+                    accessibilityLabel="Delete message"
+                    style={[styles.hoverReactionButton, { backgroundColor: theme.colors.surface }]}
+                    testID="hover-delete-button"
                   />
                 ) : null}
               </View>
@@ -419,5 +482,19 @@ const styles = StyleSheet.create({
   replyContent: {
     flex: 1,
     opacity: 0.7,
+  },
+  editInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontSize: 14,
+    minHeight: 40,
+  },
+  editActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 4,
+    marginTop: 4,
   },
 });

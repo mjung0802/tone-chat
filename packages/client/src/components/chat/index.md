@@ -1,7 +1,7 @@
 # components/chat/
 
-- **MessageBubble.tsx** — full message display: avatar, name, timestamp, tone tag (emoji+label+glow), attachments, reactions, reply indicator, hover action buttons (reply, react, mute/kick/ban)
-- **MessageList.tsx** — inverted FlatList with imperative scroll ref; empty state; onEndReached for pagination
+- **MessageBubble.tsx** — full message display: avatar, name, timestamp, tone tag (emoji+label+glow), attachments, reactions, reply indicator, hover action buttons (reply, react, mute/kick/ban for others; pencil+trash-can for own messages); inline edit mode (TextInput + Save/Cancel) when pencil pressed
+- **MessageList.tsx** — inverted FlatList with imperative scroll ref; empty state; onEndReached for pagination; threads `onSaveEdit`/`onDelete` to bubbles
 - **MessageInput.tsx** — input with attachment picker, mention autocomplete, tone picker, emoji picker; max 4000 chars + 6 attachments; Shift+Enter newline on desktop
 - **AttachmentBubble.tsx** — inline attachment in message: image (clickable → viewer) or file card
 - **AttachmentPicker.tsx** — paperclip button → expo-document-picker; allowed: images, mp4/webm, mp3/ogg, pdf, plain text

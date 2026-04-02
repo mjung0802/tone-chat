@@ -44,6 +44,12 @@ export interface MentionEvent {
   authorId: string;
 }
 
+export interface MessageDeletedPayload {
+  messageId: string;
+  channelId: string;
+  serverId: string;
+}
+
 export interface DmSendPayload {
   conversationId: string;
   content?: string | undefined;
@@ -70,6 +76,8 @@ export interface ServerToClientEvents {
   new_message: (data: { message: Message }) => void;
   typing: (event: TypingEvent) => void;
   reaction_updated: (data: { message: Message }) => void;
+  message_edited: (data: { message: Message }) => void;
+  message_deleted: (data: MessageDeletedPayload) => void;
   mention: (event: MentionEvent) => void;
   'dm:new_message': (data: { message: DirectMessage }) => void;
   'dm:typing': (event: { conversationId: string; userId: string }) => void;

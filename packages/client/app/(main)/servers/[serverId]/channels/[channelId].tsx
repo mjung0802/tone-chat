@@ -9,7 +9,7 @@ import { useChannel } from '@/hooks/useChannels';
 import { useMembers, useMuteMember, useUnmuteMember, useKickMember, useBanMember } from '@/hooks/useMembers';
 import { useServer } from '@/hooks/useServers';
 import { useCustomTones } from '@/hooks/useTones';
-import { useMessages, useSendMessage } from '@/hooks/useMessages';
+import { useMessages, useSendMessage, useEditMessage, useDeleteMessage } from '@/hooks/useMessages';
 import { useChannelSocket, useTypingEmit } from '@/hooks/useSocket';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
@@ -21,7 +21,7 @@ import type { TypingEvent } from '@/types/socket.types';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Banner, IconButton } from 'react-native-paper';
+import { Banner, IconButton, Dialog, Portal, Button, Text } from 'react-native-paper';
 
 const TYPING_TIMEOUT = 3000;
 
@@ -56,6 +56,8 @@ export default function ChannelScreen() {
   const { data: members } = useMembers(sid);
   const { data: customTones } = useCustomTones(sid);
   const sendMessage = useSendMessage(sid, cid);
+  const editMessage = useEditMessage(sid, cid);
+  const deleteMessage = useDeleteMessage(sid, cid);
   const emitTyping = useTypingEmit(sid, cid);
   const muteMember = useMuteMember(sid);
   const unmuteMember = useUnmuteMember(sid);
@@ -81,6 +83,10 @@ export default function ChannelScreen() {
   // Mod action dialog state
   const [dialogMember, setDialogMember] = useState<ServerMember | null>(null);
   const [dialogType, setDialogType] = useState<DialogType | null>(null);
+
+  // Delete message dialog state
+  const [deleteTargetMessage, setDeleteTargetMessage] = useState<Message | null>(null);
+
   const socket = useSocketStore((s) => s.socket);
 
   const handleImagePress = useCallback((attachment: Attachment) => {
@@ -225,6 +231,24 @@ export default function ChannelScreen() {
     }
   }, []);
 
+  const handleSaveEdit = useCallback(
+    (messageId: string, content: string) => {
+      editMessage.mutate({ messageId, data: { content } });
+    },
+    [editMessage],
+  );
+
+  const handleDelete = useCallback((message: Message) => {
+    setDeleteTargetMessage(message);
+  }, []);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (deleteTargetMessage) {
+      deleteMessage.mutate(deleteTargetMessage._id);
+    }
+    setDeleteTargetMessage(null);
+  }, [deleteTargetMessage, deleteMessage]);
+
   const handleSend = useCallback(
     (content: string, attachmentIds: string[], options?: { replyToId?: string; mentions?: string[]; tone?: string }) => {
       sendMessage.mutate({
@@ -287,6 +311,8 @@ export default function ChannelScreen() {
         highlightedMessageId={highlightMessageId}
         customTones={customTones}
         modActionsMap={modActionsMap}
+        onSaveEdit={handleSaveEdit}
+        onDelete={handleDelete}
         serverId={sid}
       />
       <TypingIndicator userNames={typingUserNames} />
@@ -323,6 +349,18 @@ export default function ChannelScreen() {
         onKick={(targetUserId) => kickMember.mutate(targetUserId)}
         onBan={(targetUserId, reason) => banMember.mutate({ userId: targetUserId, data: { reason } })}
       />
+      <Portal>
+        <Dialog visible={deleteTargetMessage !== null} onDismiss={() => setDeleteTargetMessage(null)}>
+          <Dialog.Title>Delete message</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">Are you sure you want to delete this message? This cannot be undone.</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setDeleteTargetMessage(null)} accessibilityLabel="Cancel delete">Cancel</Button>
+            <Button onPress={handleConfirmDelete} accessibilityLabel="Confirm delete">Delete</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }

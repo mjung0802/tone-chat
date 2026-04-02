@@ -32,7 +32,28 @@ messagesRouter.get('/', async (req: AuthRequest, res) => {
 
 messagesRouter.patch('/:messageId', async (req: AuthRequest, res) => {
   const result = await client.updateMessage(req.userId!, req.params['serverId'] as string, req.params['channelId'] as string, req.params['messageId'] as string, req.body as Record<string, unknown>);
+
+  if (result.status === 200 && ioRef) {
+    const room = `server:${req.params['serverId'] as string}:channel:${req.params['channelId'] as string}`;
+    ioRef.to(room).emit('message_edited', result.data);
+  }
+
   res.status(result.status).json(result.data);
+});
+
+messagesRouter.delete('/:messageId', async (req: AuthRequest, res) => {
+  const result = await client.deleteMessage(req.userId!, req.params['serverId'] as string, req.params['channelId'] as string, req.params['messageId'] as string);
+
+  if (result.status === 204 && ioRef) {
+    const room = `server:${req.params['serverId'] as string}:channel:${req.params['channelId'] as string}`;
+    ioRef.to(room).emit('message_deleted', {
+      messageId: req.params['messageId'] as string,
+      channelId: req.params['channelId'] as string,
+      serverId: req.params['serverId'] as string,
+    });
+  }
+
+  res.status(result.status).end();
 });
 
 messagesRouter.put('/:messageId/reactions', async (req: AuthRequest, res) => {
