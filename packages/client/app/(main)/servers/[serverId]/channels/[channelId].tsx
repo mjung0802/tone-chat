@@ -350,7 +350,7 @@ export default function ChannelScreen() {
         onBan={(targetUserId, reason) => banMember.mutate({ userId: targetUserId, data: { reason } })}
       />
       <Portal>
-        <Dialog visible={deleteTargetMessage !== null} onDismiss={() => setDeleteTargetMessage(null)}>
+        <Dialog visible={deleteTargetMessage !== null} onDismiss={() => setDeleteTargetMessage(null)} style={styles.deleteDialog}>
           <Dialog.Title>Delete message</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">Are you sure you want to delete this message? This cannot be undone.</Text>
@@ -368,5 +368,9 @@ export default function ChannelScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  deleteDialog: {
+    width: 600,
+    alignSelf: 'center',
   },
 });
