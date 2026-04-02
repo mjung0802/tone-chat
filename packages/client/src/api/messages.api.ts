@@ -1,4 +1,4 @@
-import { get, post, patch, put } from './client';
+import { get, post, patch, put, del } from './client';
 import type {
   MessageResponse,
   MessagesResponse,
@@ -47,4 +47,8 @@ export function toggleReaction(
     `/servers/${serverId}/channels/${channelId}/messages/${messageId}/reactions`,
     data,
   );
+}
+
+export function deleteMessage(serverId: string, channelId: string, messageId: string) {
+  return del(`/servers/${serverId}/channels/${channelId}/messages/${messageId}`);
 }

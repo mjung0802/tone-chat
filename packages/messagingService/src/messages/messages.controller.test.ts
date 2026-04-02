@@ -35,7 +35,7 @@ mock.module('../members/serverMember.model.js', {
   },
 });
 
-const { createMessage, listMessages, updateMessage } = await import('./messages.controller.js');
+const { createMessage, listMessages, updateMessage, deleteMessage } = await import('./messages.controller.js');
 
 function makeReq(overrides: RequestOverrides = {}): Request {
   return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
@@ -402,6 +402,46 @@ describe('createMessage — tone', () => {
     assert.equal(res.statusCode, 201);
     const createArg = mockMessageCreate.mock.calls[0]?.arguments[0] as Record<string, unknown>;
     assert.equal('tone' in createArg, false);
+  });
+});
+
+describe('deleteMessage', () => {
+  beforeEach(() => mockMessageFindOne.mock.resetCalls());
+
+  it('throws MESSAGE_NOT_FOUND when message does not exist', async () => {
+    mockMessageFindOne.mock.mockImplementation(async () => null);
+    await assert.rejects(
+      () => deleteMessage(makeReq({
+        headers: { 'x-user-id': 'u1' },
+        params: { channelId: 'c1', messageId: 'm1' },
+      }), makeRes()),
+      (error) => assertErrorCode(error, 'MESSAGE_NOT_FOUND'),
+    );
+  });
+
+  it('throws FORBIDDEN when user is not the author', async () => {
+    mockMessageFindOne.mock.mockImplementation(async () => ({ authorId: 'other' }));
+    await assert.rejects(
+      () => deleteMessage(makeReq({
+        headers: { 'x-user-id': 'u1' },
+        params: { channelId: 'c1', messageId: 'm1' },
+      }), makeRes()),
+      (error) => assertErrorCode(error, 'FORBIDDEN'),
+    );
+  });
+
+  it('deletes message and returns 204', async () => {
+    const message = { authorId: 'u1', deleteOne: mock.fn(async () => {}) };
+    mockMessageFindOne.mock.mockImplementation(async () => message);
+
+    const res = makeRes();
+    await deleteMessage(makeReq({
+      headers: { 'x-user-id': 'u1' },
+      params: { channelId: 'c1', messageId: 'm1' },
+    }), res);
+
+    assert.equal(message.deleteOne.mock.callCount(), 1);
+    assert.equal(res.statusCode, 204);
   });
 });
 
