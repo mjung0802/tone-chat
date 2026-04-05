@@ -46,15 +46,24 @@ export function useEditMessage(serverId: string, channelId: string) {
   return useMutation({
     mutationFn: ({ messageId, data }: { messageId: string; data: UpdateMessageRequest }) =>
       messagesApi.updateMessage(serverId, channelId, messageId, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: ['servers', serverId, 'channels', channelId, 'messages'],
-      });
+    onSuccess: (response) => {
+      updateMessageInCache(queryClient, response.message);
     },
   });
 }
 
-// Helper to inject a socket-received message into the query cache
+export function useDeleteMessage(serverId: string, channelId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (messageId: string) =>
+      messagesApi.deleteMessage(serverId, channelId, messageId),
+    onSuccess: (_data, messageId) => {
+      removeMessageFromCache(queryClient, serverId, channelId, messageId);
+    },
+  });
+}
+
 export function injectMessage(
   queryClient: ReturnType<typeof useQueryClient>,
   message: Message,
@@ -84,7 +93,6 @@ export function injectMessage(
       );
 }
 
-// Helper to update an existing message in the query cache (e.g., reactions changed)
 export function updateMessageInCache(
   queryClient: ReturnType<typeof useQueryClient>,
   message: Message,
@@ -100,6 +108,29 @@ export function updateMessageInCache(
           ...old,
           pages: old.pages.map((page) => ({
             messages: page.messages.map((m) => (m._id === message._id ? message : m)),
+          })),
+        };
+      },
+      );
+}
+
+export function removeMessageFromCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  serverId: string,
+  channelId: string,
+  messageId: string,
+) {
+  queryClient.setQueryData<{
+    pages: MessagesResponse[];
+    pageParams: (string | undefined)[];
+      }>(
+      ['servers', serverId, 'channels', channelId, 'messages'],
+      (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            messages: page.messages.filter((m) => m._id !== messageId),
           })),
         };
       },

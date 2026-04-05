@@ -134,3 +134,19 @@ export async function updateMessage(req: Request, res: Response): Promise<void> 
 
   res.json({ message });
 }
+
+export async function deleteMessage(req: Request, res: Response): Promise<void> {
+  const userId = req.headers['x-user-id'] as string;
+  const message = await Message.findOne({ _id: req.params['messageId'], channelId: req.params['channelId'] });
+
+  if (!message) {
+    throw new AppError('MESSAGE_NOT_FOUND', 'Message not found', 404);
+  }
+  if (message.authorId !== userId) {
+    throw new AppError('FORBIDDEN', 'You can only delete your own messages', 403);
+  }
+
+  await message.deleteOne();
+
+  res.status(204).end();
+}

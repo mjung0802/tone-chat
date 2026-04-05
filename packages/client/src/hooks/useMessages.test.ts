@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react-native';
-import { injectMessage, updateMessageInCache, useMessages, useSendMessage } from './useMessages';
+import { injectMessage, updateMessageInCache, removeMessageFromCache, useMessages, useSendMessage, useDeleteMessage } from './useMessages';
 import * as messagesApi from '../api/messages.api';
 import { makeMessage } from '../test-utils/fixtures';
 import { createHookWrapper, createTestQueryClient } from '../test-utils/renderWithProviders';
@@ -159,6 +159,115 @@ describe('updateMessageInCache', () => {
       ['servers', 'server-1', 'channels', 'channel-1', 'messages'],
     );
     expect(data).toBeUndefined();
+  });
+});
+
+// ---------- removeMessageFromCache ----------
+
+describe('removeMessageFromCache', () => {
+  let queryClient: QueryClient;
+
+  beforeEach(() => {
+    queryClient = createTestQueryClient();
+  });
+
+  it('removes message by _id from cache', () => {
+    const msg1 = makeMessage({ _id: 'msg-1', serverId: 's1', channelId: 'c1' });
+    const msg2 = makeMessage({ _id: 'msg-2', serverId: 's1', channelId: 'c1' });
+    seedCache(queryClient, 's1', 'c1', [{ messages: [msg1, msg2] }]);
+
+    removeMessageFromCache(queryClient, 's1', 'c1', 'msg-1');
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 's1', 'channels', 'c1', 'messages'],
+    );
+    expect(data!.pages[0]!.messages).toHaveLength(1);
+    expect(data!.pages[0]!.messages[0]!._id).toBe('msg-2');
+  });
+
+  it('removes message from correct page when spread across pages', () => {
+    const msg1 = makeMessage({ _id: 'msg-1', serverId: 's1', channelId: 'c1' });
+    const msg2 = makeMessage({ _id: 'msg-2', serverId: 's1', channelId: 'c1' });
+    seedCache(queryClient, 's1', 'c1', [{ messages: [msg1] }, { messages: [msg2] }]);
+
+    removeMessageFromCache(queryClient, 's1', 'c1', 'msg-2');
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 's1', 'channels', 'c1', 'messages'],
+    );
+    expect(data!.pages[0]!.messages).toHaveLength(1);
+    expect(data!.pages[1]!.messages).toHaveLength(0);
+  });
+
+  it('no-ops when _id does not exist in cache', () => {
+    const msg = makeMessage({ _id: 'msg-1', serverId: 's1', channelId: 'c1' });
+    seedCache(queryClient, 's1', 'c1', [{ messages: [msg] }]);
+
+    removeMessageFromCache(queryClient, 's1', 'c1', 'nonexistent');
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 's1', 'channels', 'c1', 'messages'],
+    );
+    expect(data!.pages[0]!.messages).toHaveLength(1);
+  });
+
+  it('no-ops when cache is empty', () => {
+    removeMessageFromCache(queryClient, 's1', 'c1', 'msg-1');
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 's1', 'channels', 'c1', 'messages'],
+    );
+    expect(data).toBeUndefined();
+  });
+});
+
+// ---------- useDeleteMessage hook ----------
+
+describe('useDeleteMessage', () => {
+  it('removes message from cache on success', async () => {
+    const queryClient = createTestQueryClient();
+    const msg = makeMessage({ _id: 'msg-to-delete', serverId: 's1', channelId: 'c1' });
+    seedCache(queryClient, 's1', 'c1', [{ messages: [msg] }]);
+
+    jest.mocked(messagesApi.deleteMessage).mockResolvedValueOnce(undefined);
+
+    const { result } = renderHook(() => useDeleteMessage('s1', 'c1'), {
+      wrapper: createHookWrapper(queryClient),
+    });
+
+    result.current.mutate('msg-to-delete');
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 's1', 'channels', 'c1', 'messages'],
+    );
+    expect(data!.pages[0]!.messages).toHaveLength(0);
+  });
+
+  it('leaves cache unchanged on error', async () => {
+    const queryClient = createTestQueryClient();
+    const msg = makeMessage({ _id: 'msg-1', serverId: 's1', channelId: 'c1' });
+    seedCache(queryClient, 's1', 'c1', [{ messages: [msg] }]);
+
+    jest.mocked(messagesApi.deleteMessage).mockRejectedValueOnce(new Error('Network error'));
+
+    const { result } = renderHook(() => useDeleteMessage('s1', 'c1'), {
+      wrapper: createHookWrapper(queryClient),
+    });
+
+    result.current.mutate('msg-1');
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    const data = queryClient.getQueryData<CacheData>(
+      ['servers', 's1', 'channels', 'c1', 'messages'],
+    );
+    expect(data!.pages[0]!.messages).toHaveLength(1);
   });
 });
 

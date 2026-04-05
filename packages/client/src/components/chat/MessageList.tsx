@@ -25,6 +25,8 @@ interface MessageListProps {
   highlightedMessageId?: string | null | undefined;
   customTones?: CustomToneDefinition[] | undefined;
   modActionsMap?: Record<string, { onMute?: (() => void) | undefined; onUnmute?: (() => void) | undefined; onKick?: (() => void) | undefined; onBan?: (() => void) | undefined }> | undefined;
+  onSaveEdit?: ((messageId: string, content: string) => void) | undefined;
+  onDelete?: ((message: Message) => void) | undefined;
   serverId?: string | undefined;
 }
 
@@ -47,6 +49,8 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
     highlightedMessageId,
     customTones,
     modActionsMap,
+    onSaveEdit,
+    onDelete,
     serverId,
   } = props;
 
@@ -95,11 +99,13 @@ export const MessageList = forwardRef<MessageListHandle, MessageListProps>(funct
         onUnmute={modActionsMap?.[item.authorId]?.onUnmute}
         onKick={modActionsMap?.[item.authorId]?.onKick}
         onBan={modActionsMap?.[item.authorId]?.onBan}
+        onSaveEdit={onSaveEdit}
+        onDelete={onDelete}
         serverId={serverId}
         isContinuation={continuationFlags[index]}
       />
     ),
-    [continuationFlags, currentUserId, authorNames, authorAvatars, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId, customTones, modActionsMap, serverId],
+    [continuationFlags, currentUserId, authorNames, authorAvatars, onMessageLongPress, onImagePress, onToggleReaction, onAddReaction, onReply, onReplyPress, highlightedMessageId, customTones, modActionsMap, onSaveEdit, onDelete, serverId],
   );
 
   const keyExtractor = useCallback((item: Message) => item._id, []);
