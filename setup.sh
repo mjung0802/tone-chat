@@ -39,6 +39,11 @@ fi
 
 echo ""
 echo "SMTP settings (optional — leave blank to print OTPs to console)"
+echo "Recommended: SendGrid (https://sendgrid.com) — 100 emails/day free"
+echo "  SMTP host: smtp.sendgrid.net"
+echo "  SMTP user: apikey"
+echo "  SMTP pass: <your SendGrid API key>"
+echo ""
 read -r -p "SMTP host: " SMTP_HOST
 read -r -p "SMTP port [587]: " SMTP_PORT
 SMTP_PORT="${SMTP_PORT:-587}"
