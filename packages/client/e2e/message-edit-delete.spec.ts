@@ -127,10 +127,10 @@ test('delete: clicking trash-can shows confirmation dialog and Cancel dismisses'
   await messageContainer.hover();
   await page.getByTestId('hover-delete-button').click();
 
-  await expect(page.getByText('Delete this message?')).toBeVisible();
+  await expect(page.getByText('Delete message')).toBeVisible();
 
   await page.getByLabel('Cancel delete').click();
-  await expect(page.getByText('Delete this message?')).not.toBeVisible();
+  await expect(page.getByText('Delete message')).not.toBeVisible();
   await expect(page.getByText(MOCK_MESSAGES[0]!.content)).toBeVisible();
 });
 

@@ -21,7 +21,8 @@ import type { TypingEvent } from '@/types/socket.types';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Banner, IconButton, Dialog, Portal, Button, Text } from 'react-native-paper';
+import { Banner, IconButton } from 'react-native-paper';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 
 const TYPING_TIMEOUT = 3000;
 
@@ -235,7 +236,7 @@ export default function ChannelScreen() {
     (messageId: string, content: string) => {
       editMessage.mutate({ messageId, data: { content } });
     },
-    [editMessage],
+    [editMessage.mutate],
   );
 
   const handleDelete = useCallback((message: Message) => {
@@ -247,7 +248,7 @@ export default function ChannelScreen() {
       deleteMessage.mutate(deleteTargetMessage._id);
     }
     setDeleteTargetMessage(null);
-  }, [deleteTargetMessage, deleteMessage]);
+  }, [deleteTargetMessage, deleteMessage.mutate]);
 
   const handleSend = useCallback(
     (content: string, attachmentIds: string[], options?: { replyToId?: string; mentions?: string[]; tone?: string }) => {
@@ -260,7 +261,7 @@ export default function ChannelScreen() {
       });
       setReplyTarget(null);
     },
-    [sendMessage],
+    [sendMessage.mutate],
   );
 
   const handleLoadMore = useCallback(() => {
@@ -349,18 +350,18 @@ export default function ChannelScreen() {
         onKick={(targetUserId) => kickMember.mutate(targetUserId)}
         onBan={(targetUserId, reason) => banMember.mutate({ userId: targetUserId, data: { reason } })}
       />
-      <Portal>
-        <Dialog visible={deleteTargetMessage !== null} onDismiss={() => setDeleteTargetMessage(null)} style={styles.deleteDialog}>
-          <Dialog.Title>Delete message</Dialog.Title>
-          <Dialog.Content>
-            <Text variant="bodyMedium">Are you sure you want to delete this message? This cannot be undone.</Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setDeleteTargetMessage(null)} accessibilityLabel="Cancel delete">Cancel</Button>
-            <Button onPress={handleConfirmDelete} accessibilityLabel="Confirm delete">Delete</Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+      <ConfirmDialog
+        visible={deleteTargetMessage !== null}
+        title="Delete message"
+        message="Are you sure you want to delete this message? This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        confirmAccessibilityLabel="Confirm delete"
+        cancelAccessibilityLabel="Cancel delete"
+        destructive
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTargetMessage(null)}
+      />
     </View>
   );
 }
@@ -368,9 +369,5 @@ export default function ChannelScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  deleteDialog: {
-    width: 600,
-    alignSelf: 'center',
   },
 });

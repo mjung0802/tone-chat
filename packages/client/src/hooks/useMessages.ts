@@ -64,7 +64,6 @@ export function useDeleteMessage(serverId: string, channelId: string) {
   });
 }
 
-// Helper to inject a socket-received message into the query cache
 export function injectMessage(
   queryClient: ReturnType<typeof useQueryClient>,
   message: Message,
@@ -94,7 +93,6 @@ export function injectMessage(
       );
 }
 
-// Helper to update an existing message in the query cache (e.g., reactions changed)
 export function updateMessageInCache(
   queryClient: ReturnType<typeof useQueryClient>,
   message: Message,
@@ -116,7 +114,6 @@ export function updateMessageInCache(
       );
 }
 
-// Helper to remove a deleted message from the query cache
 export function removeMessageFromCache(
   queryClient: ReturnType<typeof useQueryClient>,
   serverId: string,

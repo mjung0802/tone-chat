@@ -7,6 +7,8 @@ interface ConfirmDialogProps {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  confirmAccessibilityLabel?: string | undefined;
+  cancelAccessibilityLabel?: string | undefined;
   destructive?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -18,6 +20,8 @@ export function ConfirmDialog({
   message,
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
+  confirmAccessibilityLabel,
+  cancelAccessibilityLabel,
   destructive = false,
   onConfirm,
   onCancel,
@@ -36,14 +40,14 @@ export function ConfirmDialog({
         <Dialog.Actions>
           <Button
             onPress={onCancel}
-            accessibilityLabel={cancelLabel}
+            accessibilityLabel={cancelAccessibilityLabel ?? cancelLabel}
           >
             {cancelLabel}
           </Button>
           <Button
             onPress={onConfirm}
             textColor={destructive ? '#BA1A1A' : ''}
-            accessibilityLabel={confirmLabel}
+            accessibilityLabel={confirmAccessibilityLabel ?? confirmLabel}
             accessibilityHint={destructive ? 'This action cannot be undone' : ''}
           >
             {confirmLabel}

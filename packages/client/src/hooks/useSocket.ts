@@ -70,11 +70,7 @@ export function useChannelSocket(
       }
     };
 
-    const handleReactionUpdated = (data: { message: Message }) => {
-      updateMessageInCache(queryClient, data.message);
-    };
-
-    const handleMessageEdited = (data: { message: Message }) => {
+    const handleMessageUpdated = (data: { message: Message }) => {
       updateMessageInCache(queryClient, data.message);
     };
 
@@ -84,16 +80,16 @@ export function useChannelSocket(
 
     socket.on('new_message', handleNewMessage);
     socket.on('typing', handleTyping);
-    socket.on('reaction_updated', handleReactionUpdated);
-    socket.on('message_edited', handleMessageEdited);
+    socket.on('reaction_updated', handleMessageUpdated);
+    socket.on('message_edited', handleMessageUpdated);
     socket.on('message_deleted', handleMessageDeleted);
 
     return () => {
       socket.emit('leave_channel', { serverId, channelId });
       socket.off('new_message', handleNewMessage);
       socket.off('typing', handleTyping);
-      socket.off('reaction_updated', handleReactionUpdated);
-      socket.off('message_edited', handleMessageEdited);
+      socket.off('reaction_updated', handleMessageUpdated);
+      socket.off('message_edited', handleMessageUpdated);
       socket.off('message_deleted', handleMessageDeleted);
     };
   }, [socket, serverId, channelId, queryClient, onTyping, onNewMessage]);
