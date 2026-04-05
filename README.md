@@ -50,7 +50,7 @@ git pull
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-> **Note:** Without SMTP configured, email verification codes are printed to the users service logs. For production deployments, configure SMTP in `.env` to send actual emails. See [DEPLOYMENT.md](DEPLOYMENT.md) for SMTP provider examples.
+> **Note:** Without SMTP configured, email verification codes are printed to the users service logs. For production deployments, we recommend **SendGrid** (100 emails/day free) for reliable email delivery. Configure SMTP in `.env` to send actual emails. See [DEPLOYMENT.md](DEPLOYMENT.md) for complete setup instructions.
 
 ---
 
