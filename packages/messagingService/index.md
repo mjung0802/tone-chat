@@ -19,7 +19,7 @@ Express service on :3001 + MongoDB. Manages servers, channels, messages, members
 | `shared/` | Role utilities + `requireMember`/`requireRole` middleware |
 
 ## Key Files
-- `src/app.ts` — Express app; internalAuth on all routes
+- `src/app.ts` — Express app; `internalAuth` then `verifyUserToken` on all routes
 - `src/shared/roles.ts` — `getRoleLevel()`, `isAbove()` — import for all hierarchy checks
 - `src/shared/middleware/requireMember.ts` — every protected route uses this
 - `src/messages/message.model.ts` — full message schema (tone, reactions, mentions, replyTo)
