@@ -2,14 +2,6 @@ import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../../config/index.js';
 
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: string;
-    }
-  }
-}
-
 export function verifyUserToken(req: Request, res: Response, next: NextFunction): void {
   const token = req.headers['x-user-token'] as string | undefined;
   if (!token) {
