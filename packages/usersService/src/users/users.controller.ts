@@ -9,7 +9,7 @@ function stripPrivateFields(user: User): Omit<User, 'email'> {
 }
 
 export async function getMe(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   if (!userId) {
     res.status(400).json({ error: { code: 'MISSING_USER_ID', message: 'X-User-Id header is required', status: 400 } });
     return;
@@ -20,7 +20,7 @@ export async function getMe(req: Request, res: Response): Promise<void> {
 }
 
 export async function patchMe(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   if (!userId) {
     res.status(400).json({ error: { code: 'MISSING_USER_ID', message: 'X-User-Id header is required', status: 400 } });
     return;

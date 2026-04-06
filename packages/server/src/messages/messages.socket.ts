@@ -41,7 +41,7 @@ function isValidToggleReaction(data: unknown): data is { serverId: string; chann
   return true;
 }
 
-export function registerMessageHandlers(io: Server, socket: Socket, userId: string): void {
+export function registerMessageHandlers(io: Server, socket: Socket, userToken: string, userId: string): void {
   socket.on('send_message', async (data: unknown) => {
     if (!isValidSendMessage(data)) return;
 
@@ -53,13 +53,13 @@ export function registerMessageHandlers(io: Server, socket: Socket, userId: stri
     if (data.mentions) body['mentions'] = data.mentions;
     if (data.tone) body['tone'] = data.tone;
 
-    const result = await messagesClient.createMessage(userId, data.serverId, data.channelId, body);
+    const result = await messagesClient.createMessage(userToken, data.serverId, data.channelId, body);
 
     if (result.status === 201) {
       const room = `server:${data.serverId}:channel:${data.channelId}`;
       io.to(room).emit('new_message', result.data);
 
-      await emitMentionsFromResult(io, userId, data.serverId, data.channelId, result.data);
+      await emitMentionsFromResult(io, userToken, userId, data.serverId, data.channelId, result.data);
     } else {
       const errorData = result.data as { error?: { code?: string; message?: string; mutedUntil?: string } } | null;
       socket.emit('message_error', {
@@ -73,13 +73,13 @@ export function registerMessageHandlers(io: Server, socket: Socket, userId: stri
   socket.on('typing', (data: unknown) => {
     if (!isValidChannelRef(data)) return;
     const room = `server:${data.serverId}:channel:${data.channelId}`;
-    socket.to(room).emit('typing', { userId, channelId: data.channelId });
+    socket.to(room).emit('typing', { userId, channelId: data.channelId }); // userId (not token) is correct for socket event payloads
   });
 
   socket.on('toggle_reaction', async (data: unknown) => {
     if (!isValidToggleReaction(data)) return;
 
-    const result = await messagesClient.toggleReaction(userId, data.serverId, data.channelId, data.messageId, {
+    const result = await messagesClient.toggleReaction(userToken, data.serverId, data.channelId, data.messageId, {
       emoji: data.emoji,
     });
 

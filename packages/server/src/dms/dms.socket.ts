@@ -67,14 +67,14 @@ function parseParticipantIds(data: unknown): string[] {
   return conversation?.conversation?.participantIds ?? [];
 }
 
-export function registerDmHandlers(io: Server, socket: Socket, userId: string): void {
+export function registerDmHandlers(io: Server, socket: Socket, userToken: string, userId: string): void {
   const participantCache = new Map<string, string[]>();
 
   async function resolveParticipants(conversationId: string): Promise<string[]> {
     const cached = participantCache.get(conversationId);
     if (cached !== undefined) return cached;
 
-    const result = await dmsClient.getConversation(userId, conversationId);
+    const result = await dmsClient.getConversation(userToken, conversationId);
     if (result.status !== 200) return [];
 
     const participantIds = parseParticipantIds(result.data);
@@ -85,7 +85,7 @@ export function registerDmHandlers(io: Server, socket: Socket, userId: string): 
   socket.on('join_dm', async (data: unknown) => {
     if (!isValidConversationRef(data)) return;
 
-    const result = await dmsClient.getConversation(userId, data.conversationId);
+    const result = await dmsClient.getConversation(userToken, data.conversationId);
     if (result.status !== 200) {
       socket.emit('error', { message: 'Conversation not found or access denied' });
       return;
@@ -110,7 +110,7 @@ export function registerDmHandlers(io: Server, socket: Socket, userId: string): 
     const otherUserId = participantIds.find((id) => id !== userId);
 
     if (otherUserId !== undefined) {
-      const blocked = await isBlockedBidirectional(userId, otherUserId);
+      const blocked = await isBlockedBidirectional(userToken, otherUserId, userId);
       if (blocked) {
         socket.emit('dm_error', { code: 'BLOCKED', message: 'You cannot message this user' });
         return;
@@ -118,7 +118,7 @@ export function registerDmHandlers(io: Server, socket: Socket, userId: string): 
     }
 
     const { conversationId, ...body } = data;
-    const result = await dmsClient.sendDmMessage(userId, conversationId, body);
+    const result = await dmsClient.sendDmMessage(userToken, conversationId, body);
 
     if (result.status === 201) {
       if (otherUserId !== undefined) {
@@ -143,7 +143,7 @@ export function registerDmHandlers(io: Server, socket: Socket, userId: string): 
   socket.on('dm:react', async (data: unknown) => {
     if (!isValidDmReact(data)) return;
 
-    const result = await dmsClient.reactToDmMessage(userId, data.conversationId, data.messageId, { emoji: data.emoji });
+    const result = await dmsClient.reactToDmMessage(userToken, data.conversationId, data.messageId, { emoji: data.emoji });
 
     if (result.status === 200) {
       io.to(`dm:${data.conversationId}`).emit('dm:reaction_updated', result.data);

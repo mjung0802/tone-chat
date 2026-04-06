@@ -1,55 +1,56 @@
 import { Router } from 'express';
 import type { AuthRequest } from '../shared/middleware/auth.js';
 import * as client from './servers.client.js';
+import { mutationLimiters } from '../shared/rateLimiters.js';
 
 export const serversRouter = Router();
 
-serversRouter.post('/', async (req: AuthRequest, res) => {
-  const result = await client.createServer(req.userId!, req.body as Record<string, unknown>);
+serversRouter.post('/', mutationLimiters.serverWrite, async (req: AuthRequest, res) => {
+  const result = await client.createServer(req.token!, req.body as Record<string, unknown>);
   res.status(result.status).json(result.data);
 });
 
 serversRouter.get('/', async (req: AuthRequest, res) => {
-  const result = await client.listServers(req.userId!);
+  const result = await client.listServers(req.token!);
   res.status(result.status).json(result.data);
 });
 
 serversRouter.get('/:serverId', async (req: AuthRequest, res) => {
-  const result = await client.getServer(req.userId!, req.params['serverId'] as string);
+  const result = await client.getServer(req.token!, req.params['serverId'] as string);
   res.status(result.status).json(result.data);
 });
 
-serversRouter.patch('/:serverId', async (req: AuthRequest, res) => {
-  const result = await client.updateServer(req.userId!, req.params['serverId'] as string, req.body as Record<string, unknown>);
+serversRouter.patch('/:serverId', mutationLimiters.serverWrite, async (req: AuthRequest, res) => {
+  const result = await client.updateServer(req.token!, req.params['serverId'] as string, req.body as Record<string, unknown>);
   res.status(result.status).json(result.data);
 });
 
-serversRouter.delete('/:serverId', async (req: AuthRequest, res) => {
-  const result = await client.deleteServer(req.userId!, req.params['serverId'] as string);
+serversRouter.delete('/:serverId', mutationLimiters.serverWrite, async (req: AuthRequest, res) => {
+  const result = await client.deleteServer(req.token!, req.params['serverId'] as string);
   res.status(result.status).end();
 });
 
-serversRouter.post('/:serverId/transfer', async (req: AuthRequest, res) => {
-  const result = await client.transferOwnership(req.userId!, req.params['serverId'] as string, req.body as Record<string, unknown>);
+serversRouter.post('/:serverId/transfer', mutationLimiters.serverWrite, async (req: AuthRequest, res) => {
+  const result = await client.transferOwnership(req.token!, req.params['serverId'] as string, req.body as Record<string, unknown>);
   res.status(result.status).json(result.data);
 });
 
 serversRouter.get('/:serverId/tones', async (req: AuthRequest, res) => {
-  const result = await client.listCustomTones(req.userId!, req.params['serverId'] as string);
+  const result = await client.listCustomTones(req.token!, req.params['serverId'] as string);
   res.status(result.status).json(result.data);
 });
 
-serversRouter.post('/:serverId/tones', async (req: AuthRequest, res) => {
-  const result = await client.addCustomTone(req.userId!, req.params['serverId'] as string, req.body as Record<string, unknown>);
+serversRouter.post('/:serverId/tones', mutationLimiters.serverWrite, async (req: AuthRequest, res) => {
+  const result = await client.addCustomTone(req.token!, req.params['serverId'] as string, req.body as Record<string, unknown>);
   res.status(result.status).json(result.data);
 });
 
-serversRouter.delete('/:serverId/tones/:toneKey', async (req: AuthRequest, res) => {
-  const result = await client.removeCustomTone(req.userId!, req.params['serverId'] as string, req.params['toneKey'] as string);
+serversRouter.delete('/:serverId/tones/:toneKey', mutationLimiters.serverWrite, async (req: AuthRequest, res) => {
+  const result = await client.removeCustomTone(req.token!, req.params['serverId'] as string, req.params['toneKey'] as string);
   res.status(result.status).end();
 });
 
-serversRouter.patch('/:serverId/invite-settings', async (req: AuthRequest, res) => {
-  const result = await client.updateInviteSettings(req.userId!, req.params['serverId'] as string, req.body as Record<string, unknown>);
+serversRouter.patch('/:serverId/invite-settings', mutationLimiters.serverWrite, async (req: AuthRequest, res) => {
+  const result = await client.updateInviteSettings(req.token!, req.params['serverId'] as string, req.body as Record<string, unknown>);
   res.status(result.status).json(result.data);
 });

@@ -2,7 +2,7 @@ import { config } from '../config/index.js';
 
 const base = () => config.attachmentsServiceUrl;
 
-export async function uploadAttachment(userId: string, body: Buffer, contentType: string, filename: string) {
+export async function uploadAttachment(userToken: string, body: Buffer, contentType: string, filename: string) {
   const formData = new FormData();
   formData.append('file', new Blob([new Uint8Array(body)], { type: contentType }), filename);
 
@@ -10,7 +10,7 @@ export async function uploadAttachment(userId: string, body: Buffer, contentType
     method: 'POST',
     headers: {
       'X-Internal-Key': config.internalApiKey,
-      'X-User-Id': userId,
+      'X-User-Token': userToken,
     },
     body: formData,
   });
@@ -19,11 +19,11 @@ export async function uploadAttachment(userId: string, body: Buffer, contentType
   return { status: res.status, data };
 }
 
-export async function getAttachment(userId: string, attachmentId: string) {
+export async function getAttachment(userToken: string, attachmentId: string) {
   const res = await fetch(`${base()}/attachments/${attachmentId}`, {
     headers: {
       'X-Internal-Key': config.internalApiKey,
-      'X-User-Id': userId,
+      'X-User-Token': userToken,
     },
   });
 

@@ -1,6 +1,7 @@
 export const config = {
   port: Number(process.env['PORT'] ?? 4000),
   jwtSecret: process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production',
+  cookieSecret: process.env['COOKIE_SECRET'] ?? 'dev-cookie-secret-change-in-production',
   messagingServiceUrl: process.env['MESSAGING_SERVICE_URL'] ?? 'http://localhost:3001',
   usersServiceUrl: process.env['USERS_SERVICE_URL'] ?? 'http://localhost:3002',
   attachmentsServiceUrl: process.env['ATTACHMENTS_SERVICE_URL'] ?? 'http://localhost:3003',
@@ -8,7 +9,7 @@ export const config = {
   allowedOrigins: (process.env['ALLOWED_ORIGINS'] ?? 'http://localhost:8081').split(',').map(o => o.trim()),
 } as const;
 
-const DEV_DEFAULTS = ['dev-secret-change-in-production', 'dev-internal-key'];
+const DEV_DEFAULTS = ['dev-secret-change-in-production', 'dev-internal-key', 'dev-cookie-secret-change-in-production'];
 
 export function validateConfig(): void {
   if (process.env['NODE_ENV'] !== 'production') return;
@@ -18,6 +19,9 @@ export function validateConfig(): void {
   }
   if (DEV_DEFAULTS.includes(config.internalApiKey)) {
     throw new Error('INTERNAL_API_KEY must be set in production');
+  }
+  if (DEV_DEFAULTS.includes(config.cookieSecret)) {
+    throw new Error('COOKIE_SECRET must be set in production');
   }
   if (config.allowedOrigins.some(o => o.includes('localhost:8081'))) {
     throw new Error('ALLOWED_ORIGINS must be set in production (still contains localhost:8081)');

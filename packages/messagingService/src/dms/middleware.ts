@@ -6,7 +6,7 @@ export async function requireConversationParticipant(
   res: Response,
   next: NextFunction,
 ): Promise<void> {
-  const userId = req.headers['x-user-id'] as string | undefined;
+  const userId = req.userId;
   if (!userId) {
     res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Missing user identity', status: 401 } });
     return;

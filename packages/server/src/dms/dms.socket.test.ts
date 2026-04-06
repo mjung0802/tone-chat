@@ -63,7 +63,7 @@ describe('registerDmHandlers', () => {
       to: mock.fn(() => ({ emit: mock.fn() })),
     };
     // @ts-expect-error - Using simplified test mocks for io and socket
-    registerDmHandlers(io, socket, 'user-1');
+    registerDmHandlers(io, socket, 'mock-token', 'user-1');
   });
 
   describe('join_dm', () => {
@@ -236,7 +236,7 @@ describe('registerDmHandlers', () => {
 
       assert.equal(mockReactToDmMessage.mock.callCount(), 1);
       const args = mockReactToDmMessage.mock.calls[0]!.arguments;
-      assert.equal(args[0], 'user-1');
+      assert.equal(args[0], 'mock-token');
       assert.equal(args[1], 'conv-1');
       assert.equal(args[2], 'm1');
       assert.deepEqual(args[3], { emoji: '👍' });

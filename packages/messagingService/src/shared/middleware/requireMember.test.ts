@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
 
-type MemberMiddlewareReq = Request & { member?: unknown };
+type MemberMiddlewareReq = Request & { member?: unknown; userId?: string };
 type TestResponse = Response & { statusCode: number; _json: unknown };
 
 const mockFindOne = mock.fn<AnyFn>();
@@ -15,8 +15,8 @@ mock.module('../../members/serverMember.model.js', {
 
 const { requireMember } = await import('./requireMember.js');
 
-function makeReq(overrides: Partial<Pick<Request, 'params' | 'headers'>> = {}): MemberMiddlewareReq {
-  return { params: {}, headers: {}, ...overrides } as MemberMiddlewareReq;
+function makeReq(overrides: Partial<Pick<Request, 'params' | 'headers'>> & { userId?: string } = {}): MemberMiddlewareReq {
+  return { params: {}, headers: {}, userId: undefined, ...overrides } as MemberMiddlewareReq;
 }
 
 function makeRes(): TestResponse {
@@ -29,7 +29,7 @@ function makeRes(): TestResponse {
 describe('requireMember', () => {
   beforeEach(() => mockFindOne.mock.resetCalls());
 
-  it('returns 401 when x-user-id header is missing', async () => {
+  it('returns 401 when userId is missing', async () => {
     const res = makeRes();
     const next = mock.fn();
     await requireMember(makeReq({ params: { serverId: 's1' } }), res, next);
@@ -43,7 +43,7 @@ describe('requireMember', () => {
     const res = makeRes();
     const next = mock.fn();
     await requireMember(
-      makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }),
+      makeReq({ userId: 'u1', params: { serverId: 's1' } }),
       res,
       next,
     );
@@ -55,7 +55,7 @@ describe('requireMember', () => {
   it('calls next and attaches member when user is a member', async () => {
     const member = { serverId: 's1', userId: 'u1', role: 'member' };
     mockFindOne.mock.mockImplementation(async () => member);
-    const req = makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } });
+    const req = makeReq({ userId: 'u1', params: { serverId: 's1' } });
     const res = makeRes();
     const next = mock.fn();
     await requireMember(req, res, next);

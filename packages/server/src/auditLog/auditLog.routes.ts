@@ -35,7 +35,7 @@ auditLogRouter.get('/', async (req: AuthRequest, res) => {
   if (req.query['limit']) query.limit = Number(req.query['limit']);
   if (req.query['before'] && typeof req.query['before'] === 'string') query.before = req.query['before'];
 
-  const result = await client.listAuditLog(req.userId!, serverId, query);
+  const result = await client.listAuditLog(req.token!, serverId, query);
   if (result.status !== 200) {
     res.status(result.status).json(result.data);
     return;
@@ -44,7 +44,7 @@ auditLogRouter.get('/', async (req: AuthRequest, res) => {
   const { entries } = result.data as { entries: Array<Record<string, unknown>> };
 
   const userIds = [...new Set(entries.flatMap(e => [e.actorId as string, e.targetId as string]))];
-  const userMap = await fetchUserMap(req.userId!, userIds);
+  const userMap = await fetchUserMap(req.token!, userIds);
 
   for (const entry of entries) {
     const actor = userMap.get(entry.actorId as string);

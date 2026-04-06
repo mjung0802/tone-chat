@@ -36,10 +36,9 @@ function makeKeys(instance: string): { accessKey: string; refreshKey: string; em
   };
 }
 
-// SECURITY: On web, tokens are stored in localStorage which is vulnerable to XSS.
-// Native platforms use expo-secure-store (encrypted keychain/keystore).
-// Mitigation: helmet CSP headers restrict script injection on the BFF.
-// Future: migrate web storage to httpOnly cookies for refresh tokens.
+// SECURITY: On web, the refresh token is stored in an httpOnly cookie set by the BFF
+// (not accessible to JS). Only the access token is kept in memory and localStorage.
+// Native platforms use expo-secure-store (encrypted keychain/keystore) for both tokens.
 // Tokens are scoped per instance URL to prevent cross-server token leakage.
 async function persistTokens(instance: string, accessToken: string | null, refreshToken: string | null, emailVerified: boolean) {
   const { accessKey, refreshKey, emailVerifiedKey } = makeKeys(instance);
@@ -49,11 +48,8 @@ async function persistTokens(instance: string, accessToken: string | null, refre
     } else {
       localStorage.removeItem(accessKey);
     }
-    if (refreshToken) {
-      localStorage.setItem(refreshKey, refreshToken);
-    } else {
-      localStorage.removeItem(refreshKey);
-    }
+    // On web, refresh token lives in an httpOnly cookie — never touch localStorage for it
+    localStorage.removeItem(refreshKey);
     localStorage.setItem(emailVerifiedKey, emailVerified ? 'true' : 'false');
   } else {
     const SecureStore = await import('expo-secure-store');
@@ -76,7 +72,7 @@ async function loadTokensForInstance(instance: string): Promise<{ accessToken: s
   if (Platform.OS === 'web') {
     return {
       accessToken: localStorage.getItem(accessKey),
-      refreshToken: localStorage.getItem(refreshKey),
+      refreshToken: null, // On web, refresh token lives in an httpOnly cookie — not in localStorage
       emailVerified: localStorage.getItem(emailVerifiedKey) === 'true',
     };
   }
@@ -163,7 +159,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     const { accessToken, refreshToken, emailVerified } = await loadTokensForInstance(instance);
 
-    if (!accessToken && !refreshToken) {
+    // On web, refreshToken is always null (stored in httpOnly cookie).
+    // We still attempt hydration when there's no accessToken — the API client
+    // will attempt a silent refresh via the cookie on the first 401.
+    if (!accessToken && !refreshToken && Platform.OS !== 'web') {
       set({ isHydrated: true });
       return;
     }

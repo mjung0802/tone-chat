@@ -1,31 +1,31 @@
 import { serviceRequest } from '../shared/serviceClient.js';
 import { config } from '../config/index.js';
 
-export function getOrCreateConversation(userId: string, otherUserId: string) {
-  return serviceRequest(config.messagingServiceUrl, `/dms/${otherUserId}`, { method: 'POST', userId });
+export function getOrCreateConversation(userToken: string, otherUserId: string) {
+  return serviceRequest(config.messagingServiceUrl, `/dms/${otherUserId}`, { method: 'POST', userToken });
 }
 
-export function getConversation(userId: string, conversationId: string) {
-  return serviceRequest(config.messagingServiceUrl, `/dms/${conversationId}`, { userId });
+export function getConversation(userToken: string, conversationId: string) {
+  return serviceRequest(config.messagingServiceUrl, `/dms/${conversationId}`, { userToken });
 }
 
-export function listConversations(userId: string) {
-  return serviceRequest(config.messagingServiceUrl, '/dms', { userId });
+export function listConversations(userToken: string) {
+  return serviceRequest(config.messagingServiceUrl, '/dms', { userToken });
 }
 
-export function listDmMessages(userId: string, conversationId: string, queryString: string) {
+export function listDmMessages(userToken: string, conversationId: string, queryString: string) {
   const path = queryString ? `/dms/${conversationId}/messages?${queryString}` : `/dms/${conversationId}/messages`;
-  return serviceRequest(config.messagingServiceUrl, path, { userId });
+  return serviceRequest(config.messagingServiceUrl, path, { userToken });
 }
 
-export function sendDmMessage(userId: string, conversationId: string, body: Record<string, unknown>) {
-  return serviceRequest(config.messagingServiceUrl, `/dms/${conversationId}/messages`, { method: 'POST', userId, body });
+export function sendDmMessage(userToken: string, conversationId: string, body: Record<string, unknown>) {
+  return serviceRequest(config.messagingServiceUrl, `/dms/${conversationId}/messages`, { method: 'POST', userToken, body });
 }
 
-export function editDmMessage(userId: string, conversationId: string, messageId: string, body: Record<string, unknown>) {
-  return serviceRequest(config.messagingServiceUrl, `/dms/${conversationId}/messages/${messageId}`, { method: 'PATCH', userId, body });
+export function editDmMessage(userToken: string, conversationId: string, messageId: string, body: Record<string, unknown>) {
+  return serviceRequest(config.messagingServiceUrl, `/dms/${conversationId}/messages/${messageId}`, { method: 'PATCH', userToken, body });
 }
 
-export function reactToDmMessage(userId: string, conversationId: string, messageId: string, body: Record<string, unknown>) {
-  return serviceRequest(config.messagingServiceUrl, `/dms/${conversationId}/messages/${messageId}/reactions`, { method: 'PUT', userId, body });
+export function reactToDmMessage(userToken: string, conversationId: string, messageId: string, body: Record<string, unknown>) {
+  return serviceRequest(config.messagingServiceUrl, `/dms/${conversationId}/messages/${messageId}/reactions`, { method: 'PUT', userToken, body });
 }

@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import { createAttachment, getAttachment } from './attachments.service.js';
 
 export async function uploadFile(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const file = req.file;
 
   if (!file) {

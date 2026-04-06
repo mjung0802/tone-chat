@@ -39,7 +39,7 @@ mock.module('../bans/serverBan.model.js', {
 
 const { createInvite, listInvites, revokeInvite, joinViaInvite, getDefaultInvite } = await import('./invites.controller.js');
 
-type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>> & { userId?: string };
 type TestResponse = Response & { statusCode: number; _json: unknown; end: () => TestResponse };
 
 function assertErrorCode(error: unknown, code: string): true {
@@ -50,7 +50,7 @@ function assertErrorCode(error: unknown, code: string): true {
 }
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
+  return { body: {}, params: {}, headers: {}, query: {}, userId: undefined, ...overrides } as Request;
 }
 
 function makeReqWithMember(overrides: RequestOverrides & { memberRole?: 'admin' | 'mod' | 'member' } = {}): Request {
@@ -76,7 +76,7 @@ describe('createInvite', () => {
   it('throws NOT_MEMBER when user is not a member', async () => {
     mockMemberFindOne.mock.mockImplementation(async () => null);
     await assert.rejects(
-      () => createInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' }, body: {} }), makeRes()),
+      () => createInvite(makeReq({ userId: 'u1', params: { serverId: 's1' }, body: {} }), makeRes()),
       (error) => assertErrorCode(error, 'NOT_MEMBER'),
     );
   });
@@ -89,7 +89,7 @@ describe('createInvite', () => {
     const before = Date.now();
     const res = makeRes();
     await createInvite(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1' },
       body: { expiresIn: 3600 },
     }), res);
@@ -126,7 +126,7 @@ describe('revokeInvite', () => {
   it('throws SERVER_NOT_FOUND when server is null', async () => {
     mockServerFindById.mock.mockImplementation(async () => null);
     await assert.rejects(
-      () => revokeInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1', code: 'abc' } }), makeRes()),
+      () => revokeInvite(makeReq({ userId: 'u1', params: { serverId: 's1', code: 'abc' } }), makeRes()),
       (error) => assertErrorCode(error, 'SERVER_NOT_FOUND'),
     );
   });
@@ -135,7 +135,7 @@ describe('revokeInvite', () => {
     mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'other' }));
     mockMemberFindOne.mock.mockImplementation(async () => ({ role: 'member' }));
     await assert.rejects(
-      () => revokeInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1', code: 'abc' } }), makeRes()),
+      () => revokeInvite(makeReq({ userId: 'u1', params: { serverId: 's1', code: 'abc' } }), makeRes()),
       (error) => assertErrorCode(error, 'FORBIDDEN'),
     );
   });
@@ -147,7 +147,7 @@ describe('revokeInvite', () => {
     mockInviteFindOneAndUpdate.mock.mockImplementation(async () => invite);
 
     const res = makeRes();
-    await revokeInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1', code: 'abc' } }), res);
+    await revokeInvite(makeReq({ userId: 'u1', params: { serverId: 's1', code: 'abc' } }), res);
     assert.equal(res.statusCode, 200);
     assert.deepEqual((res._json as { invite: unknown }).invite, invite);
   });
@@ -167,7 +167,7 @@ describe('getDefaultInvite', () => {
 
     const res = makeRes();
     await getDefaultInvite(makeReqWithMember({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1' },
       memberRole: 'member',
     }), res);
@@ -182,7 +182,7 @@ describe('getDefaultInvite', () => {
 
     await assert.rejects(
       () => getDefaultInvite(makeReqWithMember({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { serverId: 's1' },
         memberRole: 'member',
       }), makeRes()),
@@ -197,7 +197,7 @@ describe('getDefaultInvite', () => {
 
     const res = makeRes();
     await getDefaultInvite(makeReqWithMember({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1' },
       memberRole: 'admin',
     }), res);
@@ -213,7 +213,7 @@ describe('getDefaultInvite', () => {
 
     const res = makeRes();
     await getDefaultInvite(makeReqWithMember({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1' },
       memberRole: 'member',
     }), res);
@@ -227,7 +227,7 @@ describe('getDefaultInvite', () => {
 
     await assert.rejects(
       () => getDefaultInvite(makeReqWithMember({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { serverId: 's1' },
         memberRole: 'mod',
       }), makeRes()),
@@ -242,7 +242,7 @@ describe('getDefaultInvite', () => {
 
     const res = makeRes();
     await getDefaultInvite(makeReqWithMember({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1' },
       memberRole: 'member',
     }), res);
@@ -260,7 +260,7 @@ describe('getDefaultInvite', () => {
 
     const res = makeRes();
     await getDefaultInvite(makeReqWithMember({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1' },
       memberRole: 'member',
     }), res);
@@ -284,7 +284,7 @@ describe('joinViaInvite', () => {
   it('throws INVITE_NOT_FOUND when invite is null', async () => {
     mockInviteFindOne.mock.mockImplementation(async () => null);
     await assert.rejects(
-      () => joinViaInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { code: 'bad' } }), makeRes()),
+      () => joinViaInvite(makeReq({ userId: 'u1', params: { code: 'bad' } }), makeRes()),
       (error) => assertErrorCode(error, 'INVITE_NOT_FOUND'),
     );
   });
@@ -292,7 +292,7 @@ describe('joinViaInvite', () => {
   it('throws INVITE_REVOKED when revoked', async () => {
     mockInviteFindOne.mock.mockImplementation(async () => ({ revoked: true }));
     await assert.rejects(
-      () => joinViaInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { code: 'abc' } }), makeRes()),
+      () => joinViaInvite(makeReq({ userId: 'u1', params: { code: 'abc' } }), makeRes()),
       (error) => assertErrorCode(error, 'INVITE_REVOKED'),
     );
   });
@@ -303,7 +303,7 @@ describe('joinViaInvite', () => {
       expiresAt: new Date('2000-01-01'),
     }));
     await assert.rejects(
-      () => joinViaInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { code: 'abc' } }), makeRes()),
+      () => joinViaInvite(makeReq({ userId: 'u1', params: { code: 'abc' } }), makeRes()),
       (error) => assertErrorCode(error, 'INVITE_EXPIRED'),
     );
   });
@@ -316,7 +316,7 @@ describe('joinViaInvite', () => {
       uses: 5,
     }));
     await assert.rejects(
-      () => joinViaInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { code: 'abc' } }), makeRes()),
+      () => joinViaInvite(makeReq({ userId: 'u1', params: { code: 'abc' } }), makeRes()),
       (error) => assertErrorCode(error, 'INVITE_EXHAUSTED'),
     );
   });
@@ -331,7 +331,7 @@ describe('joinViaInvite', () => {
     }));
     mockMemberFindOne.mock.mockImplementation(async () => ({ userId: 'u1' }));
     await assert.rejects(
-      () => joinViaInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { code: 'abc' } }), makeRes()),
+      () => joinViaInvite(makeReq({ userId: 'u1', params: { code: 'abc' } }), makeRes()),
       (error) => assertErrorCode(error, 'ALREADY_MEMBER'),
     );
   });
@@ -352,7 +352,7 @@ describe('joinViaInvite', () => {
     mockServerFindById.mock.mockImplementation(async () => ({ _id: 's1', name: 'Test' }));
 
     const res = makeRes();
-    await joinViaInvite(makeReq({ headers: { 'x-user-id': 'u1' }, params: { code: 'abc' } }), res);
+    await joinViaInvite(makeReq({ userId: 'u1', params: { code: 'abc' } }), res);
     assert.equal(res.statusCode, 201);
     assert.equal(invite.uses, 3);
     assert.equal(invite.save.mock.callCount(), 1);

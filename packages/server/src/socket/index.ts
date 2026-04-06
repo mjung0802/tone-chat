@@ -52,6 +52,7 @@ export function setupSocketIO(httpServer: HttpServer): Server {
     try {
       const payload = jwt.verify(token, config.jwtSecret) as { sub: string };
       socket.data['userId'] = payload.sub;
+      socket.data['userToken'] = token;
       next();
     } catch {
       next(new Error('Invalid token'));
@@ -60,6 +61,7 @@ export function setupSocketIO(httpServer: HttpServer): Server {
 
   io.on('connection', (socket) => {
     const userId = socket.data['userId'] as string;
+    const userToken = socket.data['userToken'] as string;
     console.log(`Socket connected: ${userId}`);
 
     // Join user-level room for targeted events (mentions)
@@ -68,8 +70,8 @@ export function setupSocketIO(httpServer: HttpServer): Server {
     // Room management — verify membership and channel existence before joining
     socket.on('join_channel', async (data: { serverId: string; channelId: string }) => {
       const [memberResult, channelResult] = await Promise.all([
-        getMember(userId, data.serverId, userId),
-        getChannel(userId, data.serverId, data.channelId),
+        getMember(userToken, data.serverId, userId),
+        getChannel(userToken, data.serverId, data.channelId),
       ]);
       if (memberResult.status !== 200) {
         socket.emit('error', { message: 'Not a member of this server' });
@@ -89,8 +91,8 @@ export function setupSocketIO(httpServer: HttpServer): Server {
     });
 
     // Register domain-specific handlers
-    registerMessageHandlers(io, socket, userId);
-    registerDmHandlers(io, socket, userId);
+    registerMessageHandlers(io, socket, userToken, userId);
+    registerDmHandlers(io, socket, userToken, userId);
 
     socket.on('disconnect', () => {
       console.log(`Socket disconnected: ${userId}`);

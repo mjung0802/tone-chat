@@ -7,7 +7,7 @@ import { getRoleLevel, isAbove, type Role } from '../shared/roles.js';
 import { logAuditEvent } from '../auditLog/auditLog.model.js';
 
 export async function joinServer(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const { serverId } = req.params;
 
   const server = await Server.findById(serverId);
@@ -63,7 +63,7 @@ export async function updateMember(req: Request, res: Response): Promise<void> {
 }
 
 export async function removeMember(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const serverId = req.params['serverId'] as string;
   const targetUserId = req.params['userId'] as string;
 
@@ -113,7 +113,7 @@ export async function removeMember(req: Request, res: Response): Promise<void> {
 }
 
 export async function muteMember(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const serverId = req.params['serverId'] as string;
   const targetUserId = req.params['userId'] as string;
   const server = req.server!;
@@ -142,7 +142,7 @@ export async function muteMember(req: Request, res: Response): Promise<void> {
 }
 
 export async function unmuteMember(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const serverId = req.params['serverId'] as string;
   const targetUserId = req.params['userId'] as string;
   const server = req.server!;
@@ -165,7 +165,7 @@ export async function unmuteMember(req: Request, res: Response): Promise<void> {
 }
 
 export async function promoteMember(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const serverId = req.params['serverId'] as string;
   const targetUserId = req.params['userId'] as string;
   const server = req.server!;
@@ -200,7 +200,7 @@ export async function promoteMember(req: Request, res: Response): Promise<void> 
 }
 
 export async function demoteMember(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const serverId = req.params['serverId'] as string;
   const targetUserId = req.params['userId'] as string;
   const server = req.server!;

@@ -17,10 +17,10 @@ export function logoutUser(body: { refreshToken: string }) {
   return serviceRequest(config.usersServiceUrl, '/auth/logout', { method: 'POST', body });
 }
 
-export function verifyEmail(body: { code: string }, userId: string) {
-  return serviceRequest(config.usersServiceUrl, '/auth/verify-email', { method: 'POST', body, userId });
+export function verifyEmail(body: { code: string }, userToken: string) {
+  return serviceRequest(config.usersServiceUrl, '/auth/verify-email', { method: 'POST', body, userToken });
 }
 
-export function resendVerification(userId: string) {
-  return serviceRequest(config.usersServiceUrl, '/auth/resend-verification', { method: 'POST', body: {}, userId });
+export function resendVerification(userToken: string) {
+  return serviceRequest(config.usersServiceUrl, '/auth/resend-verification', { method: 'POST', body: {}, userToken });
 }

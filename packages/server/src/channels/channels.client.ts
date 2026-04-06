@@ -3,22 +3,22 @@ import { config } from '../config/index.js';
 
 const base = () => config.messagingServiceUrl;
 
-export function createChannel(userId: string, serverId: string, body: Record<string, unknown>) {
-  return serviceRequest(base(), `/servers/${serverId}/channels`, { method: 'POST', userId, body });
+export function createChannel(userToken: string, serverId: string, body: Record<string, unknown>) {
+  return serviceRequest(base(), `/servers/${serverId}/channels`, { method: 'POST', userToken, body });
 }
 
-export function listChannels(userId: string, serverId: string) {
-  return serviceRequest(base(), `/servers/${serverId}/channels`, { userId });
+export function listChannels(userToken: string, serverId: string) {
+  return serviceRequest(base(), `/servers/${serverId}/channels`, { userToken });
 }
 
-export function getChannel(userId: string, serverId: string, channelId: string) {
-  return serviceRequest(base(), `/servers/${serverId}/channels/${channelId}`, { userId });
+export function getChannel(userToken: string, serverId: string, channelId: string) {
+  return serviceRequest(base(), `/servers/${serverId}/channels/${channelId}`, { userToken });
 }
 
-export function updateChannel(userId: string, serverId: string, channelId: string, body: Record<string, unknown>) {
-  return serviceRequest(base(), `/servers/${serverId}/channels/${channelId}`, { method: 'PATCH', userId, body });
+export function updateChannel(userToken: string, serverId: string, channelId: string, body: Record<string, unknown>) {
+  return serviceRequest(base(), `/servers/${serverId}/channels/${channelId}`, { method: 'PATCH', userToken, body });
 }
 
-export function deleteChannel(userId: string, serverId: string, channelId: string) {
-  return serviceRequest(base(), `/servers/${serverId}/channels/${channelId}`, { method: 'DELETE', userId });
+export function deleteChannel(userToken: string, serverId: string, channelId: string) {
+  return serviceRequest(base(), `/servers/${serverId}/channels/${channelId}`, { method: 'DELETE', userToken });
 }

@@ -12,11 +12,11 @@ mock.module('./users.service.js', {
 
 const { getMe, patchMe, getUser, getUsersBatch } = await import('./users.controller.js');
 
-type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>> & { userId?: string };
 type TestResponse = Response & { statusCode: number; _json: unknown };
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
+  return { body: {}, params: {}, headers: {}, query: {}, userId: undefined, ...overrides } as Request;
 }
 function makeRes(): TestResponse {
   const res = { statusCode: 200, _json: undefined } as TestResponse;
@@ -34,7 +34,7 @@ function makeRes(): TestResponse {
 describe('getMe', () => {
   beforeEach(() => mockGetUserById.mock.resetCalls());
 
-  it('returns 400 when X-User-Id missing', async () => {
+  it('returns 400 when userId missing', async () => {
     const res = makeRes();
     await getMe(makeReq(), res);
     assert.equal(res.statusCode, 400);
@@ -45,7 +45,7 @@ describe('getMe', () => {
     const user = { id: 'u1', username: 'alice' };
     mockGetUserById.mock.mockImplementation(async () => user);
     const res = makeRes();
-    await getMe(makeReq({ headers: { 'x-user-id': 'u1' } }), res);
+    await getMe(makeReq({ userId: 'u1' }), res);
     assert.equal(res.statusCode, 200);
     assert.deepEqual((res._json as { user: unknown }).user, user);
   });
@@ -54,7 +54,7 @@ describe('getMe', () => {
 describe('patchMe', () => {
   beforeEach(() => mockUpdateUser.mock.resetCalls());
 
-  it('returns 400 when X-User-Id missing', async () => {
+  it('returns 400 when userId missing', async () => {
     const res = makeRes();
     await patchMe(makeReq({ body: { display_name: 'Alice' } }), res);
     assert.equal(res.statusCode, 400);
@@ -64,7 +64,7 @@ describe('patchMe', () => {
     const user = { id: 'u1', display_name: 'Alice' };
     mockUpdateUser.mock.mockImplementation(async () => user);
     const res = makeRes();
-    await patchMe(makeReq({ headers: { 'x-user-id': 'u1' }, body: { display_name: 'Alice' } }), res);
+    await patchMe(makeReq({ userId: 'u1', body: { display_name: 'Alice' } }), res);
     assert.equal(res.statusCode, 200);
     assert.deepEqual((res._json as { user: unknown }).user, user);
   });
@@ -73,7 +73,7 @@ describe('patchMe', () => {
     const user = { id: 'u1', display_name: 'Alice', email: 'alice@test.com' };
     mockUpdateUser.mock.mockImplementation(async () => user);
     const res = makeRes();
-    await patchMe(makeReq({ headers: { 'x-user-id': 'u1' }, body: { display_name: 'Alice' } }), res);
+    await patchMe(makeReq({ userId: 'u1', body: { display_name: 'Alice' } }), res);
     assert.equal(res.statusCode, 200);
     assert.equal((res._json as { user: { email?: unknown } }).user.email, undefined);
   });

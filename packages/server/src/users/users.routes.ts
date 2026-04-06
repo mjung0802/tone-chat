@@ -16,35 +16,35 @@ import { getIO } from '../socket/index.js';
 export const usersRouter = Router();
 
 usersRouter.get('/me', async (req: AuthRequest, res) => {
-  const result = await getMe(req.userId!);
+  const result = await getMe(req.token!);
   res.status(result.status).json(result.data);
 });
 
 usersRouter.patch('/me', async (req: AuthRequest, res) => {
-  const result = await patchMe(req.userId!, req.body as Record<string, unknown>);
+  const result = await patchMe(req.token!, req.body as Record<string, unknown>);
   res.status(result.status).json(result.data);
 });
 
 usersRouter.get('/me/friends', async (req: AuthRequest, res) => {
-  const result = await getFriends(req.userId!);
+  const result = await getFriends(req.token!);
   res.status(result.status).json(result.data);
 });
 
 usersRouter.get('/me/friends/pending', async (req: AuthRequest, res) => {
-  const result = await getPendingRequests(req.userId!);
+  const result = await getPendingRequests(req.token!);
   res.status(result.status).json(result.data);
 });
 
 usersRouter.get('/me/friends/:userId/status', async (req: AuthRequest, res) => {
-  const result = await getFriendshipStatus(req.userId!, req.params['userId'] as string);
+  const result = await getFriendshipStatus(req.token!, req.params['userId'] as string);
   res.status(result.status).json(result.data);
 });
 
 usersRouter.post('/me/friends/:userId', async (req: AuthRequest, res) => {
   const targetId = req.params['userId'] as string;
   const [result, meResult] = await Promise.all([
-    sendFriendRequest(req.userId!, targetId),
-    getMe(req.userId!),
+    sendFriendRequest(req.token!, targetId),
+    getMe(req.token!),
   ]);
   res.status(result.status).json(result.data);
 
@@ -57,12 +57,12 @@ usersRouter.post('/me/friends/:userId', async (req: AuthRequest, res) => {
 
       if (responseData?.status === 'accepted') {
         io.to(`user:${targetId}`).emit('friend:request_accepted', {
-          accepterId: req.userId!,
+          accepterId: req.token!,
           accepterName: senderName,
         });
       } else {
         io.to(`user:${targetId}`).emit('friend:request_received', {
-          requesterId: req.userId!,
+          requesterId: req.token!,
           requesterName: senderName,
         });
       }
@@ -73,8 +73,8 @@ usersRouter.post('/me/friends/:userId', async (req: AuthRequest, res) => {
 usersRouter.patch('/me/friends/:userId/accept', async (req: AuthRequest, res) => {
   const requesterId = req.params['userId'] as string;
   const [result, meResult] = await Promise.all([
-    acceptFriendRequest(req.userId!, requesterId),
-    getMe(req.userId!),
+    acceptFriendRequest(req.token!, requesterId),
+    getMe(req.token!),
   ]);
   if (result.status === 204) {
     res.status(204).end();
@@ -88,7 +88,7 @@ usersRouter.patch('/me/friends/:userId/accept', async (req: AuthRequest, res) =>
       const me = meResult.data as { user?: { display_name?: string | null; username?: string } } | null;
       const accepterName = me?.user?.display_name ?? me?.user?.username ?? 'Someone';
       io.to(`user:${requesterId}`).emit('friend:request_accepted', {
-        accepterId: req.userId!,
+        accepterId: req.token!,
         accepterName: accepterName,
       });
     }
@@ -96,7 +96,7 @@ usersRouter.patch('/me/friends/:userId/accept', async (req: AuthRequest, res) =>
 });
 
 usersRouter.delete('/me/friends/:userId', async (req: AuthRequest, res) => {
-  const result = await removeFriend(req.userId!, req.params['userId'] as string);
+  const result = await removeFriend(req.token!, req.params['userId'] as string);
   if (result.status === 204) {
     res.status(204).end();
   } else {
@@ -105,6 +105,6 @@ usersRouter.delete('/me/friends/:userId', async (req: AuthRequest, res) => {
 });
 
 usersRouter.get('/:id', async (req: AuthRequest, res) => {
-  const result = await getUser(req.userId!, req.params['id'] as string);
+  const result = await getUser(req.token!, req.params['id'] as string);
   res.status(result.status).json(result.data);
 });

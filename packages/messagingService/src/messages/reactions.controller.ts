@@ -3,7 +3,7 @@ import { Message } from './message.model.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
 
 export async function toggleReaction(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const { channelId, messageId } = req.params;
   const { emoji } = req.body as { emoji?: string };
 

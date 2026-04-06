@@ -34,7 +34,7 @@ mock.module('../users/users.service.js', {
 
 const { register, login, refresh, logout, verifyEmail, resendVerification } = await import('./auth.controller.js');
 
-type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>> & { userId?: string };
 type TestResponse = Response & { statusCode: number; _json: unknown };
 
 function assertErrorCode(error: unknown, code: string): true {
@@ -45,7 +45,7 @@ function assertErrorCode(error: unknown, code: string): true {
 }
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
+  return { body: {}, params: {}, headers: {}, query: {}, userId: undefined, ...overrides } as Request;
 }
 function makeRes(): TestResponse {
   const res = { statusCode: 200, _json: undefined } as TestResponse;
@@ -162,7 +162,7 @@ describe('verifyEmail', () => {
 
   it('returns 400 MISSING_FIELDS when code is absent', async () => {
     const res = makeRes();
-    await verifyEmail(makeReq({ headers: { 'x-user-id': 'u1' }, body: {} }), res);
+    await verifyEmail(makeReq({ userId: 'u1', body: {} }), res);
     assert.equal(res.statusCode, 400);
     assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_FIELDS');
   });
@@ -170,7 +170,7 @@ describe('verifyEmail', () => {
   it('calls verifyOtp with userId from x-user-id header and code from body', async () => {
     mockVerifyOtp.mock.mockImplementation(async () => {});
     const res = makeRes();
-    await verifyEmail(makeReq({ headers: { 'x-user-id': 'u1' }, body: { code: '123456' } }), res);
+    await verifyEmail(makeReq({ userId: 'u1', body: { code: '123456' } }), res);
     assert.equal(mockVerifyOtp.mock.callCount(), 1);
     assert.equal(mockVerifyOtp.mock.calls[0]!.arguments[0], 'u1');
     assert.equal(mockVerifyOtp.mock.calls[0]!.arguments[1], '123456');
@@ -179,7 +179,7 @@ describe('verifyEmail', () => {
   it('returns 200 { message: "Email verified" } on success', async () => {
     mockVerifyOtp.mock.mockImplementation(async () => {});
     const res = makeRes();
-    await verifyEmail(makeReq({ headers: { 'x-user-id': 'u1' }, body: { code: '123456' } }), res);
+    await verifyEmail(makeReq({ userId: 'u1', body: { code: '123456' } }), res);
     assert.equal(res.statusCode, 200);
     assert.equal((res._json as { message: string }).message, 'Email verified');
   });
@@ -191,7 +191,7 @@ describe('verifyEmail', () => {
     });
     const res = makeRes();
     await assert.rejects(
-      () => verifyEmail(makeReq({ headers: { 'x-user-id': 'u1' }, body: { code: '000000' } }), res),
+      () => verifyEmail(makeReq({ userId: 'u1', body: { code: '000000' } }), res),
       (error) => assertErrorCode(error, 'INVALID_CODE'),
     );
   });
@@ -208,7 +208,7 @@ describe('resendVerification', () => {
     mockGetUserById.mock.mockImplementation(async () => user);
     mockSendVerificationOtp.mock.mockImplementation(async () => {});
     const res = makeRes();
-    await resendVerification(makeReq({ headers: { 'x-user-id': 'u1' } }), res);
+    await resendVerification(makeReq({ userId: 'u1' }), res);
     assert.equal(mockGetUserById.mock.calls[0]!.arguments[0], 'u1');
     assert.equal(mockSendVerificationOtp.mock.calls[0]!.arguments[0], 'u1');
     assert.equal(mockSendVerificationOtp.mock.calls[0]!.arguments[1], 'user@test.com');
@@ -219,7 +219,7 @@ describe('resendVerification', () => {
     mockGetUserById.mock.mockImplementation(async () => user);
     mockSendVerificationOtp.mock.mockImplementation(async () => {});
     const res = makeRes();
-    await resendVerification(makeReq({ headers: { 'x-user-id': 'u1' } }), res);
+    await resendVerification(makeReq({ userId: 'u1' }), res);
     assert.equal(res.statusCode, 200);
     assert.equal((res._json as { message: string }).message, 'Verification email sent');
   });
