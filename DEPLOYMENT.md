@@ -356,6 +356,21 @@ docker compose up -d
 docker image prune -a
 ```
 
+## Automated image publishing (optional)
+
+This repo includes [publish-images.yml](.github/workflows/publish-images.yml), which builds and pushes multi-arch images (`linux/amd64` and `linux/arm64`) to Docker Hub.
+
+Configure these repository secrets before running it:
+
+- `DOCKERHUB_USERNAME` — your Docker Hub username
+- `DOCKERHUB_TOKEN` — Docker Hub access token (recommended, not password)
+
+Workflow triggers:
+
+- Push to `main` → publishes unsuffixed tags (`bff`, `users`, `messaging`, `attachments`, `caddy`)
+- Push tag `vX.Y.Z` → publishes versioned tags (`bff-X.Y.Z`, etc.)
+- Manual dispatch → optional custom version input
+
 ## Backup
 
 ### Database Backups
