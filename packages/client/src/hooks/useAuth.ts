@@ -10,8 +10,8 @@ function useAuthSuccess() {
   const connect = useSocketStore((s) => s.connect);
   const queryClient = useQueryClient();
 
-  return (response: { accessToken: string; refreshToken: string; user: { email_verified: boolean } }) => {
-    setTokens(response.accessToken, response.refreshToken, response.user.email_verified);
+  return (response: { accessToken: string; refreshToken?: string; user: { email_verified: boolean } }) => {
+    setTokens(response.accessToken, response.refreshToken ?? '', response.user.email_verified);
     if (response.user.email_verified) {
       connect(response.accessToken);
     }

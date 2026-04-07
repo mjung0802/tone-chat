@@ -2,13 +2,23 @@ import { before, after, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
+import jwt from 'jsonwebtoken';
 import { app } from '../app.js';
 import { sql } from '../config/database.js';
 import { ensureBucket } from '../config/storage.js';
 
 let server: Server;
 let baseUrl: string;
-const HEADERS = { 'x-internal-key': 'dev-internal-key' };
+
+const TEST_USER_ID = '00000000-0000-0000-0000-000000000001';
+const USER_TOKEN = jwt.sign(
+  { sub: TEST_USER_ID },
+  process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production',
+);
+const HEADERS = {
+  'x-internal-key': 'dev-internal-key',
+  'x-user-token': USER_TOKEN,
+};
 
 before(async () => {
   await ensureBucket();
@@ -34,7 +44,7 @@ describe('POST /attachments/upload', () => {
 
     const res = await fetch(`${baseUrl}/attachments/upload`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': '00000000-0000-0000-0000-000000000001' },
+      headers: HEADERS,
       body: formData,
     });
 
@@ -75,7 +85,7 @@ describe('POST /attachments/upload', () => {
 
     const res = await fetch(`${baseUrl}/attachments/upload`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': '00000000-0000-0000-0000-000000000001' },
+      headers: HEADERS,
       body: formData,
     });
 
@@ -88,7 +98,7 @@ describe('POST /attachments/upload', () => {
   it('returns 400 when no file is provided', async () => {
     const res = await fetch(`${baseUrl}/attachments/upload`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': '00000000-0000-0000-0000-000000000001' },
+      headers: HEADERS,
     });
 
     assert.equal(res.status, 400);
@@ -103,7 +113,7 @@ describe('GET /attachments/:id', () => {
 
     const uploadRes = await fetch(`${baseUrl}/attachments/upload`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': '00000000-0000-0000-0000-000000000001' },
+      headers: HEADERS,
       body: formData,
     });
     const { attachment } = await uploadRes.json() as { attachment: { id: string; url: string } };

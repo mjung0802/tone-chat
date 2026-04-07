@@ -71,8 +71,8 @@ async function attemptRefresh(): Promise<boolean> {
         return false;
       }
 
-      const data = (await res.json()) as { accessToken: string; refreshToken: string };
-      setTokens(data.accessToken, data.refreshToken);
+      const data = (await res.json()) as { accessToken: string; refreshToken?: string };
+      setTokens(data.accessToken, data.refreshToken ?? '');
       return true;
     } catch {
       clearAuth();

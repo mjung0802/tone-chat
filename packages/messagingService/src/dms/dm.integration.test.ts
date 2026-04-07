@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import type { AddressInfo } from 'node:net';
 import type { Server as HttpServer } from 'node:http';
 import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 import { app } from '../app.js';
 import { connectDatabase } from '../config/database.js';
 import { DirectConversation } from './conversation.model.js';
@@ -12,8 +13,15 @@ let httpServer: HttpServer;
 let baseUrl: string;
 const HEADERS = { 'content-type': 'application/json', 'x-internal-key': 'dev-internal-key' };
 
+function tokenFor(userId: string): string {
+  return jwt.sign(
+    { sub: userId },
+    process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production',
+  );
+}
+
 function headersFor(userId: string) {
-  return { ...HEADERS, 'x-user-id': userId };
+  return { ...HEADERS, 'x-user-token': tokenFor(userId) };
 }
 
 const USER_A = 'user-aaa-111';

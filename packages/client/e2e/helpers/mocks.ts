@@ -21,16 +21,22 @@ export async function seedActiveInstance(page: Page): Promise<void> {
 }
 
 export async function mockAuthRoutes(page: Page): Promise<void> {
+  // Tracks whether the user has an active session (i.e. successfully logged in or registered).
+  // The real BFF sets an httpOnly refresh cookie on login; the mock simulates this with a flag
+  // so that /auth/refresh only succeeds after an actual login, not during initial hydration.
+  let hasValidSession = false;
+
   await page.route(`${API}/auth/login`, async (route) => {
     const body = route.request().postDataJSON() as { email?: string; password?: string };
     if (body.email === 'test@example.com' && body.password === 'password123') {
+      hasValidSession = true;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
+        // refreshToken is no longer returned in the response body — it is set as an httpOnly cookie by the BFF.
         body: JSON.stringify({
           user: MOCK_USER,
           accessToken: MOCK_ACCESS_TOKEN,
-          refreshToken: MOCK_REFRESH_TOKEN,
         }),
       });
     } else {
@@ -43,24 +49,31 @@ export async function mockAuthRoutes(page: Page): Promise<void> {
   });
 
   await page.route(`${API}/auth/register`, async (route) => {
+    hasValidSession = true;
     await route.fulfill({
       status: 201,
       contentType: 'application/json',
       body: JSON.stringify({
         user: MOCK_USER,
         accessToken: MOCK_ACCESS_TOKEN,
-        refreshToken: MOCK_REFRESH_TOKEN,
       }),
     });
   });
 
   await page.route(`${API}/auth/refresh`, async (route) => {
+    if (!hasValidSession) {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: 'INVALID_REFRESH_TOKEN', message: 'No valid session', status: 401 } }),
+      });
+      return;
+    }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
         accessToken: MOCK_ACCESS_TOKEN,
-        refreshToken: MOCK_REFRESH_TOKEN,
       }),
     });
   });
@@ -242,6 +255,17 @@ export async function mockMessagesRoutes(page: Page, messages = MOCK_MESSAGES): 
 
 export async function mockUsersRoutes(page: Page, user = MOCK_USER, extraUsers: { id: string; username: string; [key: string]: unknown }[] = [user, MOCK_USER_TWO]): Promise<void> {
   await page.route(`${API}/users/me`, async (route) => {
+    // On web, authStore.hydrate() calls getMe() even without tokens. Guard against that
+    // by returning 401 when no Authorization header is present, so hydration doesn't
+    // inadvertently authenticate the user before the test has logged in.
+    if (!route.request().headers()['authorization']) {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized', status: 401 } }),
+      });
+      return;
+    }
     if (route.request().method() === 'GET') {
       await route.fulfill({
         status: 200,

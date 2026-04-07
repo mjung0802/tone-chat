@@ -28,7 +28,9 @@ let InviteModel: typeof mongoose.Model;
 interface RegisterResult {
   user: { id: string; username: string; email: string };
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string;
+  // refreshToken is set as an httpOnly cookie on web — extract via cookieHeader
+  cookieHeader?: string;
 }
 
 async function registerUser(username: string, email: string, password: string): Promise<RegisterResult> {
@@ -38,7 +40,9 @@ async function registerUser(username: string, email: string, password: string): 
     body: JSON.stringify({ username, email, password }),
   });
   assert.equal(res.status, 201, `register failed: ${res.status}`);
-  return await res.json() as RegisterResult;
+  const body = await res.json() as Omit<RegisterResult, 'cookieHeader'>;
+  const cookieHeader = res.headers.get('set-cookie');
+  return { ...body, ...(cookieHeader !== null ? { cookieHeader } : {}) };
 }
 
 function authHeaders(accessToken: string): Record<string, string> {
@@ -181,7 +185,9 @@ describe('BFF Auth', () => {
     const result = await registerUser('alice', 'alice@test.com', 'password123');
     assert.equal(result.user.username, 'alice');
     assert.ok(result.accessToken);
-    assert.ok(result.refreshToken);
+    // refreshToken is now set as httpOnly cookie, not in response body
+    assert.equal(result.refreshToken, undefined);
+    assert.ok(result.cookieHeader?.includes('refreshToken='));
   });
 
   it('logs in with credentials', async () => {
@@ -200,7 +206,10 @@ describe('BFF Auth', () => {
   });
 
   it('refreshes tokens with rotation', async () => {
-    const { refreshToken } = await registerUser('alice', 'alice@test.com', 'password123');
+    const { cookieHeader } = await registerUser('alice', 'alice@test.com', 'password123');
+    // Extract refresh token value from cookie header for native-style body-based refresh
+    const refreshToken = cookieHeader?.match(/refreshToken=([^;]+)/)?.[1];
+    assert.ok(refreshToken, 'refreshToken cookie should be present after registration');
 
     const res = await fetch(`${bffUrl}/api/v1/auth/refresh`, {
       method: 'POST',
@@ -208,9 +217,13 @@ describe('BFF Auth', () => {
       body: JSON.stringify({ refreshToken }),
     });
     assert.equal(res.status, 200);
-    const body = await res.json() as { accessToken: string; refreshToken: string };
+    const body = await res.json() as { accessToken: string };
     assert.ok(body.accessToken);
-    assert.notEqual(body.refreshToken, refreshToken);
+    // New refresh token is set in cookie
+    const newCookieHeader = res.headers.get('set-cookie');
+    const newRefreshToken = newCookieHeader?.match(/refreshToken=([^;]+)/)?.[1];
+    assert.ok(newRefreshToken);
+    assert.notEqual(newRefreshToken, refreshToken);
 
     // Old token should be invalid
     const reuse = await fetch(`${bffUrl}/api/v1/auth/refresh`, {

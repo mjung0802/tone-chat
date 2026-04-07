@@ -2,12 +2,20 @@ import { before, after, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
+import jwt from 'jsonwebtoken';
 import { app } from '../app.js';
 import { sql } from '../config/database.js';
 
 let server: Server;
 let baseUrl: string;
 const HEADERS = { 'content-type': 'application/json', 'x-internal-key': 'dev-internal-key' };
+
+function tokenFor(userId: string): string {
+  return jwt.sign(
+    { sub: userId },
+    process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production',
+  );
+}
 
 async function registerUser(username: string, email: string): Promise<{ id: string }> {
   const res = await fetch(`${baseUrl}/auth/register`, {
@@ -20,7 +28,7 @@ async function registerUser(username: string, email: string): Promise<{ id: stri
 }
 
 function userHeaders(userId: string) {
-  return { ...HEADERS, 'x-user-id': userId };
+  return { ...HEADERS, 'x-user-token': tokenFor(userId) };
 }
 
 before(async () => {

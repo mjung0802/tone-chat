@@ -3,8 +3,16 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
+import jwt from 'jsonwebtoken';
 import { app } from '../app.js';
 import { sql } from '../config/database.js';
+
+function tokenFor(userId: string): string {
+  return jwt.sign(
+    { sub: userId },
+    process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production',
+  );
+}
 
 let server: Server;
 let baseUrl: string;
@@ -117,7 +125,7 @@ describe('POST /auth/login', () => {
     const { userId, code } = await registerAndCaptureOtp(baseUrl, 'alice', 'alice@test.com');
     await fetch(`${baseUrl}/auth/verify-email`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': userId },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(userId) },
       body: JSON.stringify({ code }),
     });
   });
@@ -231,8 +239,9 @@ async function registerAndCaptureOtp(
   let capturedCode: string | null = null;
   const originalLog = console.log;
   console.log = (...args: unknown[]) => {
-    if (typeof args[0] === 'string' && args[0] === '[EMAIL DEV] code:') {
-      capturedCode = String(args[1]);
+    if (typeof args[0] === 'string' && args[0].startsWith('[VERIFICATION] Code:')) {
+      const match = args[0].match(/Code: (\d+)/);
+      if (match) capturedCode = match[1]!;
     }
     originalLog.apply(console, args as Parameters<typeof console.log>);
   };
@@ -263,7 +272,7 @@ describe('POST /auth/verify-email', () => {
 
     const res = await fetch(`${baseUrl}/auth/verify-email`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': userId },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(userId) },
       body: JSON.stringify({}),
     });
 
@@ -277,7 +286,7 @@ describe('POST /auth/verify-email', () => {
 
     const res = await fetch(`${baseUrl}/auth/verify-email`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': userId },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(userId) },
       body: JSON.stringify({ code: '000000' }),
     });
 
@@ -300,7 +309,7 @@ describe('POST /auth/verify-email', () => {
 
     const res = await fetch(`${baseUrl}/auth/verify-email`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': userId },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(userId) },
       body: JSON.stringify({ code: knownCode }),
     });
 
@@ -314,7 +323,7 @@ describe('POST /auth/verify-email', () => {
 
     const res = await fetch(`${baseUrl}/auth/verify-email`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': userId },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(userId) },
       body: JSON.stringify({ code }),
     });
 
@@ -341,14 +350,14 @@ describe('POST /auth/verify-email', () => {
     // First call succeeds
     await fetch(`${baseUrl}/auth/verify-email`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': userId },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(userId) },
       body: JSON.stringify({ code }),
     });
 
     // Second call with same code
     const res = await fetch(`${baseUrl}/auth/verify-email`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': userId },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(userId) },
       body: JSON.stringify({ code }),
     });
 
@@ -367,7 +376,7 @@ describe('POST /auth/resend-verification', () => {
 
     const res = await fetch(`${baseUrl}/auth/resend-verification`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': userId },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(userId) },
       body: null,
     });
 
@@ -387,7 +396,7 @@ describe('POST /auth/resend-verification', () => {
     // At this point there should be 1 token from registration; resend replaces it
     await fetch(`${baseUrl}/auth/resend-verification`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': userId },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(userId) },
       body: null,
     });
 
@@ -402,7 +411,7 @@ describe('POST /auth/resend-verification', () => {
 
     const res = await fetch(`${baseUrl}/auth/resend-verification`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': fakeId },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(fakeId) },
       body: null,
     });
 
