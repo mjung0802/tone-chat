@@ -1,21 +1,21 @@
-import express from 'express';
 import cors from 'cors';
+import express from 'express';
 import helmet from 'helmet';
-import { config } from './config/index.js';
-import { requireAuth } from './shared/middleware/auth.js';
-import { errorHandler } from './shared/middleware/errorHandler.js';
-import { authRouter } from './auth/auth.routes.js';
-import { usersRouter } from './users/users.routes.js';
-import { serversRouter } from './servers/servers.routes.js';
-import { channelsRouter } from './channels/channels.routes.js';
-import { messagesRouter } from './messages/messages.routes.js';
-import { membersRouter } from './members/members.routes.js';
-import { attachmentsRouter } from './attachments/attachments.routes.js';
-import { serverInvitesRouter, joinRouter } from './invites/invites.routes.js';
-import { bansRouter } from './bans/bans.routes.js';
+import { attachmentsPublicRouter, attachmentsRouter } from './attachments/attachments.routes.js';
 import { auditLogRouter } from './auditLog/auditLog.routes.js';
+import { authRouter } from './auth/auth.routes.js';
+import { bansRouter } from './bans/bans.routes.js';
+import { channelsRouter } from './channels/channels.routes.js';
+import { config } from './config/index.js';
 import { dmsRouter } from './dms/dms.routes.js';
 import { healthRouter } from './health/health.routes.js';
+import { joinRouter, serverInvitesRouter } from './invites/invites.routes.js';
+import { membersRouter } from './members/members.routes.js';
+import { messagesRouter } from './messages/messages.routes.js';
+import { serversRouter } from './servers/servers.routes.js';
+import { requireAuth } from './shared/middleware/auth.js';
+import { errorHandler } from './shared/middleware/errorHandler.js';
+import { usersRouter } from './users/users.routes.js';
 
 export const app = express();
 
@@ -27,6 +27,7 @@ app.use(cors({
 app.use(express.json());
 
 app.use('/api/v1/health', healthRouter);
+app.use('/api/v1/attachments/public', attachmentsPublicRouter);
 
 // Public auth routes (no JWT required)
 app.use('/api/v1/auth', authRouter);

@@ -31,10 +31,20 @@ echo ""
 read -r -p "Domain (e.g. chat.example.com) [default: :80 for plain HTTP]: " DOMAIN
 DOMAIN="${DOMAIN:-:80}"
 
+echo ""
+read -r -p "Attachment storage backend (s3/local) [s3]: " ATTACHMENTS_STORAGE_PROVIDER
+ATTACHMENTS_STORAGE_PROVIDER="${ATTACHMENTS_STORAGE_PROVIDER:-s3}"
+if [ "${ATTACHMENTS_STORAGE_PROVIDER}" != "s3" ] && [ "${ATTACHMENTS_STORAGE_PROVIDER}" != "local" ]; then
+  echo "Invalid attachment storage backend: ${ATTACHMENTS_STORAGE_PROVIDER}. Use 's3' or 'local'."
+  exit 1
+fi
+
 if [ "$DOMAIN" = ":80" ]; then
   ALLOWED_ORIGINS="http://localhost"
+  ATTACHMENTS_PUBLIC_BASE_URL="http://localhost:8080/api/v1"
 else
   ALLOWED_ORIGINS="https://${DOMAIN}"
+  ATTACHMENTS_PUBLIC_BASE_URL="https://${DOMAIN}/api/v1"
 fi
 
 echo ""
@@ -69,6 +79,8 @@ S3_SECRET_KEY='${S3_SECRET_KEY}'
 # === Deployment ===
 DOMAIN=${DOMAIN}
 ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+ATTACHMENTS_STORAGE_PROVIDER=${ATTACHMENTS_STORAGE_PROVIDER}
+ATTACHMENTS_PUBLIC_BASE_URL=${ATTACHMENTS_PUBLIC_BASE_URL}
 
 # === SMTP (optional) ===
 SMTP_HOST=${SMTP_HOST}

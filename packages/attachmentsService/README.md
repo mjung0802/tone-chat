@@ -24,6 +24,13 @@ The S3 bucket is created automatically on startup if it doesn't exist.
 
 Maximum file size: **25 MB**.
 
+Storage backend is configurable:
+
+- `ATTACHMENTS_STORAGE_PROVIDER=s3` (default): MinIO/S3 object storage
+- `ATTACHMENTS_STORAGE_PROVIDER=local`: stores files on local disk (`ATTACHMENTS_LOCAL_STORAGE_PATH`)
+
+In local mode, `GET /attachments/:attachmentId` returns a signed URL that points to the BFF public proxy route under `/api/v1/attachments/public/:token`.
+
 ## Metadata Database
 
 PostgreSQL — default URL: `postgres://tone:tone_dev@localhost:5433/tone_attachments`
@@ -56,6 +63,8 @@ All routes require `X-Internal-Key` and `X-User-Id` headers set by the BFF.
 |--------|------|-------------|
 | POST | `/attachments/upload?filename=<name>` | Upload raw binary; returns attachment metadata |
 | GET | `/attachments/:attachmentId` | Retrieve attachment metadata |
+| DELETE | `/attachments/:attachmentId` | Delete attachment (uploader only) |
+| GET | `/attachments/public/:token` | Public signed download endpoint for local storage mode |
 
 ## Auth
 
@@ -88,6 +97,10 @@ pnpm migrate  # Apply database migrations
 | `PORT` | `3003` | HTTP port |
 | `DATABASE_URL` | `postgres://tone:tone_dev@localhost:5433/tone_attachments` | PostgreSQL connection string |
 | `INTERNAL_API_KEY` | `dev-internal-key` | Shared key for internal auth |
+| `ATTACHMENTS_STORAGE_PROVIDER` | `s3` | Storage backend (`s3` or `local`) |
+| `ATTACHMENTS_LOCAL_STORAGE_PATH` | `./storage/attachments` | Local storage directory (used when provider is `local`) |
+| `ATTACHMENTS_PUBLIC_BASE_URL` | `http://localhost:4000/api/v1` | Base URL used for generated local signed URLs |
+| `ATTACHMENTS_URL_SIGNING_SECRET` | `INTERNAL_API_KEY` | Secret used to sign local download URLs |
 | `S3_ENDPOINT` | `http://localhost:9000` | S3 / MinIO endpoint |
 | `S3_BUCKET` | `tone-attachments` | Bucket name |
 | `S3_ACCESS_KEY` | `minioadmin` | S3 access key |

@@ -1,7 +1,8 @@
 import express from 'express';
-import { internalAuth } from './shared/middleware/internalAuth.js';
-import { errorHandler } from './shared/middleware/errorHandler.js';
+import { getPublicFile } from './attachments/attachments.controller.js';
 import { attachmentsRouter } from './attachments/attachments.routes.js';
+import { errorHandler } from './shared/middleware/errorHandler.js';
+import { internalAuth, requireInternalUserId } from './shared/middleware/internalAuth.js';
 
 export const app = express();
 
@@ -12,6 +13,8 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.use('/attachments', internalAuth, attachmentsRouter);
+app.get('/attachments/public/:token', getPublicFile);
+
+app.use('/attachments', internalAuth, requireInternalUserId, attachmentsRouter);
 
 app.use(errorHandler);

@@ -1,6 +1,6 @@
 # packages/attachmentsService — File Storage Service
 
-Express service on :3003 + PostgreSQL (metadata) + MinIO/S3 (file storage). Async uploads so attachments don't block messages. Presigned URLs regenerated on every GET (15-min TTL).
+Express service on :3003 + PostgreSQL (metadata) + configurable file backend (`s3` or `local`). Async uploads so attachments don't block messages. URLs regenerated on every GET (15-min TTL).
 
 ## src/ Layout
 

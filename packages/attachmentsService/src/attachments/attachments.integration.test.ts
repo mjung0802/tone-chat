@@ -1,17 +1,17 @@
-import { before, after, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { after, before, beforeEach, describe, it } from 'node:test';
 import { app } from '../app.js';
 import { sql } from '../config/database.js';
-import { ensureBucket } from '../config/storage.js';
+import { ensureStorageReady } from '../config/storage.js';
 
 let server: Server;
 let baseUrl: string;
 const HEADERS = { 'x-internal-key': 'dev-internal-key' };
 
 before(async () => {
-  await ensureBucket();
+  await ensureStorageReady();
   server = app.listen(0);
   const { port } = server.address() as AddressInfo;
   baseUrl = `http://localhost:${port}`;
@@ -110,7 +110,7 @@ describe('GET /attachments/:id', () => {
 
     // Retrieve — should regenerate presigned URL
     const res = await fetch(`${baseUrl}/attachments/${attachment.id}`, {
-      headers: HEADERS,
+      headers: { ...HEADERS, 'x-user-id': '00000000-0000-0000-0000-000000000001' },
     });
 
     assert.equal(res.status, 200);
@@ -124,7 +124,7 @@ describe('GET /attachments/:id', () => {
 
   it('returns 404 for non-existent ID', async () => {
     const res = await fetch(`${baseUrl}/attachments/00000000-0000-0000-0000-000000000000`, {
-      headers: HEADERS,
+      headers: { ...HEADERS, 'x-user-id': '00000000-0000-0000-0000-000000000001' },
     });
 
     assert.equal(res.status, 404);
@@ -139,5 +139,85 @@ describe('internalAuth middleware', () => {
     assert.equal(res.status, 401);
     const body = await res.json() as { error: { code: string } };
     assert.equal(body.error.code, 'UNAUTHORIZED');
+  });
+
+  it('returns 400 for missing x-user-id', async () => {
+    const res = await fetch(`${baseUrl}/attachments/00000000-0000-0000-0000-000000000000`, {
+      headers: { 'x-internal-key': 'dev-internal-key' },
+    });
+    assert.equal(res.status, 400);
+    const body = await res.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'MISSING_USER_ID');
+  });
+});
+
+describe('DELETE /attachments/:id', () => {
+  it('deletes an attachment successfully when requested by uploader', async () => {
+    // Upload first
+    const formData = new FormData();
+    formData.append('file', new Blob([Buffer.from('test data')], { type: 'text/plain' }), 'delete-me.txt');
+
+    const uploadRes = await fetch(`${baseUrl}/attachments/upload`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'x-user-id': '00000000-0000-0000-0000-000000000001' },
+      body: formData,
+    });
+    const { attachment } = await uploadRes.json() as { attachment: { id: string; storage_key: string } };
+
+    // Delete
+    const deleteRes = await fetch(`${baseUrl}/attachments/${attachment.id}`, {
+      method: 'DELETE',
+      headers: { ...HEADERS, 'x-user-id': '00000000-0000-0000-0000-000000000001' },
+    });
+
+    assert.equal(deleteRes.status, 204);
+
+    // Verify it's gone from database
+    const [row] = await sql`SELECT id FROM attachments WHERE id = ${attachment.id}`;
+    assert.equal(row, undefined);
+
+    // Verify GET returns 404
+    const getRes = await fetch(`${baseUrl}/attachments/${attachment.id}`, {
+      headers: { ...HEADERS, 'x-user-id': '00000000-0000-0000-0000-000000000001' },
+    });
+    assert.equal(getRes.status, 404);
+  });
+
+  it('returns 403 when user tries to delete someone else\'s attachment', async () => {
+    // Upload as user 1
+    const formData = new FormData();
+    formData.append('file', new Blob([Buffer.from('data')], { type: 'text/plain' }), 'forbidden.txt');
+
+    const uploadRes = await fetch(`${baseUrl}/attachments/upload`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'x-user-id': '00000000-0000-0000-0000-000000000001' },
+      body: formData,
+    });
+    const { attachment } = await uploadRes.json() as { attachment: { id: string } };
+
+    // Try to delete as user 2
+    const deleteRes = await fetch(`${baseUrl}/attachments/${attachment.id}`, {
+      method: 'DELETE',
+      headers: { ...HEADERS, 'x-user-id': '00000000-0000-0000-0000-000000000002' },
+    });
+
+    assert.equal(deleteRes.status, 403);
+    const body = await deleteRes.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'FORBIDDEN');
+
+    // Verify it still exists
+    const [row] = await sql`SELECT id FROM attachments WHERE id = ${attachment.id}`;
+    assert.ok(row);
+  });
+
+  it('returns 404 for non-existent attachment', async () => {
+    const res = await fetch(`${baseUrl}/attachments/00000000-0000-0000-0000-000000000000`, {
+      method: 'DELETE',
+      headers: { ...HEADERS, 'x-user-id': '00000000-0000-0000-0000-000000000001' },
+    });
+
+    assert.equal(res.status, 404);
+    const body = await res.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'ATTACHMENT_NOT_FOUND');
   });
 });

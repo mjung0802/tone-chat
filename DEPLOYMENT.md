@@ -109,6 +109,9 @@ services:
       PORT: 3003
       DATABASE_URL: postgres://tone:${DB_PASSWORD}@attachments-db:5432/tone_attachments
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      ATTACHMENTS_STORAGE_PROVIDER: ${ATTACHMENTS_STORAGE_PROVIDER:-s3}
+      ATTACHMENTS_PUBLIC_BASE_URL: ${ATTACHMENTS_PUBLIC_BASE_URL}
+      ATTACHMENTS_LOCAL_STORAGE_PATH: /data/attachments
       S3_ENDPOINT: http://minio:9000
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
@@ -117,6 +120,8 @@ services:
     depends_on:
       - attachments-db
       - minio-init
+    volumes:
+      - attachments-local-data:/data/attachments
     networks:
       - tone-net
     restart: unless-stopped
@@ -188,6 +193,7 @@ volumes:
   mongo-data:
   users-db-data:
   attachments-db-data:
+  attachments-local-data:
   minio-data:
   caddy-data:
   caddy-config:
@@ -217,6 +223,8 @@ S3_SECRET_KEY='${S3_SECRET_KEY}'
 # === Deployment ===
 DOMAIN=chat.yourdomain.com
 ALLOWED_ORIGINS=https://chat.yourdomain.com
+ATTACHMENTS_STORAGE_PROVIDER=s3
+ATTACHMENTS_PUBLIC_BASE_URL=https://chat.yourdomain.com/api/v1
 
 # === SMTP (optional) ===
 SMTP_HOST=
@@ -238,6 +246,14 @@ chmod 600 .env
 - **ALLOWED_ORIGINS**: Match your domain
   - With domain: `https://chat.yourdomain.com`
   - HTTP only: `http://your-server-ip:8080`
+
+- **ATTACHMENTS_STORAGE_PROVIDER**:
+  - `s3` (default): uses MinIO/S3 backend
+  - `local`: stores files on local disk in the attachments container
+
+- **ATTACHMENTS_PUBLIC_BASE_URL**:
+  - Base URL used to generate signed local attachment URLs
+  - Usually: `https://chat.yourdomain.com/api/v1` (or `http://your-server-ip:8080/api/v1` for HTTP)
 
 - **SMTP** (optional but **recommended for production**):
   - **Without SMTP**: Verification codes print to console logs (`docker compose logs users`)

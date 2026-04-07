@@ -1,9 +1,9 @@
-import { before, after, beforeEach, describe, it } from 'node:test';
-import assert from 'node:assert/strict';
-import type { AddressInfo } from 'node:net';
-import type { Server as HttpServer } from 'node:http';
-import type postgres from 'postgres';
 import type mongoose from 'mongoose';
+import assert from 'node:assert/strict';
+import type { Server as HttpServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { after, before, beforeEach, describe, it } from 'node:test';
+import type postgres from 'postgres';
 
 // ─── Service state ──────────────────────────────────────────
 let bffServer: HttpServer;
@@ -619,6 +619,11 @@ describe('BFF Invites', () => {
 // ─── Attachments ────────────────────────────────────────────
 
 describe('BFF Attachments', () => {
+  it('public attachment endpoint is accessible without auth token', async () => {
+    const res = await fetch(`${bffUrl}/api/v1/attachments/public/not-a-real-token`);
+    assert.equal(res.status, 404);
+  });
+
   it('uploads file and retrieves metadata', async () => {
     const { accessToken } = await registerUser('alice', 'alice@test.com', 'password123');
 
@@ -645,6 +650,57 @@ describe('BFF Attachments', () => {
     assert.equal(getBody.attachment.id, body.attachment.id);
     assert.equal(getBody.attachment.filename, 'test.txt');
     assert.ok(getBody.attachment.url, 'presigned URL should be present on retrieval');
+  });
+
+  it('deletes uploaded attachment and returns 404 on later retrieval', async () => {
+    const { accessToken } = await registerUser('alice', 'alice@test.com', 'password123');
+
+    const uploadRes = await fetch(`${bffUrl}/api/v1/attachments/upload?filename=delete.txt`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        'content-type': 'text/plain',
+      },
+      body: Buffer.from('delete me'),
+    });
+    assert.equal(uploadRes.status, 201);
+    const uploadBody = await uploadRes.json() as { attachment: { id: string } };
+
+    const deleteRes = await fetch(`${bffUrl}/api/v1/attachments/${uploadBody.attachment.id}`, {
+      method: 'DELETE',
+      headers: authHeaders(accessToken),
+    });
+    assert.equal(deleteRes.status, 204);
+
+    const getRes = await fetch(`${bffUrl}/api/v1/attachments/${uploadBody.attachment.id}`, {
+      headers: authHeaders(accessToken),
+    });
+    assert.equal(getRes.status, 404);
+  });
+
+  it('returns 403 when deleting another user\'s attachment', async () => {
+    const alice = await registerUser('alice', 'alice@test.com', 'password123');
+    const bob = await registerUser('bob', 'bob@test.com', 'password123');
+
+    const uploadRes = await fetch(`${bffUrl}/api/v1/attachments/upload?filename=owned-by-alice.txt`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${alice.accessToken}`,
+        'content-type': 'text/plain',
+      },
+      body: Buffer.from('owned by alice'),
+    });
+    assert.equal(uploadRes.status, 201);
+    const uploadBody = await uploadRes.json() as { attachment: { id: string } };
+
+    const deleteRes = await fetch(`${bffUrl}/api/v1/attachments/${uploadBody.attachment.id}`, {
+      method: 'DELETE',
+      headers: authHeaders(bob.accessToken),
+    });
+    assert.equal(deleteRes.status, 403);
+
+    const body = await deleteRes.json() as { error: { code: string } };
+    assert.equal(body.error.code, 'FORBIDDEN');
   });
 
   it('creates message with attachment IDs', async () => {

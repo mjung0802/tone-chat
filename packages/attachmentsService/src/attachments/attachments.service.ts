@@ -1,7 +1,9 @@
 import path from 'node:path';
+import { STORAGE_PROVIDERS } from '../config/constants.js';
 import { sql } from '../config/database.js';
+import { config } from '../config/index.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
-import { getPresignedUrl, uploadToS3 } from './storage.service.js';
+import { deleteFromStorage, getStorageUrl, uploadToStorage, verifyLocalDownloadToken } from './storage.service.js';
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB
 
@@ -40,8 +42,8 @@ export async function createAttachment(
   `;
 
   try {
-    const storageKey = await uploadToS3(file);
-    const url = await getPresignedUrl(storageKey);
+    const storageKey = await uploadToStorage(file);
+    const url = await getStorageUrl(attachment!.id, storageKey);
 
     const [updated] = await sql<Attachment[]>`
       UPDATE attachments SET storage_key = ${storageKey}, status = 'ready', url = ${url}
@@ -60,7 +62,56 @@ export async function getAttachment(id: string): Promise<Attachment> {
     throw new AppError('ATTACHMENT_NOT_FOUND', 'Attachment not found', 404);
   }
   if (attachment.status === 'ready' && attachment.storage_key && attachment.storage_key !== 'pending') {
-    attachment.url = await getPresignedUrl(attachment.storage_key);
+    attachment.url = await getStorageUrl(attachment.id, attachment.storage_key);
   }
+  return attachment;
+}
+
+export async function deleteAttachment(id: string, requesterId: string): Promise<void> {
+  const [attachment] = await sql<Attachment[]>`SELECT * FROM attachments WHERE id = ${id}`;
+  if (!attachment) {
+    throw new AppError('ATTACHMENT_NOT_FOUND', 'Attachment not found', 404);
+  }
+
+  // Only the uploader can delete their attachment
+  if (attachment.uploader_id !== requesterId) {
+    throw new AppError('FORBIDDEN', 'You can only delete your own attachments', 403);
+  }
+
+  // Delete from S3 if the file was successfully uploaded
+  if (attachment.status === 'ready' && attachment.storage_key && attachment.storage_key !== 'pending') {
+    await deleteFromStorage(attachment.storage_key);
+  }
+
+  // Delete from database
+  await sql`DELETE FROM attachments WHERE id = ${id}`;
+}
+
+interface PublicAttachment {
+  storage_key: string;
+  mime_type: string;
+  filename: string;
+}
+
+export async function getPublicLocalAttachment(token: string): Promise<PublicAttachment> {
+  if (config.storageProvider !== STORAGE_PROVIDERS.LOCAL) {
+    throw new AppError('ATTACHMENT_NOT_FOUND', 'Attachment not found', 404);
+  }
+
+  const attachmentId = verifyLocalDownloadToken(token);
+  if (!attachmentId) {
+    throw new AppError('ATTACHMENT_NOT_FOUND', 'Attachment not found', 404);
+  }
+
+  const [attachment] = await sql<PublicAttachment[]>`
+    SELECT storage_key, mime_type, filename
+    FROM attachments
+    WHERE id = ${attachmentId} AND status = 'ready'
+  `;
+
+  if (!attachment) {
+    throw new AppError('ATTACHMENT_NOT_FOUND', 'Attachment not found', 404);
+  }
+
   return attachment;
 }

@@ -1,10 +1,10 @@
 import { app } from './app.js';
 import { config, validateConfig } from './config/index.js';
-import { ensureBucket } from './config/storage.js';
+import { ensureStorageReady } from './config/storage.js';
 
 async function start(): Promise<void> {
   validateConfig();
-  await ensureBucket();
+  await ensureStorageReady();
 
   app.listen(config.port, () => {
     console.log(`attachmentsService listening on port ${config.port}`);

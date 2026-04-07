@@ -47,8 +47,10 @@ All routes are prefixed `/api/v1`.
 | GET / POST / DELETE | `/servers/:sid/invites` | messagingService |
 | POST | `/invites/:code/join` | messagingService |
 | POST / GET / PATCH / DELETE | `/servers/:sid/members` | messagingService |
+| GET | `/attachments/public/:token` | attachmentsService (public signed download proxy) |
 | POST | `/attachments/upload` | attachmentsService |
 | GET | `/attachments/:id` | attachmentsService |
+| DELETE | `/attachments/:id` | attachmentsService |
 
 ## Socket.IO Events
 

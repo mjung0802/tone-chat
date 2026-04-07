@@ -1,4 +1,4 @@
-import type { PutObjectCommand } from '@aws-sdk/client-s3';
+import type { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
 
@@ -19,7 +19,7 @@ mock.module('@aws-sdk/s3-request-presigner', {
   namedExports: { getSignedUrl: mock.fn<AnyFn>(async () => 'https://signed-url') },
 });
 
-const { uploadToS3, getPresignedUrl } = await import('./storage.service.js');
+const { uploadToS3, getPresignedUrl, deleteFromS3 } = await import('./storage.service.js');
 
 describe('uploadToS3', () => {
   beforeEach(() => mockSend.mock.resetCalls());
@@ -44,5 +44,20 @@ describe('getPresignedUrl', () => {
   it('returns a presigned URL', async () => {
     const url = await getPresignedUrl('abc-123.jpg');
     assert.equal(url, 'https://signed-url');
+  });
+});
+
+describe('deleteFromS3', () => {
+  beforeEach(() => mockSend.mock.resetCalls());
+
+  it('calls s3.send with DeleteObjectCommand', async () => {
+    mockSend.mock.mockImplementation(async () => ({}));
+    
+    await deleteFromS3('test-key.png');
+
+    assert.equal(mockSend.mock.callCount(), 1);
+    const command = mockSend.mock.calls[0]!.arguments[0] as DeleteObjectCommand;
+    assert.equal(command.input.Bucket, 'test-bucket');
+    assert.equal(command.input.Key, 'test-key.png');
   });
 });
