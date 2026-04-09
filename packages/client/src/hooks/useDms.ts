@@ -23,6 +23,8 @@ export function useDmConversations() {
 }
 
 export function useDmMessages(conversationId: string | undefined) {
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useInfiniteQuery({
     queryKey: ['dms', conversationId, 'messages'],
     queryFn: ({ pageParam }) =>
@@ -37,7 +39,7 @@ export function useDmMessages(conversationId: string | undefined) {
       pageParams: data.pageParams,
       messages: data.pages.flatMap((page) => page.messages),
     }),
-    enabled: !!conversationId,
+    enabled: !!conversationId && isHydrated && isAuthenticated,
     refetchOnMount: 'always',
   });
 }

@@ -1,9 +1,12 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import * as auditLogApi from '../api/auditLog.api';
+import { useAuthStore } from '../stores/authStore';
 
 const PAGE_SIZE = 50;
 
 export function useAuditLog(serverId: string) {
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useInfiniteQuery({
     queryKey: ['servers', serverId, 'audit-log'],
     queryFn: ({ pageParam }) =>
@@ -22,6 +25,6 @@ export function useAuditLog(serverId: string) {
       pageParams: data.pageParams,
       entries: data.pages.flatMap((page) => page.entries),
     }),
-    enabled: !!serverId,
+    enabled: !!serverId && isHydrated && isAuthenticated,
   });
 }

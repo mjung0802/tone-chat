@@ -1,22 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as channelsApi from '../api/channels.api';
 import type { CreateChannelRequest, UpdateChannelRequest } from '../types/api.types';
+import { useAuthStore } from '../stores/authStore';
 
 export function useChannels(serverId: string) {
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId, 'channels'],
     queryFn: () => channelsApi.getChannels(serverId),
     select: (data) => data.channels,
-    enabled: !!serverId,
+    enabled: !!serverId && isHydrated && isAuthenticated,
   });
 }
 
 export function useChannel(serverId: string, channelId: string) {
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId, 'channels', channelId],
     queryFn: () => channelsApi.getChannel(serverId, channelId),
     select: (data) => data.channel,
-    enabled: !!serverId && !!channelId,
+    enabled: !!serverId && !!channelId && isHydrated && isAuthenticated,
   });
 }
 

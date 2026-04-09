@@ -1,13 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as invitesApi from '../api/invites.api';
 import type { CreateInviteRequest } from '../types/api.types';
+import { useAuthStore } from '../stores/authStore';
 
 export function useInvites(serverId: string) {
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId, 'invites'],
     queryFn: () => invitesApi.getInvites(serverId),
     select: (data) => data.invites,
-    enabled: !!serverId,
+    enabled: !!serverId && isHydrated && isAuthenticated,
   });
 }
 
@@ -45,10 +48,12 @@ export function useJoinViaCode() {
 }
 
 export function useDefaultInvite(serverId: string) {
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useQuery({
     queryKey: ['defaultInvite', serverId],
     queryFn: () => invitesApi.getDefaultInvite(serverId),
-    enabled: !!serverId,
+    enabled: !!serverId && isHydrated && isAuthenticated,
     select: (data) => data.invite,
   });
 }

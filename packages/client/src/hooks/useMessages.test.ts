@@ -4,9 +4,22 @@ import { injectMessage, updateMessageInCache, removeMessageFromCache, useMessage
 import * as messagesApi from '../api/messages.api';
 import { makeMessage } from '../test-utils/fixtures';
 import { createHookWrapper, createTestQueryClient } from '../test-utils/renderWithProviders';
+import { useAuthStore } from '../stores/authStore';
 import type { MessagesResponse } from '../types/api.types';
 
 jest.mock('../api/messages.api');
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  useAuthStore.setState({
+    accessToken: null,
+    refreshToken: null,
+    userId: null,
+    isAuthenticated: false,
+    isHydrated: false,
+    emailVerified: false,
+  });
+});
 
 // ---------- helpers ----------
 
@@ -274,6 +287,24 @@ describe('useDeleteMessage', () => {
 // ---------- useMessages hook ----------
 
 describe('useMessages', () => {
+  it('stays idle when isHydrated is false', () => {
+    useAuthStore.setState({ isHydrated: false, isAuthenticated: false });
+
+    const { result } = renderHook(() => useMessages('s1', 'c1'), { wrapper: createHookWrapper() });
+
+    expect(messagesApi.getMessages).not.toHaveBeenCalled();
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
+  it('stays idle when isAuthenticated is false', () => {
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: false });
+
+    const { result } = renderHook(() => useMessages('s1', 'c1'), { wrapper: createHookWrapper() });
+
+    expect(messagesApi.getMessages).not.toHaveBeenCalled();
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
   it('returns messages flattened from all pages', async () => {
     const page1 = { messages: [makeMessage({ _id: 'a' }), makeMessage({ _id: 'b' })] };
     const page2 = { messages: [makeMessage({ _id: 'c' })] };

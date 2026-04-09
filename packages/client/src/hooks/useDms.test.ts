@@ -129,7 +129,27 @@ describe('updateConversationLastMessage', () => {
 });
 
 describe('useDmMessages', () => {
+  it('stays idle when isHydrated is false', () => {
+    useAuthStore.setState({ isHydrated: false, isAuthenticated: false });
+
+    const { result } = renderHook(() => useDmMessages('conv-1'), { wrapper: createHookWrapper() });
+
+    expect(dmsApi.getDmMessages).not.toHaveBeenCalled();
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
+  it('stays idle when isAuthenticated is false', () => {
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: false });
+
+    const { result } = renderHook(() => useDmMessages('conv-1'), { wrapper: createHookWrapper() });
+
+    expect(dmsApi.getDmMessages).not.toHaveBeenCalled();
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
   it('refetches on mount even when cache is seeded', async () => {
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: true });
+
     const queryClient = createTestQueryClient();
     const existingMsg = makeDirectMessage({ _id: 'dm-old' });
     const newMsg = makeDirectMessage({ _id: 'dm-new', content: 'New message' });
