@@ -712,7 +712,7 @@ describe('BFF Blocks', () => {
       method: 'POST',
       headers: authHeaders(alice.accessToken),
     });
-    assert.equal(blockRes.status, 200);
+    assert.equal(blockRes.status, 204);
 
     const listRes = await fetch(`${bffUrl}/api/v1/users/me/blocks`, {
       headers: authHeaders(alice.accessToken),

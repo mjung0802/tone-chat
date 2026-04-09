@@ -114,7 +114,11 @@ usersRouter.get('/me/blocks', async (req: AuthRequest, res) => {
 
 usersRouter.post('/me/blocks/:userId', async (req: AuthRequest, res) => {
   const result = await blockUser(req.token!, req.params['userId'] as string);
-  res.status(result.status).json(result.data);
+  if (result.status === 204) {
+    res.status(204).end();
+  } else {
+    res.status(result.status).json(result.data);
+  }
 });
 
 usersRouter.delete('/me/blocks/:userId', async (req: AuthRequest, res) => {
