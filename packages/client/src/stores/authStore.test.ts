@@ -250,6 +250,20 @@ describe('authStore', () => {
       expect(mockGetMe).toHaveBeenCalledTimes(1);
     });
 
+    it('server returns email_verified=true overrides stale false in storage', async () => {
+      useInstanceStore.setState({ activeInstance: INSTANCE_A });
+      localStorage.setItem(`accessToken:${INSTANCE_A}`, VALID_JWT);
+      localStorage.setItem(`emailVerified:${INSTANCE_A}`, 'false'); // stale cached value
+      mockGetMe.mockResolvedValueOnce(STUB_USER_RESPONSE); // email_verified: true
+
+      await useAuthStore.getState().hydrate();
+
+      const state = useAuthStore.getState();
+      expect(state.emailVerified).toBe(true);
+      expect(state.isAuthenticated).toBe(true);
+      expect(localStorage.getItem(`emailVerified:${INSTANCE_A}`)).toBe('true');
+    });
+
     it('no accessToken but valid session cookie → authenticated', async () => {
       useInstanceStore.setState({ activeInstance: INSTANCE_A });
       // No tokens stored in localStorage for INSTANCE_A; on web, session is maintained

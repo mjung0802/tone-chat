@@ -173,8 +173,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ accessToken, refreshToken, userId: payload?.sub ?? null, emailVerified });
 
     try {
-      await getMe();
-      set({ isAuthenticated: true, isHydrated: true });
+      const { user } = await getMe();
+      set({ isAuthenticated: true, isHydrated: true, emailVerified: user.email_verified });
+      const instance = useInstanceStore.getState().activeInstance;
+      if (instance) {
+        void persistTokens(instance, get().accessToken, get().refreshToken, user.email_verified);
+      }
     } catch {
       get().clearAuth();
       set({ isHydrated: true });
