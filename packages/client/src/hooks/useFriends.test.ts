@@ -19,6 +19,12 @@ beforeEach(() => {
 });
 
 describe('useFriends', () => {
+  it('does not call the API when isHydrated is false', () => {
+    // isHydrated is false by default from beforeEach
+    renderHook(() => useFriends(), { wrapper: createHookWrapper() });
+    expect(friendsApi.getFriends).not.toHaveBeenCalled();
+  });
+
   it('stays idle when not authenticated', () => {
     useAuthStore.setState({ isHydrated: true, isAuthenticated: false } as never);
 
@@ -49,6 +55,12 @@ describe('useFriends', () => {
 });
 
 describe('usePendingRequests', () => {
+  it('does not call the API when isHydrated is false', () => {
+    // isHydrated is false by default from beforeEach
+    renderHook(() => usePendingRequests(), { wrapper: createHookWrapper() });
+    expect(friendsApi.getPendingRequests).not.toHaveBeenCalled();
+  });
+
   it('stays idle when not authenticated', () => {
     useAuthStore.setState({ isHydrated: true, isAuthenticated: false } as never);
 

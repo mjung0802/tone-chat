@@ -158,6 +158,12 @@ describe('useDmMessages', () => {
 });
 
 describe('useDmConversations', () => {
+  it('does not call the API when not authenticated', () => {
+    // not authenticated by default from beforeEach
+    renderHook(() => useDmConversations(), { wrapper: createHookWrapper() });
+    expect(dmsApi.listConversations).not.toHaveBeenCalled();
+  });
+
   it('calls listConversations and returns conversations', async () => {
     useAuthStore.setState({ isHydrated: true, isAuthenticated: true } as never);
     const conversation = makeDirectConversation();
