@@ -10,6 +10,9 @@ import {
   sendFriendRequest,
   acceptFriendRequest,
   removeFriend,
+  getBlockedIds,
+  blockUser,
+  unblockUser,
 } from './users.client.js';
 import { getIO } from '../socket/index.js';
 
@@ -97,6 +100,25 @@ usersRouter.patch('/me/friends/:userId/accept', async (req: AuthRequest, res) =>
 
 usersRouter.delete('/me/friends/:userId', async (req: AuthRequest, res) => {
   const result = await removeFriend(req.token!, req.params['userId'] as string);
+  if (result.status === 204) {
+    res.status(204).end();
+  } else {
+    res.status(result.status).json(result.data);
+  }
+});
+
+usersRouter.get('/me/blocks', async (req: AuthRequest, res) => {
+  const result = await getBlockedIds(req.token!);
+  res.status(result.status).json(result.data);
+});
+
+usersRouter.post('/me/blocks/:userId', async (req: AuthRequest, res) => {
+  const result = await blockUser(req.token!, req.params['userId'] as string);
+  res.status(result.status).json(result.data);
+});
+
+usersRouter.delete('/me/blocks/:userId', async (req: AuthRequest, res) => {
+  const result = await unblockUser(req.token!, req.params['userId'] as string);
   if (result.status === 204) {
     res.status(204).end();
   } else {

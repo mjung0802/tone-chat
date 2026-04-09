@@ -690,3 +690,66 @@ describe('BFF Attachments', () => {
     assert.ok(listBody.messages.some(m => m.attachmentIds.includes(attachment.id)));
   });
 });
+
+// ─── Blocks ─────────────────────────────────────────────────
+
+describe('BFF Blocks', () => {
+  it('returns empty blocked list initially', async () => {
+    const { accessToken } = await registerUser('alice', 'alice@test.com', 'password123');
+    const res = await fetch(`${bffUrl}/api/v1/users/me/blocks`, {
+      headers: authHeaders(accessToken),
+    });
+    assert.equal(res.status, 200);
+    const body = await res.json() as { blockedIds: string[] };
+    assert.deepEqual(body.blockedIds, []);
+  });
+
+  it('blocks a user and GET reflects the change', async () => {
+    const alice = await registerUser('alice', 'alice@test.com', 'password123');
+    const bob = await registerUser('bob', 'bob@test.com', 'password123');
+
+    const blockRes = await fetch(`${bffUrl}/api/v1/users/me/blocks/${bob.user.id}`, {
+      method: 'POST',
+      headers: authHeaders(alice.accessToken),
+    });
+    assert.equal(blockRes.status, 200);
+
+    const listRes = await fetch(`${bffUrl}/api/v1/users/me/blocks`, {
+      headers: authHeaders(alice.accessToken),
+    });
+    assert.equal(listRes.status, 200);
+    const body = await listRes.json() as { blockedIds: string[] };
+    assert.ok(body.blockedIds.includes(bob.user.id));
+  });
+
+  it('unblocks a user and GET shows empty list again', async () => {
+    const alice = await registerUser('alice', 'alice@test.com', 'password123');
+    const bob = await registerUser('bob', 'bob@test.com', 'password123');
+
+    // Block first
+    await fetch(`${bffUrl}/api/v1/users/me/blocks/${bob.user.id}`, {
+      method: 'POST',
+      headers: authHeaders(alice.accessToken),
+    });
+
+    // Unblock
+    const unblockRes = await fetch(`${bffUrl}/api/v1/users/me/blocks/${bob.user.id}`, {
+      method: 'DELETE',
+      headers: authHeaders(alice.accessToken),
+    });
+    assert.equal(unblockRes.status, 204);
+
+    // Verify list is empty again
+    const listRes = await fetch(`${bffUrl}/api/v1/users/me/blocks`, {
+      headers: authHeaders(alice.accessToken),
+    });
+    assert.equal(listRes.status, 200);
+    const body = await listRes.json() as { blockedIds: string[] };
+    assert.deepEqual(body.blockedIds, []);
+  });
+
+  it('returns 401 without auth token', async () => {
+    const res = await fetch(`${bffUrl}/api/v1/users/me/blocks`);
+    assert.equal(res.status, 401);
+  });
+});
