@@ -15,12 +15,12 @@ beforeEach(() => {
     isAuthenticated: false,
     isHydrated: false,
     emailVerified: false,
-  } as never);
+  });
 });
 
 describe('useServers', () => {
   it('stays idle when isHydrated is false', () => {
-    useAuthStore.setState({ isHydrated: false, isAuthenticated: false } as never);
+    useAuthStore.setState({ isHydrated: false, isAuthenticated: false });
 
     const { result } = renderHook(() => useServers(), {
       wrapper: createHookWrapper(),
@@ -31,7 +31,7 @@ describe('useServers', () => {
   });
 
   it('stays idle when isAuthenticated is false', () => {
-    useAuthStore.setState({ isHydrated: true, isAuthenticated: false } as never);
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: false });
 
     const { result } = renderHook(() => useServers(), {
       wrapper: createHookWrapper(),
@@ -42,7 +42,7 @@ describe('useServers', () => {
   });
 
   it('fires and returns data when isHydrated and isAuthenticated are true', async () => {
-    useAuthStore.setState({ isHydrated: true, isAuthenticated: true } as never);
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: true });
 
     jest.mocked(serversApi.getServers).mockResolvedValueOnce({ servers: [] });
 
@@ -61,7 +61,7 @@ describe('useServers', () => {
 
 describe('useServer', () => {
   it('stays idle when auth is not ready, even with a valid serverId', () => {
-    useAuthStore.setState({ isHydrated: false, isAuthenticated: false } as never);
+    useAuthStore.setState({ isHydrated: false, isAuthenticated: false });
 
     const { result } = renderHook(() => useServer('server-1'), {
       wrapper: createHookWrapper(),
@@ -72,11 +72,11 @@ describe('useServer', () => {
   });
 
   it('fires when auth is ready and serverId is provided', async () => {
-    useAuthStore.setState({ isHydrated: true, isAuthenticated: true } as never);
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: true });
 
     jest.mocked(serversApi.getServer).mockResolvedValueOnce({
       server: { _id: 'server-1', name: 'Test', ownerId: 'user-1', visibility: 'public', createdAt: '', updatedAt: '' },
-    } as never);
+    });
 
     const { result } = renderHook(() => useServer('server-1'), {
       wrapper: createHookWrapper(),

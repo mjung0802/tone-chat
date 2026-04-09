@@ -27,7 +27,7 @@ beforeEach(() => {
     isAuthenticated: false,
     isHydrated: false,
     emailVerified: false,
-  } as never);
+  });
 });
 
 // Using `any` here to avoid duplicating the test cases for each hook, since they all have the same structure and we only care about the side effects (invalidating queries) in this test suite.
@@ -97,7 +97,7 @@ describe.each(cases)('$name', ({ hook, mockFn, mutateArg }) => {
 
 describe('useMembers — enabled guard', () => {
   it('stays idle when isHydrated is false, even with a valid serverId', () => {
-    useAuthStore.setState({ isHydrated: false, isAuthenticated: false } as never);
+    useAuthStore.setState({ isHydrated: false, isAuthenticated: false });
 
     const { result } = renderHook(() => useMembers(SERVER_ID), {
       wrapper: createHookWrapper(),
@@ -108,9 +108,9 @@ describe('useMembers — enabled guard', () => {
   });
 
   it('fires when auth is ready', async () => {
-    useAuthStore.setState({ isHydrated: true, isAuthenticated: true } as never);
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: true });
 
-    jest.mocked(membersApi.getMembers).mockResolvedValueOnce({ members: [] } as never);
+    jest.mocked(membersApi.getMembers).mockResolvedValueOnce({ members: [] });
 
     const { result } = renderHook(() => useMembers(SERVER_ID), {
       wrapper: createHookWrapper(),

@@ -57,7 +57,7 @@ beforeEach(() => {
     isAuthenticated: false,
     isHydrated: false,
     emailVerified: false,
-  } as never);
+  });
 });
 
 describe('injectDmMessage', () => {
@@ -158,14 +158,23 @@ describe('useDmMessages', () => {
 });
 
 describe('useDmConversations', () => {
-  it('does not call the API when not authenticated', () => {
-    // not authenticated by default from beforeEach
-    renderHook(() => useDmConversations(), { wrapper: createHookWrapper() });
+  it('does not call the API when isHydrated is false', () => {
+    // isHydrated is false by default from beforeEach
+    const { result } = renderHook(() => useDmConversations(), { wrapper: createHookWrapper() });
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(dmsApi.listConversations).not.toHaveBeenCalled();
+  });
+
+  it('does not call the API when isAuthenticated is false', () => {
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: false });
+
+    const { result } = renderHook(() => useDmConversations(), { wrapper: createHookWrapper() });
+    expect(result.current.fetchStatus).toBe('idle');
     expect(dmsApi.listConversations).not.toHaveBeenCalled();
   });
 
   it('calls listConversations and returns conversations', async () => {
-    useAuthStore.setState({ isHydrated: true, isAuthenticated: true } as never);
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: true });
     const conversation = makeDirectConversation();
     jest.mocked(dmsApi.listConversations).mockResolvedValueOnce({ conversations: [conversation] });
 
@@ -248,7 +257,7 @@ describe('useSendDmMessage', () => {
 
 describe('useBlockedIds', () => {
   it('stays idle when not authenticated', () => {
-    useAuthStore.setState({ isHydrated: true, isAuthenticated: false } as never);
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: false });
 
     const { result } = renderHook(() => useBlockedIds(), {
       wrapper: createHookWrapper(),
@@ -259,7 +268,7 @@ describe('useBlockedIds', () => {
   });
 
   it('fires and returns data when auth is ready', async () => {
-    useAuthStore.setState({ isHydrated: true, isAuthenticated: true } as never);
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: true });
 
     jest.mocked(dmsApi.getBlockedIds).mockResolvedValueOnce({ blockedIds: ['user-99'] });
 
