@@ -2,6 +2,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import * as dmsApi from '../api/dms.api';
 import type { DirectConversationsResponse, DirectMessagesResponse, SendDmRequest } from '../types/api.types';
 import type { DirectMessage } from '../types/models';
+import { useAuthStore } from '../stores/authStore';
 
 const PAGE_SIZE = 50;
 
@@ -11,10 +12,13 @@ type DmMessagesCache = {
 };
 
 export function useDmConversations() {
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useQuery({
     queryKey: ['dms'],
     queryFn: () => dmsApi.listConversations(),
     select: (data) => data.conversations,
+    enabled: isHydrated && isAuthenticated,
   });
 }
 
@@ -71,10 +75,13 @@ export function useGetOrCreateConversation() {
 }
 
 export function useBlockedIds() {
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useQuery({
     queryKey: ['blocks'],
     queryFn: () => dmsApi.getBlockedIds(),
     select: (data) => data.blockedIds,
+    enabled: isHydrated && isAuthenticated,
   });
 }
 

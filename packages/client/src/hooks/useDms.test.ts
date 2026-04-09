@@ -4,12 +4,14 @@ import {
   useDmConversations,
   useDmMessages,
   useSendDmMessage,
+  useBlockedIds,
   injectDmMessage,
   updateConversationLastMessage,
 } from './useDms';
 import { createHookWrapper, createTestQueryClient } from '../test-utils/renderWithProviders';
 import { DirectMessage, DirectConversation } from '../types/models';
 import { DirectConversationsResponse, DirectMessagesResponse } from '../types/api.types';
+import { useAuthStore } from '../stores/authStore';
 
 jest.mock('../api/dms.api');
 
@@ -48,6 +50,14 @@ function makeDirectMessage(overrides: Partial<DirectMessage> = {}): DirectMessag
 
 beforeEach(() => {
   jest.clearAllMocks();
+  useAuthStore.setState({
+    accessToken: null,
+    refreshToken: null,
+    userId: null,
+    isAuthenticated: false,
+    isHydrated: false,
+    emailVerified: false,
+  } as never);
 });
 
 describe('injectDmMessage', () => {
@@ -149,6 +159,7 @@ describe('useDmMessages', () => {
 
 describe('useDmConversations', () => {
   it('calls listConversations and returns conversations', async () => {
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: true } as never);
     const conversation = makeDirectConversation();
     jest.mocked(dmsApi.listConversations).mockResolvedValueOnce({ conversations: [conversation] });
 
@@ -226,5 +237,35 @@ describe('useSendDmMessage', () => {
 
     const convCache = queryClient.getQueryData<DirectConversationsResponse>(['dms']);
     expect(convCache?.conversations[0]?.lastMessage?._id).toBe('dm-1');
+  });
+});
+
+describe('useBlockedIds', () => {
+  it('stays idle when not authenticated', () => {
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: false } as never);
+
+    const { result } = renderHook(() => useBlockedIds(), {
+      wrapper: createHookWrapper(),
+    });
+
+    expect(dmsApi.getBlockedIds).not.toHaveBeenCalled();
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
+  it('fires and returns data when auth is ready', async () => {
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: true } as never);
+
+    jest.mocked(dmsApi.getBlockedIds).mockResolvedValueOnce({ blockedIds: ['user-99'] });
+
+    const { result } = renderHook(() => useBlockedIds(), {
+      wrapper: createHookWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(dmsApi.getBlockedIds).toHaveBeenCalledTimes(1);
+    expect(result.current.data).toEqual(['user-99']);
   });
 });

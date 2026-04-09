@@ -1,21 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as serversApi from '../api/servers.api';
 import type { CreateServerRequest, UpdateServerRequest, TransferOwnershipRequest, UpdateInviteSettingsRequest } from '../types/api.types';
+import { useAuthStore } from '../stores/authStore';
 
 export function useServers() {
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useQuery({
     queryKey: ['servers'],
     queryFn: () => serversApi.getServers(),
     select: (data) => data.servers,
+    enabled: isHydrated && isAuthenticated,
   });
 }
 
 export function useServer(serverId: string) {
+  const isHydrated = useAuthStore((s) => s.isHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId],
     queryFn: () => serversApi.getServer(serverId),
     select: (data) => data.server,
-    enabled: !!serverId,
+    enabled: !!serverId && isHydrated && isAuthenticated,
   });
 }
 
