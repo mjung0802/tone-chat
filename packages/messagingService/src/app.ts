@@ -1,5 +1,6 @@
 import express from 'express';
 import { internalAuth } from './shared/middleware/internalAuth.js';
+import { verifyUserToken } from './shared/middleware/verifyUserToken.js';
 import { errorHandler } from './shared/middleware/errorHandler.js';
 import { serversRouter } from './servers/servers.routes.js';
 import { channelsRouter } from './channels/channels.routes.js';
@@ -19,8 +20,9 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// All routes require internal auth
+// All routes require internal auth + verified user token
 app.use(internalAuth);
+app.use(verifyUserToken);
 
 app.use('/servers', serversRouter);
 app.use('/servers/:serverId/channels', channelsRouter);

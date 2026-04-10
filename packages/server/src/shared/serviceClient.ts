@@ -11,11 +11,11 @@ export async function serviceRequest(
   options: {
     method?: string;
     body?: unknown;
-    userId?: string;
+    userToken?: string;
     headers?: Record<string, string>;
   } = {},
 ): Promise<ServiceResponse> {
-  const { method = 'GET', body, userId } = options;
+  const { method = 'GET', body, userToken } = options;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -23,8 +23,8 @@ export async function serviceRequest(
     ...options.headers,
   };
 
-  if (userId) {
-    headers['X-User-Id'] = userId;
+  if (userToken) {
+    headers['X-User-Token'] = userToken;
   }
 
   const res = await fetch(`${baseUrl}${path}`, {

@@ -1,13 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as tonesApi from '../api/tones.api';
 import type { AddCustomToneRequest } from '../types/api.types';
+import { useAuthStore } from '../stores/authStore';
 
 export function useCustomTones(serverId: string) {
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId, 'customTones'],
     queryFn: () => tonesApi.getCustomTones(serverId),
     select: (data) => data.customTones,
-    enabled: !!serverId,
+    enabled: !!serverId && authReady,
   });
 }
 

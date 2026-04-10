@@ -12,6 +12,8 @@
     "test:integration": "tsx --env-file=.env.test --test --test-concurrency=1 \"src/**/*.integration.test.ts\""
   },
   "dependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",

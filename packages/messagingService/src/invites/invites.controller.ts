@@ -7,7 +7,7 @@ import { AppError } from '../shared/middleware/errorHandler.js';
 import { getRoleLevel, type Role } from '../shared/roles.js';
 
 export async function getDefaultInvite(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const { serverId } = req.params as { serverId: string };
 
   const [server, existingInvite] = await Promise.all([
@@ -38,7 +38,7 @@ export async function getDefaultInvite(req: Request, res: Response): Promise<voi
 }
 
 export async function createInvite(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const { serverId } = req.params;
   const { maxUses, expiresIn } = req.body as { maxUses?: number; expiresIn?: number };
 
@@ -66,7 +66,7 @@ export async function listInvites(req: Request, res: Response): Promise<void> {
 }
 
 export async function revokeInvite(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const { serverId, code } = req.params;
 
   // Only admins or owner can revoke
@@ -96,7 +96,7 @@ export async function revokeInvite(req: Request, res: Response): Promise<void> {
 }
 
 export async function joinViaInvite(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const { code } = req.params;
 
   const invite = await Invite.findOne({ code });

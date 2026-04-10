@@ -2,6 +2,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import * as dmsApi from '../api/dms.api';
 import type { DirectConversationsResponse, DirectMessagesResponse, SendDmRequest } from '../types/api.types';
 import type { DirectMessage } from '../types/models';
+import { useAuthStore } from '../stores/authStore';
 
 const PAGE_SIZE = 50;
 
@@ -11,14 +12,17 @@ type DmMessagesCache = {
 };
 
 export function useDmConversations() {
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['dms'],
     queryFn: () => dmsApi.listConversations(),
     select: (data) => data.conversations,
+    enabled: authReady,
   });
 }
 
 export function useDmMessages(conversationId: string | undefined) {
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useInfiniteQuery({
     queryKey: ['dms', conversationId, 'messages'],
     queryFn: ({ pageParam }) =>
@@ -33,7 +37,7 @@ export function useDmMessages(conversationId: string | undefined) {
       pageParams: data.pageParams,
       messages: data.pages.flatMap((page) => page.messages),
     }),
-    enabled: !!conversationId,
+    enabled: !!conversationId && authReady,
     refetchOnMount: 'always',
   });
 }
@@ -71,10 +75,12 @@ export function useGetOrCreateConversation() {
 }
 
 export function useBlockedIds() {
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['blocks'],
     queryFn: () => dmsApi.getBlockedIds(),
     select: (data) => data.blockedIds,
+    enabled: authReady,
   });
 }
 

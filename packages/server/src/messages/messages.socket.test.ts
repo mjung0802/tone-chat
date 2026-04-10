@@ -46,7 +46,7 @@ describe('registerMessageHandlers', () => {
       to: mock.fn(() => ({ emit: mock.fn() })),
     };
     // @ts-expect-error - Using simplified test mocks for io and socket
-    registerMessageHandlers(io, socket, 'user-1');
+    registerMessageHandlers(io, socket, 'mock-token', 'user-1');
   });
 
   describe('send_message', () => {
@@ -108,10 +108,11 @@ describe('registerMessageHandlers', () => {
 
       assert.equal(mockEmitMentionsFromResult.mock.callCount(), 1);
       const args = mockEmitMentionsFromResult.mock.calls[0]!.arguments;
-      assert.equal(args[1], 'user-1'); // senderId
-      assert.equal(args[2], 's1');     // serverId
-      assert.equal(args[3], 'c1');     // channelId
-      assert.deepEqual(args[4], responseData); // resultData
+      assert.equal(args[1], 'mock-token'); // senderToken
+      assert.equal(args[2], 'user-1');     // senderId
+      assert.equal(args[3], 's1');         // serverId
+      assert.equal(args[4], 'c1');         // channelId
+      assert.deepEqual(args[5], responseData); // resultData
     });
 
     it('does not call emitMentionsFromResult on non-201', async () => {
@@ -206,7 +207,7 @@ describe('registerMessageHandlers', () => {
 
       assert.equal(mockToggleReaction.mock.callCount(), 1);
       const args = mockToggleReaction.mock.calls[0]!.arguments;
-      assert.equal(args[0], 'user-1');
+      assert.equal(args[0], 'mock-token');
       assert.equal(args[1], 's1');
       assert.equal(args[2], 'c1');
       assert.equal(args[3], 'm1');

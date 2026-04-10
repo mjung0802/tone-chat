@@ -1,70 +1,66 @@
 import { serviceRequest } from '../shared/serviceClient.js';
 import { config } from '../config/index.js';
 
-export function getMe(userId: string) {
-  return serviceRequest(config.usersServiceUrl, '/users/me', { userId });
+export function getMe(userToken: string) {
+  return serviceRequest(config.usersServiceUrl, '/users/me', { userToken });
 }
 
-export function patchMe(userId: string, body: Record<string, unknown>) {
-  return serviceRequest(config.usersServiceUrl, '/users/me', { method: 'PATCH', userId, body });
+export function patchMe(userToken: string, body: Record<string, unknown>) {
+  return serviceRequest(config.usersServiceUrl, '/users/me', { method: 'PATCH', userToken, body });
 }
 
-export function getUser(userId: string, targetId: string) {
-  return serviceRequest(config.usersServiceUrl, `/users/${targetId}`, { userId });
+export function getUser(userToken: string, targetId: string) {
+  return serviceRequest(config.usersServiceUrl, `/users/${targetId}`, { userToken });
 }
 
-export function getUsersBatch(userId: string, ids: string[]) {
+export function getUsersBatch(userToken: string, ids: string[]) {
   return serviceRequest(config.usersServiceUrl, '/users/batch', {
-    userId,
+    userToken,
     method: 'POST',
     body: { ids },
   });
 }
 
-export function getBlockedIds(userId: string) {
-  return serviceRequest(config.usersServiceUrl, '/users/me/blocks', { userId });
+export function getBlockedIds(userToken: string) {
+  return serviceRequest(config.usersServiceUrl, '/users/me/blocks', { userToken });
 }
 
-export function blockUser(userId: string, targetId: string) {
-  return serviceRequest(config.usersServiceUrl, `/users/me/blocks/${targetId}`, { method: 'POST', userId });
+export function blockUser(userToken: string, targetId: string) {
+  return serviceRequest(config.usersServiceUrl, `/users/me/blocks/${targetId}`, { method: 'POST', userToken });
 }
 
-export function unblockUser(userId: string, targetId: string) {
-  return serviceRequest(config.usersServiceUrl, `/users/me/blocks/${targetId}`, { method: 'DELETE', userId });
+export function unblockUser(userToken: string, targetId: string) {
+  return serviceRequest(config.usersServiceUrl, `/users/me/blocks/${targetId}`, { method: 'DELETE', userToken });
 }
 
-export function getFriends(userId: string) {
-  return serviceRequest(config.usersServiceUrl, '/users/me/friends', { userId });
+export function getFriends(userToken: string) {
+  return serviceRequest(config.usersServiceUrl, '/users/me/friends', { userToken });
 }
 
-export function getPendingRequests(userId: string) {
-  return serviceRequest(config.usersServiceUrl, '/users/me/friends/pending', { userId });
+export function getPendingRequests(userToken: string) {
+  return serviceRequest(config.usersServiceUrl, '/users/me/friends/pending', { userToken });
 }
 
-export function getFriendshipStatus(userId: string, targetId: string) {
-  return serviceRequest(config.usersServiceUrl, `/users/me/friends/${targetId}/status`, { userId });
+export function getFriendshipStatus(userToken: string, targetId: string) {
+  return serviceRequest(config.usersServiceUrl, `/users/me/friends/${targetId}/status`, { userToken });
 }
 
-export function sendFriendRequest(userId: string, targetId: string) {
-  return serviceRequest(config.usersServiceUrl, `/users/me/friends/${targetId}`, { method: 'POST', userId });
+export function sendFriendRequest(userToken: string, targetId: string) {
+  return serviceRequest(config.usersServiceUrl, `/users/me/friends/${targetId}`, { method: 'POST', userToken });
 }
 
-export function acceptFriendRequest(userId: string, targetId: string) {
-  return serviceRequest(config.usersServiceUrl, `/users/me/friends/${targetId}/accept`, { method: 'PATCH', userId });
+export function acceptFriendRequest(userToken: string, targetId: string) {
+  return serviceRequest(config.usersServiceUrl, `/users/me/friends/${targetId}/accept`, { method: 'PATCH', userToken });
 }
 
-export function removeFriend(userId: string, targetId: string) {
-  return serviceRequest(config.usersServiceUrl, `/users/me/friends/${targetId}`, { method: 'DELETE', userId });
+export function removeFriend(userToken: string, targetId: string) {
+  return serviceRequest(config.usersServiceUrl, `/users/me/friends/${targetId}`, { method: 'DELETE', userToken });
 }
 
-export async function isBlockedBidirectional(userId: string, otherUserId: string): Promise<boolean> {
-  const [aResult, bResult] = await Promise.all([
-    getBlockedIds(userId),
-    getBlockedIds(otherUserId),
-  ]);
-
-  const aBlocked = (aResult.data as { blockedIds?: string[] } | null)?.blockedIds ?? [];
-  const bBlocked = (bResult.data as { blockedIds?: string[] } | null)?.blockedIds ?? [];
-
-  return aBlocked.includes(otherUserId) || bBlocked.includes(userId);
+export async function isBlockedBidirectional(userToken: string, otherUserId: string, userId: string): Promise<boolean> {
+  const result = await serviceRequest(config.usersServiceUrl, '/internal/blocks/bidirectional-check', {
+    method: 'POST',
+    body: { userId, otherUserId },
+  });
+  return (result.data as { blocked?: boolean } | null)?.blocked ?? false;
 }

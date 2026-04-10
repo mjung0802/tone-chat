@@ -29,11 +29,11 @@ describe('serviceRequest', () => {
     assert.equal((init.headers as Record<string, string>)['X-Internal-Key'], 'test-key');
   });
 
-  it('injects X-User-Id when userId option provided', async () => {
+  it('injects X-User-Token when userToken option provided', async () => {
     mockFetch.mock.mockImplementation(async () => ({ status: 200, json: async () => ({}) }));
-    await serviceRequest('http://svc', '/path', { userId: 'u1' });
+    await serviceRequest('http://svc', '/path', { userToken: 'tok1' });
     const init = mockFetch.mock.calls[0]!.arguments[1] as RequestInit;
-    assert.equal((init.headers as Record<string, string>)['X-User-Id'], 'u1');
+    assert.equal((init.headers as Record<string, string>)['X-User-Token'], 'tok1');
   });
 
   it('sends JSON-stringified body', async () => {

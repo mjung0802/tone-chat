@@ -63,7 +63,7 @@ export async function logout(req: Request, res: Response): Promise<void> {
 }
 
 export async function verifyEmail(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const { code } = req.body as { code: string };
 
   if (!code) {
@@ -76,7 +76,7 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
 }
 
 export async function resendVerification(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
 
   const user = await getUserById(userId);
   await sendVerificationOtp(userId, user.email);

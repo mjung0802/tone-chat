@@ -10,7 +10,7 @@ import {
 } from './friends.service.js';
 
 export async function postFriendRequest(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   if (!userId) {
     res.status(400).json({ error: { code: 'MISSING_USER_ID', message: 'X-User-Id header is required', status: 400 } });
     return;
@@ -34,7 +34,7 @@ export async function postFriendRequest(req: Request, res: Response): Promise<vo
 }
 
 export async function patchAcceptRequest(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   if (!userId) {
     res.status(400).json({ error: { code: 'MISSING_USER_ID', message: 'X-User-Id header is required', status: 400 } });
     return;
@@ -46,7 +46,7 @@ export async function patchAcceptRequest(req: Request, res: Response): Promise<v
 }
 
 export async function deleteFriend(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   if (!userId) {
     res.status(400).json({ error: { code: 'MISSING_USER_ID', message: 'X-User-Id header is required', status: 400 } });
     return;
@@ -58,7 +58,7 @@ export async function deleteFriend(req: Request, res: Response): Promise<void> {
 }
 
 export async function listFriends(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   if (!userId) {
     res.status(400).json({ error: { code: 'MISSING_USER_ID', message: 'X-User-Id header is required', status: 400 } });
     return;
@@ -69,7 +69,7 @@ export async function listFriends(req: Request, res: Response): Promise<void> {
 }
 
 export async function listPendingRequests(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   if (!userId) {
     res.status(400).json({ error: { code: 'MISSING_USER_ID', message: 'X-User-Id header is required', status: 400 } });
     return;
@@ -80,7 +80,7 @@ export async function listPendingRequests(req: Request, res: Response): Promise<
 }
 
 export async function getFriendshipStatus(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   if (!userId) {
     res.status(400).json({ error: { code: 'MISSING_USER_ID', message: 'X-User-Id header is required', status: 400 } });
     return;

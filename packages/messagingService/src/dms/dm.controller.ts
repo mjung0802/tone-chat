@@ -5,7 +5,7 @@ import { AppError } from '../shared/middleware/errorHandler.js';
 import { config } from '../config/index.js';
 
 export async function getOrCreateConversation(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const otherUserId = req.params['otherUserId'] as string;
 
   if (otherUserId === userId) {
@@ -31,7 +31,7 @@ export async function getConversation(req: Request, res: Response): Promise<void
 }
 
 export async function listConversations(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
 
   const conversations = await DirectConversation.find({ participantIds: userId }).sort({
     lastMessageAt: -1,
@@ -79,7 +79,7 @@ export async function listDmMessages(req: Request, res: Response): Promise<void>
 }
 
 export async function sendDmMessage(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const { conversationId } = req.params;
   const conversation = req.conversation!;
 
@@ -224,7 +224,7 @@ export async function sendDmMessage(req: Request, res: Response): Promise<void> 
 }
 
 export async function editDmMessage(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const { conversationId, messageId } = req.params;
 
   const message = await DirectMessage.findOne({ _id: messageId, conversationId });
@@ -249,7 +249,7 @@ export async function editDmMessage(req: Request, res: Response): Promise<void> 
 }
 
 export async function toggleDmReaction(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const { conversationId, messageId } = req.params;
 
   const { emoji } = req.body as { emoji?: unknown };

@@ -2,12 +2,20 @@ import { before, after, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
+import jwt from 'jsonwebtoken';
 import { app } from '../app.js';
 import { sql } from '../config/database.js';
 
 let server: Server;
 let baseUrl: string;
 const HEADERS = { 'content-type': 'application/json', 'x-internal-key': 'dev-internal-key' };
+
+function tokenFor(userId: string): string {
+  return jwt.sign(
+    { sub: userId },
+    process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production',
+  );
+}
 
 async function registerUser(username: string, email: string): Promise<{ id: string }> {
   const res = await fetch(`${baseUrl}/auth/register`, {
@@ -41,7 +49,7 @@ describe('POST /users/me/blocks/:userId', () => {
 
     const res = await fetch(`${baseUrl}/users/me/blocks/${bob.id}`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': alice.id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(alice.id) },
     });
 
     assert.equal(res.status, 204);
@@ -59,7 +67,7 @@ describe('POST /users/me/blocks/:userId', () => {
 
     const res = await fetch(`${baseUrl}/users/me/blocks/${alice.id}`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': alice.id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(alice.id) },
     });
 
     assert.equal(res.status, 400);
@@ -72,7 +80,7 @@ describe('POST /users/me/blocks/:userId', () => {
 
     const res = await fetch(`${baseUrl}/users/me/blocks/00000000-0000-0000-0000-000000000000`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': alice.id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(alice.id) },
     });
 
     assert.equal(res.status, 404);
@@ -85,14 +93,14 @@ describe('POST /users/me/blocks/:userId', () => {
     // First block
     const res1 = await fetch(`${baseUrl}/users/me/blocks/${bob.id}`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': alice.id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(alice.id) },
     });
     assert.equal(res1.status, 204);
 
     // Second block — should not error
     const res2 = await fetch(`${baseUrl}/users/me/blocks/${bob.id}`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': alice.id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(alice.id) },
     });
     assert.equal(res2.status, 204);
 
@@ -112,13 +120,13 @@ describe('DELETE /users/me/blocks/:userId', () => {
     // Block first
     await fetch(`${baseUrl}/users/me/blocks/${bob.id}`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': alice.id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(alice.id) },
     });
 
     // Now unblock
     const res = await fetch(`${baseUrl}/users/me/blocks/${bob.id}`, {
       method: 'DELETE',
-      headers: { ...HEADERS, 'x-user-id': alice.id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(alice.id) },
     });
 
     assert.equal(res.status, 204);
@@ -135,7 +143,7 @@ describe('DELETE /users/me/blocks/:userId', () => {
 
     const res = await fetch(`${baseUrl}/users/me/blocks/${bob.id}`, {
       method: 'DELETE',
-      headers: { ...HEADERS, 'x-user-id': alice.id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(alice.id) },
     });
 
     assert.equal(res.status, 404);
@@ -150,15 +158,15 @@ describe('GET /users/me/blocks', () => {
 
     await fetch(`${baseUrl}/users/me/blocks/${bob.id}`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': alice.id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(alice.id) },
     });
     await fetch(`${baseUrl}/users/me/blocks/${charlie.id}`, {
       method: 'POST',
-      headers: { ...HEADERS, 'x-user-id': alice.id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(alice.id) },
     });
 
     const res = await fetch(`${baseUrl}/users/me/blocks`, {
-      headers: { ...HEADERS, 'x-user-id': alice.id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(alice.id) },
     });
 
     assert.equal(res.status, 200);
@@ -172,7 +180,7 @@ describe('GET /users/me/blocks', () => {
     const alice = await registerUser('alice', 'alice@test.com');
 
     const res = await fetch(`${baseUrl}/users/me/blocks`, {
-      headers: { ...HEADERS, 'x-user-id': alice.id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(alice.id) },
     });
 
     assert.equal(res.status, 200);

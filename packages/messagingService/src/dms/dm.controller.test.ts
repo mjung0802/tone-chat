@@ -87,7 +87,8 @@ function makeReq(opts: {
   conversation?: IDirectConversation;
 }): DmReq {
   const req = {
-    headers: opts.userId ? { 'x-user-id': opts.userId } : {},
+    userId: opts.userId,
+    headers: {},
     params: opts.params ?? {},
     body: opts.body ?? {},
     query: opts.query ?? {},

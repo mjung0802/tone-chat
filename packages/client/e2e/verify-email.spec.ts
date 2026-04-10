@@ -20,8 +20,19 @@ async function gotoVerifyEmailScreen(page: Parameters<typeof mockUnverifiedLogin
   await mockResendVerificationRoute(page);
   await mockSocketIO(page);
 
-  // /users/me is called by verify-email screen to display the email
+  // /users/me is called by verify-email screen to display the email.
+  // Guard with an Authorization header check so that authStore.hydrate() (which calls
+  // getMe() on web even without tokens) does not accidentally authenticate the user
+  // before the test has gone through the login flow.
   await page.route(`${API}/users/me`, async (route) => {
+    if (!route.request().headers()['authorization']) {
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: { code: 'UNAUTHORIZED', message: 'Unauthorized', status: 401 } }),
+      });
+      return;
+    }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',

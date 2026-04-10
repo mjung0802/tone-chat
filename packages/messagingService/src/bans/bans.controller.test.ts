@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
 
-type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>> & { member?: unknown; server?: unknown };
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>> & { userId?: string; member?: unknown; server?: unknown };
 type TestResponse = Response & { statusCode: number; _json: unknown };
 
 function assertErrorCode(error: unknown, code: string): true {
@@ -41,7 +41,7 @@ mock.module('../auditLog/auditLog.model.js', {
 const { banMember, unbanUser, listBans } = await import('./bans.controller.js');
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
+  return { body: {}, params: {}, headers: {}, query: {}, userId: undefined, ...overrides } as Request;
 }
 function makeRes(): TestResponse {
   const res = { statusCode: 200, _json: undefined } as TestResponse;
@@ -65,7 +65,7 @@ describe('banMember', () => {
 
     const res = makeRes();
     await banMember(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', userId: 'u2' },
       body: { reason: 'spam' },
       member: { role: 'mod', userId: 'u1' },
@@ -85,7 +85,7 @@ describe('banMember', () => {
 
     await assert.rejects(
       () => banMember(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { serverId: 's1', userId: 'u2' },
         body: {},
         member: { role: 'mod', userId: 'u1' },
@@ -102,7 +102,7 @@ describe('unbanUser', () => {
   it('deletes ban and returns 204', async () => {
     mockBanFindOneAndDelete.mock.mockImplementation(async () => ({ userId: 'u2' }));
     const res = makeRes();
-    await unbanUser(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1', userId: 'u2' } }), res);
+    await unbanUser(makeReq({ userId: 'u1', params: { serverId: 's1', userId: 'u2' } }), res);
     assert.equal(res.statusCode, 204);
     assert.equal(mockLogAuditEvent.mock.callCount(), 1);
     assert.deepEqual(mockLogAuditEvent.mock.calls[0]!.arguments.slice(0, 4), ['s1', 'unban', 'u1', 'u2']);
@@ -111,7 +111,7 @@ describe('unbanUser', () => {
   it('throws BAN_NOT_FOUND when no ban exists', async () => {
     mockBanFindOneAndDelete.mock.mockImplementation(async () => null);
     await assert.rejects(
-      () => unbanUser(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1', userId: 'u2' } }), makeRes()),
+      () => unbanUser(makeReq({ userId: 'u1', params: { serverId: 's1', userId: 'u2' } }), makeRes()),
       (error) => assertErrorCode(error, 'BAN_NOT_FOUND'),
     );
   });

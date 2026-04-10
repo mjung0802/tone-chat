@@ -4,7 +4,7 @@ import { ServerMember } from '../members/serverMember.model.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
 
 export async function createMessage(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const { serverId, channelId } = req.params;
   const { content, attachmentIds, replyToId, mentions: rawMentions, tone: rawTone } = req.body as {
     content: string;
@@ -117,7 +117,7 @@ export async function listMessages(req: Request, res: Response): Promise<void> {
 }
 
 export async function updateMessage(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const message = await Message.findOne({ _id: req.params['messageId'], channelId: req.params['channelId'] });
 
   if (!message) {
@@ -136,7 +136,7 @@ export async function updateMessage(req: Request, res: Response): Promise<void> 
 }
 
 export async function deleteMessage(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const message = await Message.findOne({ _id: req.params['messageId'], channelId: req.params['channelId'] });
 
   if (!message) {

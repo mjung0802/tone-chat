@@ -2,12 +2,20 @@ import { before, after, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
+import jwt from 'jsonwebtoken';
 import { app } from '../app.js';
 import { sql } from '../config/database.js';
 
 let server: Server;
 let baseUrl: string;
 const HEADERS = { 'content-type': 'application/json', 'x-internal-key': 'dev-internal-key' };
+
+function tokenFor(userId: string): string {
+  return jwt.sign(
+    { sub: userId },
+    process.env['JWT_SECRET'] ?? 'dev-secret-change-in-production',
+  );
+}
 
 async function registerUser(username: string, email: string): Promise<{ id: string; accessToken: string; refreshToken: string }> {
   const res = await fetch(`${baseUrl}/auth/register`, {
@@ -39,7 +47,7 @@ describe('GET /users/me', () => {
     const { id } = await registerUser('alice', 'alice@test.com');
 
     const res = await fetch(`${baseUrl}/users/me`, {
-      headers: { ...HEADERS, 'x-user-id': id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(id) },
     });
 
     assert.equal(res.status, 200);
@@ -50,12 +58,12 @@ describe('GET /users/me', () => {
     assert.equal(body.user.email, 'alice@test.com');
   });
 
-  it('returns 400 without x-user-id', async () => {
+  it('returns 401 without x-user-token', async () => {
     const res = await fetch(`${baseUrl}/users/me`, {
       headers: HEADERS,
     });
 
-    assert.equal(res.status, 400);
+    assert.equal(res.status, 401);
   });
 });
 
@@ -65,7 +73,7 @@ describe('PATCH /users/me', () => {
 
     const res = await fetch(`${baseUrl}/users/me`, {
       method: 'PATCH',
-      headers: { ...HEADERS, 'x-user-id': id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(id) },
       body: JSON.stringify({ display_name: 'Alice W', bio: 'Hello world' }),
     });
 
@@ -87,7 +95,7 @@ describe('PATCH /users/me', () => {
 
     const res = await fetch(`${baseUrl}/users/me`, {
       method: 'PATCH',
-      headers: { ...HEADERS, 'x-user-id': id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(id) },
       body: JSON.stringify({ avatar_url: 'att-avatar-123' }),
     });
 
@@ -97,7 +105,7 @@ describe('PATCH /users/me', () => {
 
     // Verify persistence via GET
     const getRes = await fetch(`${baseUrl}/users/me`, {
-      headers: { ...HEADERS, 'x-user-id': id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(id) },
     });
     const getBody = await getRes.json() as { user: { avatar_url: string | null } };
     assert.equal(getBody.user.avatar_url, 'att-avatar-123');
@@ -108,7 +116,7 @@ describe('PATCH /users/me', () => {
 
     const res = await fetch(`${baseUrl}/users/me`, {
       method: 'PATCH',
-      headers: { ...HEADERS, 'x-user-id': id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(id) },
       body: JSON.stringify({ email: 'hacked@test.com', display_name: 'Valid' }),
     });
 
@@ -126,7 +134,7 @@ describe('POST /users/batch', () => {
 
     const res = await fetch(`${baseUrl}/users/batch`, {
       method: 'POST',
-      headers: HEADERS,
+      headers: { ...HEADERS, 'x-user-token': tokenFor(u1.id) },
       body: JSON.stringify({ ids: [u1.id, u2.id] }),
     });
 
@@ -146,13 +154,13 @@ describe('POST /users/batch', () => {
     // Set avatar_url on alice
     await fetch(`${baseUrl}/users/me`, {
       method: 'PATCH',
-      headers: { ...HEADERS, 'x-user-id': u1.id },
+      headers: { ...HEADERS, 'x-user-token': tokenFor(u1.id) },
       body: JSON.stringify({ avatar_url: 'att-avatar-alice' }),
     });
 
     const res = await fetch(`${baseUrl}/users/batch`, {
       method: 'POST',
-      headers: HEADERS,
+      headers: { ...HEADERS, 'x-user-token': tokenFor(u1.id) },
       body: JSON.stringify({ ids: [u1.id, u2.id] }),
     });
 
@@ -169,9 +177,11 @@ describe('POST /users/batch', () => {
   });
 
   it('returns 400 for empty ids', async () => {
+    const { id } = await registerUser('alice', 'alice@test.com');
+
     const res = await fetch(`${baseUrl}/users/batch`, {
       method: 'POST',
-      headers: HEADERS,
+      headers: { ...HEADERS, 'x-user-token': tokenFor(id) },
       body: JSON.stringify({ ids: [] }),
     });
 
@@ -179,9 +189,11 @@ describe('POST /users/batch', () => {
   });
 
   it('returns 400 for non-array ids', async () => {
+    const { id } = await registerUser('alice', 'alice@test.com');
+
     const res = await fetch(`${baseUrl}/users/batch`, {
       method: 'POST',
-      headers: HEADERS,
+      headers: { ...HEADERS, 'x-user-token': tokenFor(id) },
       body: JSON.stringify({ ids: 'not-an-array' }),
     });
 
@@ -194,7 +206,7 @@ describe('GET /users/:id', () => {
     const { id } = await registerUser('alice', 'alice@test.com');
 
     const res = await fetch(`${baseUrl}/users/${id}`, {
-      headers: HEADERS,
+      headers: { ...HEADERS, 'x-user-token': tokenFor(id) },
     });
 
     assert.equal(res.status, 200);
@@ -205,8 +217,10 @@ describe('GET /users/:id', () => {
   });
 
   it('returns 404 for non-existent UUID', async () => {
+    const { id } = await registerUser('alice', 'alice@test.com');
+
     const res = await fetch(`${baseUrl}/users/00000000-0000-0000-0000-000000000000`, {
-      headers: HEADERS,
+      headers: { ...HEADERS, 'x-user-token': tokenFor(id) },
     });
 
     assert.equal(res.status, 404);

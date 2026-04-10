@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
 
-type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>> & { member?: unknown; server?: unknown };
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>> & { userId?: string; member?: unknown; server?: unknown };
 type TestResponse = Response & { statusCode: number; _json: unknown };
 
 function assertErrorCode(error: unknown, code: string): true {
@@ -46,7 +46,7 @@ mock.module('../auditLog/auditLog.model.js', {
 const { joinServer, listMembers, getMember, updateMember, removeMember, muteMember, unmuteMember, promoteMember, demoteMember } = await import('./members.controller.js');
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
+  return { body: {}, params: {}, headers: {}, query: {}, userId: undefined, ...overrides } as Request;
 }
 function makeRes(): TestResponse {
   const res = { statusCode: 200, _json: undefined } as TestResponse;
@@ -67,7 +67,7 @@ describe('joinServer', () => {
   it('throws SERVER_NOT_FOUND when server is null', async () => {
     mockServerFindById.mock.mockImplementation(async () => null);
     await assert.rejects(
-      () => joinServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
+      () => joinServer(makeReq({ userId: 'u1', params: { serverId: 's1' } }), makeRes()),
       (error) => assertErrorCode(error, 'SERVER_NOT_FOUND'),
     );
   });
@@ -75,7 +75,7 @@ describe('joinServer', () => {
   it('rejects private servers', async () => {
     mockServerFindById.mock.mockImplementation(async () => ({ visibility: 'private' }));
     await assert.rejects(
-      () => joinServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
+      () => joinServer(makeReq({ userId: 'u1', params: { serverId: 's1' } }), makeRes()),
       (error) => assertErrorCode(error, 'SERVER_PRIVATE'),
     );
   });
@@ -84,7 +84,7 @@ describe('joinServer', () => {
     mockServerFindById.mock.mockImplementation(async () => ({ visibility: 'public' }));
     mockBanFindOne.mock.mockImplementation(async () => ({ userId: 'u1' }));
     await assert.rejects(
-      () => joinServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
+      () => joinServer(makeReq({ userId: 'u1', params: { serverId: 's1' } }), makeRes()),
       (error) => assertErrorCode(error, 'BANNED'),
     );
   });
@@ -94,7 +94,7 @@ describe('joinServer', () => {
     mockBanFindOne.mock.mockImplementation(async () => null);
     mockMemberFindOne.mock.mockImplementation(async () => ({ userId: 'u1' }));
     await assert.rejects(
-      () => joinServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
+      () => joinServer(makeReq({ userId: 'u1', params: { serverId: 's1' } }), makeRes()),
       (error) => assertErrorCode(error, 'ALREADY_MEMBER'),
     );
   });
@@ -107,7 +107,7 @@ describe('joinServer', () => {
     mockMemberCreate.mock.mockImplementation(async () => member);
 
     const res = makeRes();
-    await joinServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), res);
+    await joinServer(makeReq({ userId: 'u1', params: { serverId: 's1' } }), res);
     assert.equal(res.statusCode, 201);
     assert.deepEqual((res._json as { member: unknown }).member, member);
   });
@@ -153,7 +153,7 @@ describe('updateMember', () => {
     mockMemberFindOne.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => updateMember(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { serverId: 's1', userId: 'u2' },
         body: { nickname: 'nick' },
       }), makeRes()),
@@ -167,7 +167,7 @@ describe('updateMember', () => {
 
     const res = makeRes();
     await updateMember(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', userId: 'u2' },
       body: { nickname: 'nick' },
     }), res);
@@ -191,7 +191,7 @@ describe('removeMember', () => {
     mockMemberFindOneAndDelete.mock.mockImplementation(async () => ({ userId: 'u1' }));
     const res = makeRes();
     await removeMember(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', userId: 'u1' },
     }), res);
     assert.equal(res.statusCode, 204);
@@ -201,7 +201,7 @@ describe('removeMember', () => {
     mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'u1' }));
     await assert.rejects(
       () => removeMember(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { serverId: 's1', userId: 'u1' },
       }), makeRes()),
       (error) => assertErrorCode(error, 'OWNER_CANNOT_LEAVE'),
@@ -219,7 +219,7 @@ describe('removeMember', () => {
 
     const res = makeRes();
     await removeMember(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', userId: 'u2' },
     }), res);
     assert.equal(res.statusCode, 204);
@@ -232,7 +232,7 @@ describe('removeMember', () => {
     mockMemberFindOneAndDelete.mock.mockImplementation(async () => ({ userId: 'u1' }));
     const res = makeRes();
     await removeMember(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', userId: 'u1' },
     }), res);
     assert.equal(res.statusCode, 204);
@@ -250,7 +250,7 @@ describe('removeMember', () => {
 
     await assert.rejects(
       () => removeMember(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { serverId: 's1', userId: 'u2' },
       }), makeRes()),
       (error) => assertErrorCode(error, 'FORBIDDEN'),
@@ -263,7 +263,7 @@ describe('removeMember', () => {
 
     await assert.rejects(
       () => removeMember(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { serverId: 's1', userId: 'u2' },
       }), makeRes()),
       (error) => assertErrorCode(error, 'FORBIDDEN'),
@@ -277,7 +277,7 @@ describe('muteMember', () => {
   it('rejects invalid duration', async () => {
     await assert.rejects(
       () => muteMember(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { serverId: 's1', userId: 'u2' },
         body: { duration: 999 },
         member: { role: 'mod', userId: 'u1' },
@@ -293,7 +293,7 @@ describe('muteMember', () => {
 
     const res = makeRes();
     await muteMember(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', userId: 'u2' },
       body: { duration: 60 },
       member: { role: 'mod', userId: 'u1' },
@@ -314,7 +314,7 @@ describe('muteMember', () => {
 
     await assert.rejects(
       () => muteMember(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { serverId: 's1', userId: 'u2' },
         body: { duration: 60 },
         member: { role: 'mod', userId: 'u1' },
@@ -334,7 +334,7 @@ describe('unmuteMember', () => {
 
     const res = makeRes();
     await unmuteMember(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', userId: 'u2' },
       member: { role: 'mod', userId: 'u1' },
       server: { ownerId: 'owner' },
@@ -356,7 +356,7 @@ describe('promoteMember', () => {
 
     const res = makeRes();
     await promoteMember(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', userId: 'u2' },
       member: { role: 'admin', userId: 'u1' },
       server: { ownerId: 'owner' },
@@ -375,7 +375,7 @@ describe('promoteMember', () => {
 
     const res = makeRes();
     await promoteMember(makeReq({
-      headers: { 'x-user-id': 'owner' },
+      userId: 'owner',
       params: { serverId: 's1', userId: 'u2' },
       member: { role: 'admin', userId: 'owner' },
       server: { ownerId: 'owner' },
@@ -393,7 +393,7 @@ describe('promoteMember', () => {
 
     await assert.rejects(
       () => promoteMember(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { serverId: 's1', userId: 'u2' },
         member: { role: 'admin', userId: 'u1' },
         server: { ownerId: 'owner' },
@@ -408,7 +408,7 @@ describe('promoteMember', () => {
 
     await assert.rejects(
       () => promoteMember(makeReq({
-        headers: { 'x-user-id': 'owner' },
+        userId: 'owner',
         params: { serverId: 's1', userId: 'u2' },
         member: { role: 'admin', userId: 'owner' },
         server: { ownerId: 'owner' },
@@ -427,7 +427,7 @@ describe('demoteMember', () => {
 
     const res = makeRes();
     await demoteMember(makeReq({
-      headers: { 'x-user-id': 'owner' },
+      userId: 'owner',
       params: { serverId: 's1', userId: 'u2' },
       member: { role: 'admin', userId: 'owner' },
       server: { ownerId: 'owner' },
@@ -446,7 +446,7 @@ describe('demoteMember', () => {
 
     const res = makeRes();
     await demoteMember(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', userId: 'u2' },
       member: { role: 'admin', userId: 'u1' },
       server: { ownerId: 'owner' },
@@ -464,7 +464,7 @@ describe('demoteMember', () => {
 
     await assert.rejects(
       () => demoteMember(makeReq({
-        headers: { 'x-user-id': 'owner' },
+        userId: 'owner',
         params: { serverId: 's1', userId: 'owner' },
         member: { role: 'admin', userId: 'owner' },
         server: { ownerId: 'owner' },
@@ -479,7 +479,7 @@ describe('demoteMember', () => {
 
     await assert.rejects(
       () => demoteMember(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { serverId: 's1', userId: 'u2' },
         member: { role: 'admin', userId: 'u1' },
         server: { ownerId: 'owner' },

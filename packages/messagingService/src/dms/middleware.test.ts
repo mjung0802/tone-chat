@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
 
-type ConvMiddlewareReq = Request & { conversation?: unknown };
+type ConvMiddlewareReq = Request & { conversation?: unknown; userId?: string };
 type TestResponse = Response & { statusCode: number; _json: unknown };
 
 const mockFindById = mock.fn<AnyFn>();
@@ -16,9 +16,9 @@ mock.module('./conversation.model.js', {
 const { requireConversationParticipant } = await import('./middleware.js');
 
 function makeReq(
-  overrides: Partial<Pick<Request, 'params' | 'headers'>> = {},
+  overrides: Partial<Pick<Request, 'params' | 'headers'>> & { userId?: string } = {},
 ): ConvMiddlewareReq {
-  return { params: {}, headers: {}, ...overrides } as ConvMiddlewareReq;
+  return { params: {}, headers: {}, userId: undefined, ...overrides } as ConvMiddlewareReq;
 }
 
 function makeRes(): TestResponse {
@@ -37,7 +37,7 @@ function makeRes(): TestResponse {
 describe('requireConversationParticipant', () => {
   beforeEach(() => mockFindById.mock.resetCalls());
 
-  it('returns 401 when x-user-id header is missing', async () => {
+  it('returns 401 when userId is missing', async () => {
     const res = makeRes();
     const next = mock.fn();
     await requireConversationParticipant(
@@ -55,7 +55,7 @@ describe('requireConversationParticipant', () => {
     const res = makeRes();
     const next = mock.fn();
     await requireConversationParticipant(
-      makeReq({ headers: { 'x-user-id': 'u1' }, params: { conversationId: 'conv1' } }),
+      makeReq({ userId: 'u1', params: { conversationId: 'conv1' } }),
       res,
       next,
     );
@@ -76,7 +76,7 @@ describe('requireConversationParticipant', () => {
     const res = makeRes();
     const next = mock.fn();
     await requireConversationParticipant(
-      makeReq({ headers: { 'x-user-id': 'u1' }, params: { conversationId: 'conv1' } }),
+      makeReq({ userId: 'u1', params: { conversationId: 'conv1' } }),
       res,
       next,
     );
@@ -94,7 +94,7 @@ describe('requireConversationParticipant', () => {
       participantIds: { includes: (id: string) => ['u1', 'u2'].includes(id) },
     };
     mockFindById.mock.mockImplementation(async () => conversation);
-    const req = makeReq({ headers: { 'x-user-id': 'u1' }, params: { conversationId: 'conv1' } });
+    const req = makeReq({ userId: 'u1', params: { conversationId: 'conv1' } });
     const res = makeRes();
     const next = mock.fn();
     await requireConversationParticipant(req, res, next);

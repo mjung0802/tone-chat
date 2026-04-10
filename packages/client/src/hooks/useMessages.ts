@@ -2,10 +2,12 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import * as messagesApi from '../api/messages.api';
 import type { SendMessageRequest, UpdateMessageRequest, MessagesResponse } from '../types/api.types';
 import type { Message } from '../types/models';
+import { useAuthStore } from '../stores/authStore';
 
 const PAGE_SIZE = 50;
 
 export function useMessages(serverId: string, channelId: string) {
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useInfiniteQuery({
     queryKey: ['servers', serverId, 'channels', channelId, 'messages'],
     queryFn: ({ pageParam }) =>
@@ -24,7 +26,7 @@ export function useMessages(serverId: string, channelId: string) {
       pageParams: data.pageParams,
       messages: data.pages.flatMap((page) => page.messages),
     }),
-    enabled: !!serverId && !!channelId,
+    enabled: !!serverId && !!channelId && authReady,
   });
 }
 

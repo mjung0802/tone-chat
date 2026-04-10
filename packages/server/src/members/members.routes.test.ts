@@ -34,7 +34,7 @@ const { membersRouter } = await import('./members.routes.js');
 
 type RouteStackEntry = { method?: string; handle?: (req: unknown, res: unknown) => Promise<void> };
 type RouterLayer = { route?: { path?: string; methods?: Record<string, boolean>; stack?: RouteStackEntry[] } };
-type MembersReq = { userId: string; params: { serverId: string } };
+type MembersReq = { userId: string; token: string; params: { serverId: string } };
 type MembersRes = {
   statusCode: number;
   _json: unknown;
@@ -49,7 +49,7 @@ const layer = membersRouter.stack.find((l: RouterLayer) => l.route?.path === '/'
 const getHandler = (layer?.route?.stack?.find((s) => s.method === 'get')?.handle ?? (async () => {})) as (req: MembersReq, res: MembersRes) => Promise<void>;
 
 function makeReq(overrides: Partial<MembersReq> = {}): MembersReq {
-  return { userId: 'user-1', params: { serverId: 'server-1' }, ...overrides };
+  return { userId: 'user-1', token: 'mock-token', params: { serverId: 'server-1' }, ...overrides };
 }
 
 function makeRes(): MembersRes {
@@ -125,7 +125,7 @@ describe('GET / (list members with user enrichment)', () => {
     await getHandler(makeReq(), res);
 
     assert.equal(mockGetUsersBatch.mock.callCount(), 1);
-    assert.deepEqual(mockGetUsersBatch.mock.calls[0]!.arguments, ['user-1', ['a', 'b', 'c']]);
+    assert.deepEqual(mockGetUsersBatch.mock.calls[0]!.arguments, ['mock-token', ['a', 'b', 'c']]);
 
     const result = (res._json as { members: Array<Record<string, unknown>> }).members;
     assert.equal(result.length, 3);

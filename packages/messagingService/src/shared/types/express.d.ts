@@ -5,6 +5,7 @@ import type { IDirectConversation } from '../../dms/conversation.model.js';
 declare global {
   namespace Express {
     interface Request {
+      userId?: string;
       member?: IServerMember;
       server?: IServer;
       conversation?: IDirectConversation;

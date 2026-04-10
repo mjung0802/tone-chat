@@ -1,17 +1,22 @@
+import { Platform } from 'react-native';
 import type { ApiError } from '../types/api.types';
 import { useInstanceStore, DEFAULT_INSTANCE_URL } from '../stores/instanceStore';
 
 const getBaseUrl = () => (useInstanceStore.getState().activeInstance ?? DEFAULT_INSTANCE_URL) + '/api/v1';
 
+// On web, credentials: 'include' is required so httpOnly cookies are sent with requests.
+const credentialsExtra: { credentials: RequestCredentials } | Record<string, never> =
+  Platform.OS === 'web' ? { credentials: 'include' } : {};
+
 let getAccessToken: () => string | null = () => null;
 let getRefreshToken: () => string | null = () => null;
-let setTokens: (access: string, refresh: string) => void = () => {};
+let setTokens: (access: string, refresh: string | null) => void = () => {};
 let clearAuth: () => void = () => {};
 
 export function configureAuth(config: {
   getAccessToken: () => string | null;
   getRefreshToken: () => string | null;
-  setTokens: (access: string, refresh: string) => void;
+  setTokens: (access: string, refresh: string | null) => void;
   clearAuth: () => void;
 }) {
   getAccessToken = config.getAccessToken;
@@ -47,7 +52,9 @@ async function attemptRefresh(): Promise<boolean> {
   refreshPromise = (async () => {
     try {
       const refreshToken = getRefreshToken();
-      if (!refreshToken) {
+      // On web, refresh token is in an httpOnly cookie — no body needed.
+      // On native, send refreshToken in request body.
+      if (!refreshToken && Platform.OS !== 'web') {
         clearAuth();
         return false;
       }
@@ -55,7 +62,8 @@ async function attemptRefresh(): Promise<boolean> {
       const res = await fetch(`${getBaseUrl()}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
+        body: Platform.OS === 'web' ? null : JSON.stringify({ refreshToken }),
+        ...credentialsExtra,
       });
 
       if (!res.ok) {
@@ -63,8 +71,8 @@ async function attemptRefresh(): Promise<boolean> {
         return false;
       }
 
-      const data = (await res.json()) as { accessToken: string; refreshToken: string };
-      setTokens(data.accessToken, data.refreshToken);
+      const data = (await res.json()) as { accessToken: string; refreshToken?: string };
+      setTokens(data.accessToken, data.refreshToken ?? null);
       return true;
     } catch {
       clearAuth();
@@ -103,6 +111,7 @@ async function request<T>(
   const res = await fetch(`${getBaseUrl()}${path}`, {
     ...options,
     headers,
+    ...credentialsExtra,
   });
 
   if (res.status === 204) {

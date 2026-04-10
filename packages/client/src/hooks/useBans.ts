@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as bansApi from '../api/bans.api';
+import { useAuthStore } from '../stores/authStore';
 
 export function useBans(serverId: string) {
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId, 'bans'],
     queryFn: () => bansApi.getBans(serverId),
     select: (data) => data.bans,
-    enabled: !!serverId,
+    enabled: !!serverId && authReady,
   });
 }
 

@@ -1,22 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as membersApi from '../api/members.api';
 import type { UpdateMemberRequest, MuteMemberRequest, BanMemberRequest } from '../types/api.types';
+import { useAuthStore } from '../stores/authStore';
 
 export function useMembers(serverId: string) {
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId, 'members'],
     queryFn: () => membersApi.getMembers(serverId),
     select: (data) => data.members,
-    enabled: !!serverId,
+    enabled: !!serverId && authReady,
   });
 }
 
 export function useMember(serverId: string, userId: string) {
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId, 'members', userId],
     queryFn: () => membersApi.getMember(serverId, userId),
     select: (data) => data.member,
-    enabled: !!serverId && !!userId,
+    enabled: !!serverId && !!userId && authReady,
   });
 }
 

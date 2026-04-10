@@ -2,6 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react-native';
 import type { UseMutationResult } from '@tanstack/react-query';
 import * as membersApi from '../api/members.api';
 import {
+  useMembers,
   useKickMember,
   useMuteMember,
   useUnmuteMember,
@@ -10,6 +11,7 @@ import {
   useBanMember,
 } from './useMembers';
 import { createHookWrapper, createTestQueryClient } from '../test-utils/renderWithProviders';
+import { useAuthStore } from '../stores/authStore';
 
 jest.mock('../api/members.api');
 
@@ -18,6 +20,14 @@ const USER_ID = 'user-1';
 
 beforeEach(() => {
   jest.clearAllMocks();
+  useAuthStore.setState({
+    accessToken: null,
+    refreshToken: null,
+    userId: null,
+    isAuthenticated: false,
+    isHydrated: false,
+    emailVerified: false,
+  });
 });
 
 // Using `any` here to avoid duplicating the test cases for each hook, since they all have the same structure and we only care about the side effects (invalidating queries) in this test suite.
@@ -82,5 +92,34 @@ describe.each(cases)('$name', ({ hook, mockFn, mutateArg }) => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(spy).toHaveBeenCalledWith({ queryKey: ['servers', SERVER_ID, 'members'] });
     expect(spy).toHaveBeenCalledWith({ queryKey: ['servers', SERVER_ID, 'audit-log'] });
+  });
+});
+
+describe('useMembers — enabled guard', () => {
+  it('stays idle when isHydrated is false, even with a valid serverId', () => {
+    useAuthStore.setState({ isHydrated: false, isAuthenticated: false });
+
+    const { result } = renderHook(() => useMembers(SERVER_ID), {
+      wrapper: createHookWrapper(),
+    });
+
+    expect(membersApi.getMembers).not.toHaveBeenCalled();
+    expect(result.current.fetchStatus).toBe('idle');
+  });
+
+  it('fires when auth is ready', async () => {
+    useAuthStore.setState({ isHydrated: true, isAuthenticated: true });
+
+    jest.mocked(membersApi.getMembers).mockResolvedValueOnce({ members: [] });
+
+    const { result } = renderHook(() => useMembers(SERVER_ID), {
+      wrapper: createHookWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    expect(membersApi.getMembers).toHaveBeenCalledWith(SERVER_ID);
   });
 });

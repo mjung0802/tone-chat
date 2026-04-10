@@ -62,7 +62,7 @@ describe('authStore', () => {
       useAuthStore.getState().setTokens(VALID_JWT, 'refresh-abc');
 
       expect(localStorage.getItem(`accessToken:${INSTANCE_A}`)).toBe(VALID_JWT);
-      expect(localStorage.getItem(`refreshToken:${INSTANCE_A}`)).toBe('refresh-abc');
+      expect(localStorage.getItem(`refreshToken:${INSTANCE_A}`)).toBeNull();
     });
 
     it('does not write to flat (unprefixed) keys', () => {
@@ -132,6 +132,7 @@ describe('authStore', () => {
 
     it('no tokens → only isHydrated', async () => {
       useInstanceStore.setState({ activeInstance: INSTANCE_A });
+      mockGetMe.mockRejectedValueOnce(new Error('Unauthorized'));
       await useAuthStore.getState().hydrate();
 
       const state = useAuthStore.getState();
@@ -143,9 +144,10 @@ describe('authStore', () => {
 
     it('apiGet not called when no tokens', async () => {
       useInstanceStore.setState({ activeInstance: INSTANCE_A });
+      mockGetMe.mockRejectedValueOnce(new Error('Unauthorized'));
       await useAuthStore.getState().hydrate();
 
-      expect(mockGetMe).not.toHaveBeenCalled();
+      expect(mockGetMe).toHaveBeenCalledTimes(1);
     });
 
     it('valid token + server validates → authenticated', async () => {
@@ -237,6 +239,7 @@ describe('authStore', () => {
       useInstanceStore.setState({ activeInstance: INSTANCE_A });
       localStorage.setItem(`accessToken:${INSTANCE_B}`, VALID_JWT);
       localStorage.setItem(`refreshToken:${INSTANCE_B}`, 'refresh-token');
+      mockGetMe.mockRejectedValueOnce(new Error('Unauthorized'));
 
       await useAuthStore.getState().hydrate();
 
@@ -244,7 +247,37 @@ describe('authStore', () => {
       expect(state.accessToken).toBeNull();
       expect(state.isAuthenticated).toBe(false);
       expect(state.isHydrated).toBe(true);
-      expect(mockGetMe).not.toHaveBeenCalled();
+      expect(mockGetMe).toHaveBeenCalledTimes(1);
+    });
+
+    it('server returns email_verified=true overrides stale false in storage', async () => {
+      useInstanceStore.setState({ activeInstance: INSTANCE_A });
+      localStorage.setItem(`accessToken:${INSTANCE_A}`, VALID_JWT);
+      localStorage.setItem(`emailVerified:${INSTANCE_A}`, 'false'); // stale cached value
+      mockGetMe.mockResolvedValueOnce(STUB_USER_RESPONSE); // email_verified: true
+
+      await useAuthStore.getState().hydrate();
+
+      const state = useAuthStore.getState();
+      expect(state.emailVerified).toBe(true);
+      expect(state.isAuthenticated).toBe(true);
+      expect(localStorage.getItem(`emailVerified:${INSTANCE_A}`)).toBe('true');
+    });
+
+    it('no accessToken but valid session cookie → authenticated', async () => {
+      useInstanceStore.setState({ activeInstance: INSTANCE_A });
+      // No tokens stored in localStorage for INSTANCE_A; on web, session is maintained
+      // via httpOnly cookie — the API client handles the 401→refresh transparently, so
+      // from hydrate's perspective getMe() simply resolves.
+      // Note: userId is set by setTokens() inside the client's refresh flow (not by hydrate
+      // directly), so it remains null in this unit test where the API client is mocked.
+      mockGetMe.mockResolvedValueOnce(STUB_USER_RESPONSE);
+
+      await useAuthStore.getState().hydrate();
+
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(true);
+      expect(state.isHydrated).toBe(true);
     });
   });
 
@@ -317,7 +350,7 @@ describe('authStore', () => {
 
       const state = useAuthStore.getState();
       expect(state.accessToken).toBe(VALID_JWT);
-      expect(state.refreshToken).toBe('refresh-a');
+      expect(state.refreshToken).toBeNull();
       expect(state.userId).toBe('user-123');
       expect(state.emailVerified).toBe(true);
       expect(state.isAuthenticated).toBe(false);
@@ -357,13 +390,13 @@ describe('authStore', () => {
 
       const state = useAuthStore.getState();
       expect(state.accessToken).toBe(EXPIRED_JWT);
-      expect(state.refreshToken).toBe('refresh-b');
+      expect(state.refreshToken).toBeNull();
 
       await loadInstanceTokens(INSTANCE_A);
 
       const stateA = useAuthStore.getState();
       expect(stateA.accessToken).toBe(VALID_JWT);
-      expect(stateA.refreshToken).toBe('refresh-a');
+      expect(stateA.refreshToken).toBeNull();
     });
   });
 });

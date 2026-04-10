@@ -13,11 +13,11 @@ attachmentsRouter.post('/upload', async (req: AuthRequest, res) => {
   const contentType = req.headers['content-type'] ?? 'application/octet-stream';
   const filename = (req.query['filename'] as string) ?? 'upload';
 
-  const result = await uploadAttachment(req.userId!, body, contentType, filename);
+  const result = await uploadAttachment(req.token!, body, contentType, filename);
   res.status(result.status).json(result.data);
 });
 
 attachmentsRouter.get('/:attachmentId', async (req: AuthRequest, res) => {
-  const result = await getAttachment(req.userId!, req.params['attachmentId'] as string);
+  const result = await getAttachment(req.token!, req.params['attachmentId'] as string);
   res.status(result.status).json(result.data);
 });

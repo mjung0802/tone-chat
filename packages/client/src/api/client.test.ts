@@ -33,6 +33,21 @@ beforeEach(() => {
 // ---------- tests (non-refresh) ----------
 
 describe('API client', () => {
+  it('includes credentials: "include" on all requests (web)', async () => {
+    configureAuth({
+      getAccessToken: () => null,
+      getRefreshToken: () => null,
+      setTokens: jest.fn(),
+      clearAuth: jest.fn(),
+    });
+    mockFetch.mockResolvedValueOnce(mockResponse(200, {}));
+
+    await get('/test');
+
+    const [, init] = mockFetch.mock.calls[0]!;
+    expect(init?.credentials).toBe('include');
+  });
+
   it('injects Authorization header when token exists', async () => {
     configureAuth({
       getAccessToken: () => 'my-token',
@@ -287,15 +302,13 @@ describe('API client', () => {
       clearAuth: mockClearAuth,
     });
 
-    mockFetch.mockResolvedValueOnce(
-      mockResponse(401, {
-        error: { code: 'UNAUTHORIZED', message: 'bad', status: 401 },
-      }),
-    );
+    mockFetch
+      .mockResolvedValueOnce(mockResponse(401, { error: { code: 'UNAUTHORIZED', message: 'bad', status: 401 } }))
+      .mockResolvedValueOnce(mockResponse(401, { error: { code: 'UNAUTHORIZED', message: 'no cookie', status: 401 } }));
 
     await expect(get('/protected')).rejects.toThrow(ApiClientError);
     expect(mockClearAuth).toHaveBeenCalled();
-    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
   it('on 401 when refresh fails (non-OK): calls clearAuth', async () => {
@@ -371,6 +384,77 @@ describe('API client', () => {
       .mockResolvedValueOnce(
         mockResponse(200, { accessToken: 'new-at', refreshToken: 'new-rt' }),
       ) // single refresh
+      .mockResolvedValueOnce(mockResponse(200, { d: 1 })) // get('/a') retry
+      .mockResolvedValueOnce(mockResponse(200, { d: 2 })); // get('/b') retry
+
+    const [r1, r2] = await Promise.all([get('/a'), get('/b')]);
+
+    expect(r1).toEqual({ d: 1 });
+    expect(r2).toEqual({ d: 2 });
+
+    const refreshCalls = mockFetch.mock.calls.filter(([url]) =>
+      String(url).includes('/auth/refresh'),
+    );
+    expect(refreshCalls).toHaveLength(1);
+  });
+
+  // ---------- web: cookie-based refresh (getRefreshToken always null) ----------
+
+  it('on 401 with no refresh token (web cookie): cookie refresh succeeds → retries', async () => {
+    const mockSetTokens = jest.fn();
+    configureAuth({
+      getAccessToken: () => 'expired-token',
+      getRefreshToken: () => null, // web: refresh token lives in httpOnly cookie
+      setTokens: mockSetTokens,
+      clearAuth: jest.fn(),
+    });
+
+    mockFetch
+      .mockResolvedValueOnce(mockResponse(401)) // original request
+      .mockResolvedValueOnce(mockResponse(200, { accessToken: 'new-at', refreshToken: 'new-rt' })) // cookie refresh
+      .mockResolvedValueOnce(mockResponse(200, { data: 'ok' })); // retry
+
+    const result = await get<{ data: string }>('/protected');
+
+    expect(result.data).toBe('ok');
+    expect(mockSetTokens).toHaveBeenCalledWith('new-at', 'new-rt');
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('on 401 with no refresh token (web cookie): refresh request sends null body and credentials: include', async () => {
+    configureAuth({
+      getAccessToken: () => 'expired-token',
+      getRefreshToken: () => null,
+      setTokens: jest.fn(),
+      clearAuth: jest.fn(),
+    });
+
+    mockFetch
+      .mockResolvedValueOnce(mockResponse(401))
+      .mockResolvedValueOnce(mockResponse(200, { accessToken: 'new-at', refreshToken: 'new-rt' }))
+      .mockResolvedValueOnce(mockResponse(200, {}));
+
+    await get('/protected');
+
+    const refreshCall = mockFetch.mock.calls.find(([url]) => String(url).includes('/auth/refresh'));
+    expect(refreshCall).toBeDefined();
+    const [, refreshInit] = refreshCall!;
+    expect(refreshInit?.body).toBeNull();
+    expect(refreshInit?.credentials).toBe('include');
+  });
+
+  it('two simultaneous 401s with no refresh token produce exactly one /auth/refresh call', async () => {
+    configureAuth({
+      getAccessToken: () => 'expired-token',
+      getRefreshToken: () => null, // web: refresh token in httpOnly cookie
+      setTokens: jest.fn(),
+      clearAuth: jest.fn(),
+    });
+
+    mockFetch
+      .mockResolvedValueOnce(mockResponse(401)) // get('/a') initial
+      .mockResolvedValueOnce(mockResponse(401)) // get('/b') initial
+      .mockResolvedValueOnce(mockResponse(200, { accessToken: 'new-at', refreshToken: 'new-rt' })) // single cookie refresh
       .mockResolvedValueOnce(mockResponse(200, { d: 1 })) // get('/a') retry
       .mockResolvedValueOnce(mockResponse(200, { d: 2 })); // get('/b') retry
 

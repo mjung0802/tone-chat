@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { config } from './config/index.js';
 import { requireAuth } from './shared/middleware/auth.js';
 import { errorHandler } from './shared/middleware/errorHandler.js';
@@ -25,6 +26,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+app.use(cookieParser(config.cookieSecret));
 
 app.use('/api/v1/health', healthRouter);
 

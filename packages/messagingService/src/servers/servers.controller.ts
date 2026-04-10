@@ -5,7 +5,7 @@ import { ServerMember } from '../members/serverMember.model.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
 
 export async function createServer(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const { name, description, visibility } = req.body as { name: string; description?: string; visibility?: string };
 
   if (!name) {
@@ -33,7 +33,7 @@ export async function getServer(req: Request, res: Response): Promise<void> {
 }
 
 export async function listServers(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
 
   // Return servers the user is a member of
   const memberships = await ServerMember.find({ userId }).select('serverId');
@@ -44,7 +44,7 @@ export async function listServers(req: Request, res: Response): Promise<void> {
 }
 
 export async function updateServer(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const server = await Server.findById(req.params['serverId']);
 
   if (!server) {
@@ -65,7 +65,7 @@ export async function updateServer(req: Request, res: Response): Promise<void> {
 }
 
 export async function transferOwnership(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const server = await Server.findById(req.params['serverId']);
 
   if (!server) {
@@ -117,7 +117,7 @@ export async function updateInviteSettings(req: Request, res: Response): Promise
 }
 
 export async function deleteServer(req: Request, res: Response): Promise<void> {
-  const userId = req.headers['x-user-id'] as string;
+  const userId = req.userId!;
   const server = await Server.findById(req.params['serverId']);
 
   if (!server) {

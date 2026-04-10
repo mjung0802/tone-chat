@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
 
-type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>> & { userId?: string };
 type TestResponse = Response & { statusCode: number; _json: unknown };
 
 function assertErrorCode(error: unknown, code: string): true {
@@ -25,7 +25,7 @@ mock.module('./message.model.js', {
 const { toggleReaction } = await import('./reactions.controller.js');
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
+  return { body: {}, params: {}, headers: {}, query: {}, userId: undefined, ...overrides } as Request;
 }
 function makeRes(): TestResponse {
   const res = { statusCode: 200, _json: undefined } as TestResponse;
@@ -41,7 +41,7 @@ describe('toggleReaction', () => {
   it('returns 403 MUTED when user is muted', async () => {
     const res = makeRes();
     const req = makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { channelId: 'c1', messageId: 'm1' },
       body: { emoji: '\u{1F44D}' },
     });
@@ -54,7 +54,7 @@ describe('toggleReaction', () => {
   it('returns 400 when emoji is missing', async () => {
     const res = makeRes();
     await toggleReaction(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { channelId: 'c1', messageId: 'm1' },
       body: {},
     }), res);
@@ -65,7 +65,7 @@ describe('toggleReaction', () => {
   it('returns 400 when emoji is empty string', async () => {
     const res = makeRes();
     await toggleReaction(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { channelId: 'c1', messageId: 'm1' },
       body: { emoji: '   ' },
     }), res);
@@ -76,7 +76,7 @@ describe('toggleReaction', () => {
   it('returns 400 when emoji is too long', async () => {
     const res = makeRes();
     await toggleReaction(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { channelId: 'c1', messageId: 'm1' },
       body: { emoji: 'a'.repeat(33) },
     }), res);
@@ -88,7 +88,7 @@ describe('toggleReaction', () => {
     mockMessageFindOne.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => toggleReaction(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { channelId: 'c1', messageId: 'm1' },
         body: { emoji: '\u{1F44D}' },
       }), makeRes()),
@@ -105,7 +105,7 @@ describe('toggleReaction', () => {
 
     const res = makeRes();
     await toggleReaction(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { channelId: 'c1', messageId: 'm1' },
       body: { emoji: '\u{1F44D}' },
     }), res);
@@ -126,7 +126,7 @@ describe('toggleReaction', () => {
 
     const res = makeRes();
     await toggleReaction(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { channelId: 'c1', messageId: 'm1' },
       body: { emoji: '\u{1F44D}' },
     }), res);
@@ -144,7 +144,7 @@ describe('toggleReaction', () => {
 
     const res = makeRes();
     await toggleReaction(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { channelId: 'c1', messageId: 'm1' },
       body: { emoji: '\u{1F44D}' },
     }), res);
@@ -162,7 +162,7 @@ describe('toggleReaction', () => {
 
     const res = makeRes();
     await toggleReaction(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { channelId: 'c1', messageId: 'm1' },
       body: { emoji: '\u{1F44D}' },
     }), res);
@@ -184,7 +184,7 @@ describe('toggleReaction', () => {
 
     const res = makeRes();
     await toggleReaction(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { channelId: 'c1', messageId: 'm1' },
       body: { emoji: '\u{1F195}' },
     }), res);
@@ -206,7 +206,7 @@ describe('toggleReaction', () => {
 
     const res = makeRes();
     await toggleReaction(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { channelId: 'c1', messageId: 'm1' },
       body: { emoji: '0' },
     }), res);

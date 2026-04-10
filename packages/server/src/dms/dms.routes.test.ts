@@ -43,6 +43,7 @@ type RouterLayer = { route?: { path?: string; methods?: Record<string, boolean>;
 
 type DmsReq = {
   userId: string;
+  token: string;
   params: Record<string, string>;
   query: Record<string, string>;
   body: unknown;
@@ -102,7 +103,7 @@ describe('POST /:otherUserId', () => {
   });
 
   it('returns 400 CANNOT_DM_SELF when otherUserId === userId', async () => {
-    const req: DmsReq = { userId: 'user-1', params: { otherUserId: 'user-1' }, query: {}, body: {} };
+    const req: DmsReq = { userId: 'user-1', token: 'mock-token', params: { otherUserId: 'user-1' }, query: {}, body: {} };
     const res = makeRes();
 
     await postOtherUserHandler(req, res);
@@ -116,7 +117,7 @@ describe('POST /:otherUserId', () => {
   it('returns 403 BLOCKED when bidirectional block check returns true', async () => {
     mockIsBlockedBidirectional.mock.mockImplementation(async () => true);
 
-    const req: DmsReq = { userId: 'user-1', params: { otherUserId: 'user-2' }, query: {}, body: {} };
+    const req: DmsReq = { userId: 'user-1', token: 'mock-token', params: { otherUserId: 'user-2' }, query: {}, body: {} };
     const res = makeRes();
 
     await postOtherUserHandler(req, res);
@@ -133,7 +134,7 @@ describe('POST /:otherUserId', () => {
       data: { conversation: { _id: 'conv-1', participantIds: ['user-1', 'user-2'] } },
     }));
 
-    const req: DmsReq = { userId: 'user-1', params: { otherUserId: 'user-2' }, query: {}, body: {} };
+    const req: DmsReq = { userId: 'user-1', token: 'mock-token', params: { otherUserId: 'user-2' }, query: {}, body: {} };
     const res = makeRes();
 
     await postOtherUserHandler(req, res);
@@ -141,7 +142,7 @@ describe('POST /:otherUserId', () => {
     assert.equal(res.statusCode, 200);
     assert.deepEqual(res._json, { conversation: { _id: 'conv-1', participantIds: ['user-1', 'user-2'] } });
     assert.equal(mockGetOrCreateConversation.mock.callCount(), 1);
-    assert.deepEqual(mockGetOrCreateConversation.mock.calls[0]!.arguments, ['user-1', 'user-2']);
+    assert.deepEqual(mockGetOrCreateConversation.mock.calls[0]!.arguments, ['mock-token', 'user-2']);
   });
 });
 
@@ -175,6 +176,7 @@ describe('POST /:conversationId/messages', () => {
 
     const req: DmsReq = {
       userId: 'user-1',
+      token: 'mock-token',
       params: { conversationId: 'conv-1' },
       query: {},
       body: { content: 'hello' },
@@ -201,6 +203,7 @@ describe('POST /:conversationId/messages', () => {
 
     const req: DmsReq = {
       userId: 'user-1',
+      token: 'mock-token',
       params: { conversationId: 'conv-1' },
       query: {},
       body: { content: 'hello' },
@@ -212,7 +215,7 @@ describe('POST /:conversationId/messages', () => {
     assert.equal(res.statusCode, 201);
     assert.deepEqual(res._json, { message: { _id: 'msg-1', content: 'hello' } });
     assert.equal(mockSendDmMessage.mock.callCount(), 1);
-    assert.deepEqual(mockSendDmMessage.mock.calls[0]!.arguments, ['user-1', 'conv-1', { content: 'hello' }]);
+    assert.deepEqual(mockSendDmMessage.mock.calls[0]!.arguments, ['mock-token', 'conv-1', { content: 'hello' }]);
   });
 
   it('emits dm:new_message and dm:notification on successful send', async () => {
@@ -231,6 +234,7 @@ describe('POST /:conversationId/messages', () => {
 
     const req: DmsReq = {
       userId: 'user-1',
+      token: 'mock-token',
       params: { conversationId: 'conv-1' },
       query: {},
       body: { content: 'hello world' },
@@ -272,6 +276,7 @@ describe('POST /:conversationId/messages', () => {
 
     const req: DmsReq = {
       userId: 'user-1',
+      token: 'mock-token',
       params: { conversationId: 'conv-1' },
       query: {},
       body: {},
@@ -298,6 +303,7 @@ describe('POST /:conversationId/messages', () => {
 
     const req: DmsReq = {
       userId: 'user-1',
+      token: 'mock-token',
       params: { conversationId: 'conv-1' },
       query: {},
       body: { content: 'hello' },
@@ -330,6 +336,7 @@ describe('POST /:conversationId/messages', () => {
 
     const req: DmsReq = {
       userId: 'user-1',
+      token: 'mock-token',
       params: { conversationId: 'conv-1' },
       query: {},
       body: { content: longContent },
@@ -363,6 +370,7 @@ describe('POST /:conversationId/messages', () => {
 
     const req: DmsReq = {
       userId: 'user-1',
+      token: 'mock-token',
       params: { conversationId: 'conv-1' },
       query: {},
       body: { attachmentIds: ['att-1'] },

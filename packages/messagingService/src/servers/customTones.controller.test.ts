@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
 
-type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers'>>;
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers'>> & { userId?: string };
 type TestResponse = Response & { statusCode: number; _json: unknown };
 
 const mockServerFindById = mock.fn<AnyFn>();
@@ -17,7 +17,7 @@ mock.module('./server.model.js', {
 const { listCustomTones, addCustomTone, removeCustomTone } = await import('./customTones.controller.js');
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: { 'x-user-id': 'u1' }, ...overrides } as Request;
+  return { body: {}, params: {}, headers: {}, userId: 'u1', ...overrides } as Request;
 }
 
 function makeRes(): TestResponse {

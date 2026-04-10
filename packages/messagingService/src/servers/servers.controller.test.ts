@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
 import type { IServer } from './server.model.js';
 
-type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>> & { userId?: string };
 type TestResponse = Response & { statusCode: number; _json: unknown };
 
 function assertErrorCode(error: unknown, code: string): true {
@@ -45,7 +45,7 @@ mock.module('../members/serverMember.model.js', {
 const { createServer, getServer, listServers, updateServer, deleteServer, updateInviteSettings } = await import('./servers.controller.js');
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
+  return { body: {}, params: {}, headers: {}, query: {}, userId: undefined, ...overrides } as Request;
 }
 
 function makeReqWithServer(server: unknown, overrides: RequestOverrides = {}): Request {
@@ -70,7 +70,7 @@ describe('createServer', () => {
 
   it('returns 400 when name missing', async () => {
     const res = makeRes();
-    await createServer(makeReq({ headers: { 'x-user-id': 'u1' }, body: {} }), res);
+    await createServer(makeReq({ userId: 'u1', body: {} }), res);
     assert.equal(res.statusCode, 400);
     assert.equal((res._json as { error: { code: string } }).error.code, 'MISSING_FIELDS');
   });
@@ -82,7 +82,7 @@ describe('createServer', () => {
     mockMemberCreate.mock.mockImplementation(async () => ({}));
 
     const res = makeRes();
-    await createServer(makeReq({ headers: { 'x-user-id': 'u1' }, body: { name: 'Test' } }), res);
+    await createServer(makeReq({ userId: 'u1', body: { name: 'Test' } }), res);
 
     assert.equal(res.statusCode, 201);
     assert.deepEqual((res._json as { server: unknown }).server, server);
@@ -140,7 +140,7 @@ describe('updateServer', () => {
   it('throws SERVER_NOT_FOUND when server is null', async () => {
     mockServerFindById.mock.mockImplementation(async () => null);
     await assert.rejects(
-      () => updateServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
+      () => updateServer(makeReq({ userId: 'u1', params: { serverId: 's1' } }), makeRes()),
       (error) => assertErrorCode(error, 'SERVER_NOT_FOUND'),
     );
   });
@@ -148,7 +148,7 @@ describe('updateServer', () => {
   it('throws FORBIDDEN when not owner', async () => {
     mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'other' }));
     await assert.rejects(
-      () => updateServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
+      () => updateServer(makeReq({ userId: 'u1', params: { serverId: 's1' } }), makeRes()),
       (error) => assertErrorCode(error, 'FORBIDDEN'),
     );
   });
@@ -159,7 +159,7 @@ describe('updateServer', () => {
 
     const res = makeRes();
     await updateServer(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1' },
       body: { name: 'New', description: 'desc' },
     }), res);
@@ -176,7 +176,7 @@ describe('updateServer', () => {
 
     const res = makeRes();
     await updateServer(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1' },
       body: { icon: 'att-icon-001' },
     }), res);
@@ -193,7 +193,7 @@ describe('deleteServer', () => {
   it('throws SERVER_NOT_FOUND when server is null', async () => {
     mockServerFindById.mock.mockImplementation(async () => null);
     await assert.rejects(
-      () => deleteServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
+      () => deleteServer(makeReq({ userId: 'u1', params: { serverId: 's1' } }), makeRes()),
       (error) => assertErrorCode(error, 'SERVER_NOT_FOUND'),
     );
   });
@@ -201,7 +201,7 @@ describe('deleteServer', () => {
   it('throws FORBIDDEN when not owner', async () => {
     mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'other' }));
     await assert.rejects(
-      () => deleteServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), makeRes()),
+      () => deleteServer(makeReq({ userId: 'u1', params: { serverId: 's1' } }), makeRes()),
       (error) => assertErrorCode(error, 'FORBIDDEN'),
     );
   });
@@ -211,7 +211,7 @@ describe('deleteServer', () => {
     mockServerFindById.mock.mockImplementation(async () => ({ ownerId: 'u1', deleteOne: mockDeleteOne }));
 
     const res = makeRes();
-    await deleteServer(makeReq({ headers: { 'x-user-id': 'u1' }, params: { serverId: 's1' } }), res);
+    await deleteServer(makeReq({ userId: 'u1', params: { serverId: 's1' } }), res);
     assert.equal(res.statusCode, 204);
     assert.equal(mockDeleteOne.mock.callCount(), 1);
   });

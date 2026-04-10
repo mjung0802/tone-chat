@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
 
-type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>>;
+type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>> & { userId?: string };
 type TestResponse = Response & { statusCode: number; _json: unknown };
 
 function assertErrorCode(error: unknown, code: string): true {
@@ -38,7 +38,7 @@ mock.module('../members/serverMember.model.js', {
 const { createMessage, listMessages, updateMessage, deleteMessage } = await import('./messages.controller.js');
 
 function makeReq(overrides: RequestOverrides = {}): Request {
-  return { body: {}, params: {}, headers: {}, query: {}, ...overrides } as Request;
+  return { body: {}, params: {}, headers: {}, query: {}, userId: undefined, ...overrides } as Request;
 }
 function makeRes(): TestResponse {
   const res = { statusCode: 200, _json: undefined } as TestResponse;
@@ -54,7 +54,7 @@ describe('createMessage', () => {
   it('returns 400 when content missing', async () => {
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: {},
     }), res);
@@ -68,7 +68,7 @@ describe('createMessage', () => {
 
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { attachmentIds: ['att-1'] },
     }), res);
@@ -79,7 +79,7 @@ describe('createMessage', () => {
   it('returns 400 with empty attachments and no content', async () => {
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { attachmentIds: [] },
     }), res);
@@ -93,7 +93,7 @@ describe('createMessage', () => {
 
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'hello' },
     }), res);
@@ -154,7 +154,7 @@ describe('createMessage — mentions', () => {
   it('stores mentions array when provided', async () => {
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'hello', mentions: ['u2', 'u3'] },
     }), res);
@@ -166,7 +166,7 @@ describe('createMessage — mentions', () => {
   it('returns 400 for invalid mentions (non-array)', async () => {
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'hello', mentions: 'not-an-array' },
     }), res);
@@ -177,7 +177,7 @@ describe('createMessage — mentions', () => {
   it('returns 400 for too many mentions (>20)', async () => {
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'hello', mentions: Array.from({ length: 21 }, (_, i) => `u${i}`) },
     }), res);
@@ -188,7 +188,7 @@ describe('createMessage — mentions', () => {
   it('returns 400 for mention with string >36 chars', async () => {
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'hello', mentions: ['a'.repeat(37)] },
     }), res);
@@ -199,7 +199,7 @@ describe('createMessage — mentions', () => {
   it('returns 400 for non-string replyToId (NoSQL injection guard)', async () => {
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'hello', replyToId: { $gt: '' } },
     }), res);
@@ -210,7 +210,7 @@ describe('createMessage — mentions', () => {
   it('defaults mentions to empty array when not provided', async () => {
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'hello' },
     }), res);
@@ -241,7 +241,7 @@ describe('createMessage — replyTo', () => {
 
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'reply', replyToId: 'orig-msg' },
     }), res);
@@ -261,7 +261,7 @@ describe('createMessage — replyTo', () => {
 
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'reply', replyToId: 'nonexistent' },
     }), res);
@@ -283,7 +283,7 @@ describe('createMessage — replyTo', () => {
 
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'reply', replyToId: 'orig-msg', mentions: ['author1', 'u2'] },
     }), res);
@@ -307,7 +307,7 @@ describe('createMessage — replyTo', () => {
 
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'reply', replyToId: 'orig-msg' },
     }), res);
@@ -331,7 +331,7 @@ describe('createMessage — replyTo', () => {
 
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'reply', replyToId: 'orig-msg' },
     }), res);
@@ -351,7 +351,7 @@ describe('createMessage — tone', () => {
   it('stores tone when provided as valid string', async () => {
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'hello', tone: 'j' },
     }), res);
@@ -362,7 +362,7 @@ describe('createMessage — tone', () => {
   it('returns 400 with code INVALID_TONE for non-string tone', async () => {
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'hello', tone: { $gt: '' } },
     }), res);
@@ -373,7 +373,7 @@ describe('createMessage — tone', () => {
   it('returns 400 for tone exceeding 50 chars', async () => {
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'hello', tone: 'a'.repeat(51) },
     }), res);
@@ -384,7 +384,7 @@ describe('createMessage — tone', () => {
   it('returns 400 for empty string tone', async () => {
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'hello', tone: '' },
     }), res);
@@ -395,7 +395,7 @@ describe('createMessage — tone', () => {
   it('creates message without tone when tone is undefined', async () => {
     const res = makeRes();
     await createMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { serverId: 's1', channelId: 'c1' },
       body: { content: 'hello' },
     }), res);
@@ -412,7 +412,7 @@ describe('deleteMessage', () => {
     mockMessageFindOne.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => deleteMessage(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { channelId: 'c1', messageId: 'm1' },
       }), makeRes()),
       (error) => assertErrorCode(error, 'MESSAGE_NOT_FOUND'),
@@ -423,7 +423,7 @@ describe('deleteMessage', () => {
     mockMessageFindOne.mock.mockImplementation(async () => ({ authorId: 'other' }));
     await assert.rejects(
       () => deleteMessage(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { channelId: 'c1', messageId: 'm1' },
       }), makeRes()),
       (error) => assertErrorCode(error, 'FORBIDDEN'),
@@ -436,7 +436,7 @@ describe('deleteMessage', () => {
 
     const res = makeRes();
     await deleteMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { channelId: 'c1', messageId: 'm1' },
     }), res);
 
@@ -452,7 +452,7 @@ describe('updateMessage', () => {
     mockMessageFindOne.mock.mockImplementation(async () => null);
     await assert.rejects(
       () => updateMessage(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { channelId: 'c1', messageId: 'm1' },
         body: { content: 'edited' },
       }), makeRes()),
@@ -464,7 +464,7 @@ describe('updateMessage', () => {
     mockMessageFindOne.mock.mockImplementation(async () => ({ authorId: 'other' }));
     await assert.rejects(
       () => updateMessage(makeReq({
-        headers: { 'x-user-id': 'u1' },
+        userId: 'u1',
         params: { channelId: 'c1', messageId: 'm1' },
         body: { content: 'edited' },
       }), makeRes()),
@@ -478,7 +478,7 @@ describe('updateMessage', () => {
 
     const res = makeRes();
     await updateMessage(makeReq({
-      headers: { 'x-user-id': 'u1' },
+      userId: 'u1',
       params: { channelId: 'c1', messageId: 'm1' },
       body: { content: 'edited' },
     }), res);

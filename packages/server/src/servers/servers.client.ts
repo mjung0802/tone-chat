@@ -3,42 +3,42 @@ import { config } from '../config/index.js';
 
 const base = () => config.messagingServiceUrl;
 
-export function createServer(userId: string, body: Record<string, unknown>) {
-  return serviceRequest(base(), '/servers', { method: 'POST', userId, body });
+export function createServer(userToken: string, body: Record<string, unknown>) {
+  return serviceRequest(base(), '/servers', { method: 'POST', userToken, body });
 }
 
-export function listServers(userId: string) {
-  return serviceRequest(base(), '/servers', { userId });
+export function listServers(userToken: string) {
+  return serviceRequest(base(), '/servers', { userToken });
 }
 
-export function getServer(userId: string, serverId: string) {
-  return serviceRequest(base(), `/servers/${serverId}`, { userId });
+export function getServer(userToken: string, serverId: string) {
+  return serviceRequest(base(), `/servers/${serverId}`, { userToken });
 }
 
-export function updateServer(userId: string, serverId: string, body: Record<string, unknown>) {
-  return serviceRequest(base(), `/servers/${serverId}`, { method: 'PATCH', userId, body });
+export function updateServer(userToken: string, serverId: string, body: Record<string, unknown>) {
+  return serviceRequest(base(), `/servers/${serverId}`, { method: 'PATCH', userToken, body });
 }
 
-export function deleteServer(userId: string, serverId: string) {
-  return serviceRequest(base(), `/servers/${serverId}`, { method: 'DELETE', userId });
+export function deleteServer(userToken: string, serverId: string) {
+  return serviceRequest(base(), `/servers/${serverId}`, { method: 'DELETE', userToken });
 }
 
-export function listCustomTones(userId: string, serverId: string) {
-  return serviceRequest(base(), `/servers/${serverId}/tones`, { userId });
+export function listCustomTones(userToken: string, serverId: string) {
+  return serviceRequest(base(), `/servers/${serverId}/tones`, { userToken });
 }
 
-export function addCustomTone(userId: string, serverId: string, body: Record<string, unknown>) {
-  return serviceRequest(base(), `/servers/${serverId}/tones`, { method: 'POST', userId, body });
+export function addCustomTone(userToken: string, serverId: string, body: Record<string, unknown>) {
+  return serviceRequest(base(), `/servers/${serverId}/tones`, { method: 'POST', userToken, body });
 }
 
-export function removeCustomTone(userId: string, serverId: string, toneKey: string) {
-  return serviceRequest(base(), `/servers/${serverId}/tones/${toneKey}`, { method: 'DELETE', userId });
+export function removeCustomTone(userToken: string, serverId: string, toneKey: string) {
+  return serviceRequest(base(), `/servers/${serverId}/tones/${toneKey}`, { method: 'DELETE', userToken });
 }
 
-export function transferOwnership(userId: string, serverId: string, body: Record<string, unknown>) {
-  return serviceRequest(base(), `/servers/${serverId}/transfer`, { method: 'POST', userId, body });
+export function transferOwnership(userToken: string, serverId: string, body: Record<string, unknown>) {
+  return serviceRequest(base(), `/servers/${serverId}/transfer`, { method: 'POST', userToken, body });
 }
 
-export function updateInviteSettings(userId: string, serverId: string, body: Record<string, unknown>) {
-  return serviceRequest(base(), `/servers/${serverId}/invite-settings`, { method: 'PATCH', userId, body });
+export function updateInviteSettings(userToken: string, serverId: string, body: Record<string, unknown>) {
+  return serviceRequest(base(), `/servers/${serverId}/invite-settings`, { method: 'PATCH', userToken, body });
 }
