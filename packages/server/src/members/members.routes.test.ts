@@ -183,6 +183,31 @@ describe('GET / (list members with user enrichment)', () => {
     }
   });
 
+  it('fires both getUsersBatch calls in parallel for 150 members', async () => {
+    const callOrder: Array<'start' | 'end'> = [];
+    const ids = Array.from({ length: 150 }, (_, i) => `id-${i}`);
+    const members = ids.map(makeMember);
+
+    mockListMembers.mock.mockImplementation(async () => ({
+      status: 200,
+      data: { members },
+    }));
+    mockGetUsersBatch.mock.mockImplementation(async (_token: string, batch: unknown) => {
+      callOrder.push('start');
+      await Promise.resolve(); // yield so concurrent calls can interleave
+      callOrder.push('end');
+      return { status: 200, data: { users: (batch as string[]).map(makeUser) } };
+    });
+
+    await getHandler(makeReq(), makeRes());
+
+    // Sequential: ['start','end','start','end']
+    // Parallel:   ['start','start','end','end'] (second start before first end)
+    assert.equal(callOrder[0], 'start');
+    assert.equal(callOrder[1], 'start');
+    assert.equal(mockGetUsersBatch.mock.callCount(), 2);
+  });
+
   it('enriches members from successful batches even when another batch fails', async () => {
     const ids = Array.from({ length: 150 }, (_, i) => `id-${i}`);
     const members = ids.map(makeMember);
