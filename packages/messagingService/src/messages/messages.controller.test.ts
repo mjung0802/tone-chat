@@ -51,6 +51,28 @@ function makeRes(): TestResponse {
 describe('createMessage', () => {
   beforeEach(() => mockMessageCreate.mock.resetCalls());
 
+  it('returns 400 INVALID_REQUEST when req.body is null', async () => {
+    const res = makeRes();
+    await createMessage(makeReq({
+      userId: 'u1',
+      params: { serverId: 's1', channelId: 'c1' },
+      body: null,
+    }), res);
+    assert.equal(res.statusCode, 400);
+    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_REQUEST');
+  });
+
+  it('returns 400 INVALID_REQUEST when req.body is an array', async () => {
+    const res = makeRes();
+    await createMessage(makeReq({
+      userId: 'u1',
+      params: { serverId: 's1', channelId: 'c1' },
+      body: [],
+    }), res);
+    assert.equal(res.statusCode, 400);
+    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_REQUEST');
+  });
+
   it('returns 400 when content missing', async () => {
     const res = makeRes();
     await createMessage(makeReq({
@@ -116,6 +138,19 @@ describe('listMessages', () => {
     assert.equal(res.statusCode, 200);
     // messages.reverse() is called
     assert.deepEqual((res._json as { messages: unknown[] }).messages, [{ _id: 'm1' }, { _id: 'm2' }]);
+  });
+
+  it('uses default limit of 50 when limit is non-numeric', async () => {
+    let capturedLimit: number | undefined;
+    mockMessageFind.mock.mockImplementation(() => ({
+      sort: () => ({
+        limit: (n: number) => { capturedLimit = n; return []; },
+      }),
+    }));
+
+    const res = makeRes();
+    await listMessages(makeReq({ params: { channelId: 'c1' }, query: { limit: 'foo' } }), res);
+    assert.equal(capturedLimit, 50);
   });
 
   it('caps limit at 100', async () => {

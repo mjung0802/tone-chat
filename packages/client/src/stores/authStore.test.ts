@@ -2,6 +2,7 @@ import { useAuthStore, loadInstanceTokens } from './authStore';
 import { useInstanceStore } from './instanceStore';
 import { VALID_JWT, EXPIRED_JWT, MALFORMED_JWT } from '../test-utils/fixtures';
 import { getMe } from '../api/users.api';
+import { ApiClientError } from '../api/client';
 import type { UserResponse } from '../types/api.types';
 
 jest.mock('../api/users.api');
@@ -164,11 +165,11 @@ describe('authStore', () => {
       expect(state.userId).toBe('user-123');
     });
 
-    it('valid token + server rejects → not authenticated', async () => {
+    it('valid token + server rejects with 401 → not authenticated', async () => {
       useInstanceStore.setState({ activeInstance: INSTANCE_A });
       localStorage.setItem(`accessToken:${INSTANCE_A}`, VALID_JWT);
       localStorage.setItem(`refreshToken:${INSTANCE_A}`, 'refresh-token');
-      mockGetMe.mockRejectedValueOnce(new Error('Unauthorized'));
+      mockGetMe.mockRejectedValueOnce(new ApiClientError('INVALID_TOKEN', 'Unauthorized', 401));
 
       await useAuthStore.getState().hydrate();
 
@@ -192,11 +193,11 @@ describe('authStore', () => {
       expect(state.isHydrated).toBe(true);
     });
 
-    it('expired access + refresh token + server rejects → not authenticated', async () => {
+    it('expired access + refresh token + server rejects with 401 → not authenticated', async () => {
       useInstanceStore.setState({ activeInstance: INSTANCE_A });
       localStorage.setItem(`accessToken:${INSTANCE_A}`, EXPIRED_JWT);
       localStorage.setItem(`refreshToken:${INSTANCE_A}`, 'refresh-token');
-      mockGetMe.mockRejectedValueOnce(new Error('Unauthorized'));
+      mockGetMe.mockRejectedValueOnce(new ApiClientError('INVALID_TOKEN', 'Unauthorized', 401));
 
       await useAuthStore.getState().hydrate();
 
@@ -207,7 +208,7 @@ describe('authStore', () => {
       expect(state.refreshToken).toBeNull();
     });
 
-    it('valid token + network error → not authenticated', async () => {
+    it('valid token + network error → tokens preserved, still authenticated', async () => {
       useInstanceStore.setState({ activeInstance: INSTANCE_A });
       localStorage.setItem(`accessToken:${INSTANCE_A}`, VALID_JWT);
       localStorage.setItem(`refreshToken:${INSTANCE_A}`, 'refresh-token');
@@ -216,9 +217,23 @@ describe('authStore', () => {
       await useAuthStore.getState().hydrate();
 
       const state = useAuthStore.getState();
-      expect(state.isAuthenticated).toBe(false);
+      expect(state.isAuthenticated).toBe(true);
       expect(state.isHydrated).toBe(true);
-      expect(state.accessToken).toBeNull();
+      expect(state.accessToken).toBe(VALID_JWT);
+    });
+
+    it('valid token + non-401 server error → tokens preserved, still authenticated', async () => {
+      useInstanceStore.setState({ activeInstance: INSTANCE_A });
+      localStorage.setItem(`accessToken:${INSTANCE_A}`, VALID_JWT);
+      localStorage.setItem(`refreshToken:${INSTANCE_A}`, 'refresh-token');
+      mockGetMe.mockRejectedValueOnce(new ApiClientError('SERVER_ERROR', 'Internal server error', 500));
+
+      await useAuthStore.getState().hydrate();
+
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(true);
+      expect(state.isHydrated).toBe(true);
+      expect(state.accessToken).toBe(VALID_JWT);
     });
 
     it('server validates → emailVerified preserved', async () => {

@@ -37,6 +37,10 @@ export async function serviceRequest(
     return { status: 204, data: null };
   }
 
-  const data: unknown = await res.json();
-  return { status: res.status, data };
+  try {
+    const data: unknown = await res.json();
+    return { status: res.status, data };
+  } catch {
+    return { status: res.status, data: null };
+  }
 }

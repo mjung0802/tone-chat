@@ -69,4 +69,22 @@ describe('serviceRequest', () => {
     const result = await serviceRequest('http://svc', '/path');
     assert.deepEqual(result, { status: 200, data: payload });
   });
+
+  it('returns status and null data when response body is not valid JSON', async () => {
+    mockFetch.mock.mockImplementation(async () => ({
+      status: 502,
+      json: async () => { throw new SyntaxError('Unexpected token < in JSON'); },
+    }));
+    const result = await serviceRequest('http://svc', '/path');
+    assert.deepEqual(result, { status: 502, data: null });
+  });
+
+  it('returns status and null data on any JSON parse failure', async () => {
+    mockFetch.mock.mockImplementation(async () => ({
+      status: 500,
+      json: async () => { throw new SyntaxError('malformed'); },
+    }));
+    const result = await serviceRequest('http://svc', '/path');
+    assert.deepEqual(result, { status: 500, data: null });
+  });
 });

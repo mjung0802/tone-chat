@@ -6,6 +6,12 @@ import { AppError } from '../shared/middleware/errorHandler.js';
 export async function createMessage(req: Request, res: Response): Promise<void> {
   const userId = req.userId!;
   const { serverId, channelId } = req.params;
+
+  if (typeof req.body !== 'object' || req.body === null || Array.isArray(req.body)) {
+    res.status(400).json({ error: { code: 'INVALID_REQUEST', message: 'Request body must be a JSON object', status: 400 } });
+    return;
+  }
+
   const { content, attachmentIds, replyToId, mentions: rawMentions, tone: rawTone } = req.body as {
     content: string;
     attachmentIds?: string[];
@@ -101,7 +107,8 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
 
 export async function listMessages(req: Request, res: Response): Promise<void> {
   const { channelId } = req.params;
-  const limit = Math.min(Number(req.query['limit'] ?? 50), 100);
+  const rawLimit = Number(req.query['limit'] ?? 50);
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 50;
   const before = req.query['before'] as string | undefined;
 
   const filter: Record<string, unknown> = { channelId };

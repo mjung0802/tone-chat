@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Platform } from 'react-native';
 import { getMe } from '../api/users.api';
+import { ApiClientError } from '../api/client';
 import { useInstanceStore } from './instanceStore';
 
 interface AuthState {
@@ -180,17 +181,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (emailChanged && instance) {
         void persistTokens(instance, get().accessToken, get().refreshToken, user.email_verified);
       }
-    } catch {
-      set({
-        accessToken: null,
-        refreshToken: null,
-        userId: null,
-        isAuthenticated: false,
-        emailVerified: false,
-        isHydrated: true,
-      });
-      if (instance) {
-        void persistTokens(instance, null, null, false);
+    } catch (err: unknown) {
+      if (err instanceof ApiClientError && err.status === 401) {
+        set({
+          accessToken: null,
+          refreshToken: null,
+          userId: null,
+          isAuthenticated: false,
+          emailVerified: false,
+          isHydrated: true,
+        });
+        if (instance) {
+          void persistTokens(instance, null, null, false);
+        }
+      } else {
+        // Network errors or other failures: tokens remain; assume the user is still valid
+        set({ isAuthenticated: get().accessToken !== null, isHydrated: true });
       }
     }
   },
