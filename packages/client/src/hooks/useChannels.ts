@@ -4,24 +4,22 @@ import type { CreateChannelRequest, UpdateChannelRequest } from '../types/api.ty
 import { useAuthStore } from '../stores/authStore';
 
 export function useChannels(serverId: string) {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId, 'channels'],
     queryFn: () => channelsApi.getChannels(serverId),
     select: (data) => data.channels,
-    enabled: !!serverId && isHydrated && isAuthenticated,
+    enabled: !!serverId && authReady,
   });
 }
 
 export function useChannel(serverId: string, channelId: string) {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId, 'channels', channelId],
     queryFn: () => channelsApi.getChannel(serverId, channelId),
     select: (data) => data.channel,
-    enabled: !!serverId && !!channelId && isHydrated && isAuthenticated,
+    enabled: !!serverId && !!channelId && authReady,
   });
 }
 

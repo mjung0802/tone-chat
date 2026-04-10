@@ -4,13 +4,12 @@ import type { AddCustomToneRequest } from '../types/api.types';
 import { useAuthStore } from '../stores/authStore';
 
 export function useCustomTones(serverId: string) {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId, 'customTones'],
     queryFn: () => tonesApi.getCustomTones(serverId),
     select: (data) => data.customTones,
-    enabled: !!serverId && isHydrated && isAuthenticated,
+    enabled: !!serverId && authReady,
   });
 }
 

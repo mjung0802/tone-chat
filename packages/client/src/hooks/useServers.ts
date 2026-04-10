@@ -4,24 +4,22 @@ import type { CreateServerRequest, UpdateServerRequest, TransferOwnershipRequest
 import { useAuthStore } from '../stores/authStore';
 
 export function useServers() {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['servers'],
     queryFn: () => serversApi.getServers(),
     select: (data) => data.servers,
-    enabled: isHydrated && isAuthenticated,
+    enabled: authReady,
   });
 }
 
 export function useServer(serverId: string) {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId],
     queryFn: () => serversApi.getServer(serverId),
     select: (data) => data.server,
-    enabled: !!serverId && isHydrated && isAuthenticated,
+    enabled: !!serverId && authReady,
   });
 }
 

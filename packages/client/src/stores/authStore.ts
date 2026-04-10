@@ -10,7 +10,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isHydrated: boolean;
   emailVerified: boolean;
-  setTokens: (accessToken: string, refreshToken: string, emailVerified?: boolean | undefined) => void;
+  setTokens: (accessToken: string, refreshToken: string | null, emailVerified?: boolean | undefined) => void;
   setEmailVerified: (verified: boolean) => void;
   clearAuth: () => void;
   hydrate: () => Promise<void>;
@@ -110,7 +110,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isHydrated: false,
   emailVerified: false,
 
-  setTokens: (accessToken: string, refreshToken: string, emailVerified?: boolean | undefined) => {
+  setTokens: (accessToken: string, refreshToken: string | null, emailVerified?: boolean | undefined) => {
     const payload = parseJwtPayload(accessToken);
     set((state) => ({
       accessToken,
@@ -174,14 +174,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     try {
       const { user } = await getMe();
+      const emailChanged = user.email_verified !== emailVerified;
       set({ isAuthenticated: true, isHydrated: true, emailVerified: user.email_verified });
-      const instance = useInstanceStore.getState().activeInstance;
-      if (instance) {
+      // Only persist if the server returned a different emailVerified than what was loaded from storage
+      if (emailChanged && instance) {
         void persistTokens(instance, get().accessToken, get().refreshToken, user.email_verified);
       }
     } catch {
-      get().clearAuth();
-      set({ isHydrated: true });
+      set({
+        accessToken: null,
+        refreshToken: null,
+        userId: null,
+        isAuthenticated: false,
+        emailVerified: false,
+        isHydrated: true,
+      });
+      if (instance) {
+        void persistTokens(instance, null, null, false);
+      }
     }
   },
 }));

@@ -12,19 +12,17 @@ type DmMessagesCache = {
 };
 
 export function useDmConversations() {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['dms'],
     queryFn: () => dmsApi.listConversations(),
     select: (data) => data.conversations,
-    enabled: isHydrated && isAuthenticated,
+    enabled: authReady,
   });
 }
 
 export function useDmMessages(conversationId: string | undefined) {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useInfiniteQuery({
     queryKey: ['dms', conversationId, 'messages'],
     queryFn: ({ pageParam }) =>
@@ -39,7 +37,7 @@ export function useDmMessages(conversationId: string | undefined) {
       pageParams: data.pageParams,
       messages: data.pages.flatMap((page) => page.messages),
     }),
-    enabled: !!conversationId && isHydrated && isAuthenticated,
+    enabled: !!conversationId && authReady,
     refetchOnMount: 'always',
   });
 }
@@ -77,13 +75,12 @@ export function useGetOrCreateConversation() {
 }
 
 export function useBlockedIds() {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['blocks'],
     queryFn: () => dmsApi.getBlockedIds(),
     select: (data) => data.blockedIds,
-    enabled: isHydrated && isAuthenticated,
+    enabled: authReady,
   });
 }
 

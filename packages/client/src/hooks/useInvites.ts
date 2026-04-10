@@ -4,13 +4,12 @@ import type { CreateInviteRequest } from '../types/api.types';
 import { useAuthStore } from '../stores/authStore';
 
 export function useInvites(serverId: string) {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId, 'invites'],
     queryFn: () => invitesApi.getInvites(serverId),
     select: (data) => data.invites,
-    enabled: !!serverId && isHydrated && isAuthenticated,
+    enabled: !!serverId && authReady,
   });
 }
 
@@ -48,12 +47,11 @@ export function useJoinViaCode() {
 }
 
 export function useDefaultInvite(serverId: string) {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['defaultInvite', serverId],
     queryFn: () => invitesApi.getDefaultInvite(serverId),
-    enabled: !!serverId && isHydrated && isAuthenticated,
+    enabled: !!serverId && authReady,
     select: (data) => data.invite,
   });
 }

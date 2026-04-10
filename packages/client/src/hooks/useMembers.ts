@@ -4,24 +4,22 @@ import type { UpdateMemberRequest, MuteMemberRequest, BanMemberRequest } from '.
 import { useAuthStore } from '../stores/authStore';
 
 export function useMembers(serverId: string) {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId, 'members'],
     queryFn: () => membersApi.getMembers(serverId),
     select: (data) => data.members,
-    enabled: !!serverId && isHydrated && isAuthenticated,
+    enabled: !!serverId && authReady,
   });
 }
 
 export function useMember(serverId: string, userId: string) {
-  const isHydrated = useAuthStore((s) => s.isHydrated);
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['servers', serverId, 'members', userId],
     queryFn: () => membersApi.getMember(serverId, userId),
     select: (data) => data.member,
-    enabled: !!serverId && !!userId && isHydrated && isAuthenticated,
+    enabled: !!serverId && !!userId && authReady,
   });
 }
 

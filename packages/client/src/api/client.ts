@@ -10,13 +10,13 @@ const credentialsExtra: { credentials: RequestCredentials } | Record<string, nev
 
 let getAccessToken: () => string | null = () => null;
 let getRefreshToken: () => string | null = () => null;
-let setTokens: (access: string, refresh: string) => void = () => {};
+let setTokens: (access: string, refresh: string | null) => void = () => {};
 let clearAuth: () => void = () => {};
 
 export function configureAuth(config: {
   getAccessToken: () => string | null;
   getRefreshToken: () => string | null;
-  setTokens: (access: string, refresh: string) => void;
+  setTokens: (access: string, refresh: string | null) => void;
   clearAuth: () => void;
 }) {
   getAccessToken = config.getAccessToken;
@@ -72,7 +72,7 @@ async function attemptRefresh(): Promise<boolean> {
       }
 
       const data = (await res.json()) as { accessToken: string; refreshToken?: string };
-      setTokens(data.accessToken, data.refreshToken ?? '');
+      setTokens(data.accessToken, data.refreshToken ?? null);
       return true;
     } catch {
       clearAuth();

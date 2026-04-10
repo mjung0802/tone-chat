@@ -11,7 +11,7 @@ function useAuthSuccess() {
   const queryClient = useQueryClient();
 
   return (response: { accessToken: string; refreshToken?: string; user: { email_verified: boolean } }) => {
-    setTokens(response.accessToken, response.refreshToken ?? '', response.user.email_verified);
+    setTokens(response.accessToken, response.refreshToken ?? null, response.user.email_verified);
     if (response.user.email_verified) {
       connect(response.accessToken);
     }

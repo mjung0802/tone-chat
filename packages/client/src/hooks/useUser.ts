@@ -4,12 +4,12 @@ import { useAuthStore } from '../stores/authStore';
 import type { UpdateUserRequest } from '../types/api.types';
 
 export function useMe() {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
   return useQuery({
     queryKey: ['me'],
     queryFn: () => usersApi.getMe(),
     select: (data) => data.user,
-    enabled: isAuthenticated,
+    enabled: authReady,
   });
 }
 
