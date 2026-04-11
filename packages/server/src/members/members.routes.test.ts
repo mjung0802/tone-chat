@@ -192,7 +192,7 @@ describe('GET / (list members with user enrichment)', () => {
       status: 200,
       data: { members },
     }));
-    mockGetUsersBatch.mock.mockImplementation(async (_token: string, batch: unknown) => {
+    mockGetUsersBatch.mock.mockImplementation(async (_token, batch: unknown) => {
       callOrder.push('start');
       await Promise.resolve(); // yield so concurrent calls can interleave
       callOrder.push('end');

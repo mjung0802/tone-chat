@@ -1,5 +1,4 @@
 import type { Server } from 'socket.io';
-import { getMember } from '../members/members.client.js';
 
 interface CreateMessageResult {
   message: { _id: string; mentions?: string[] };
@@ -7,7 +6,6 @@ interface CreateMessageResult {
 
 export async function emitMentionsFromResult(
   io: Server,
-  senderToken: string,
   senderId: string,
   serverId: string,
   channelId: string,
@@ -16,13 +14,12 @@ export async function emitMentionsFromResult(
   const msg = (resultData as CreateMessageResult).message;
   const mentions = msg.mentions ?? [];
   if (mentions.length > 0) {
-    await emitMentionEvents(io, senderToken, senderId, serverId, channelId, msg._id, mentions);
+    await emitMentionEvents(io, senderId, serverId, channelId, msg._id, mentions);
   }
 }
 
 export async function emitMentionEvents(
   io: Server,
-  senderToken: string,
   senderId: string,
   serverId: string,
   channelId: string,
@@ -32,17 +29,12 @@ export async function emitMentionEvents(
   const uniqueMentions = [...new Set(mentions)].filter((uid) => uid !== senderId);
   if (uniqueMentions.length === 0) return;
 
-  await Promise.all(
-    uniqueMentions.map(async (userId) => {
-      const result = await getMember(senderToken, serverId, userId);
-      if (result.status !== 200) return;
-
-      io.to(`user:${userId}`).emit('mention', {
-        messageId,
-        channelId,
-        serverId,
-        authorId: senderId,
-      });
-    }),
-  );
+  for (const userId of uniqueMentions) {
+    io.to(`user:${userId}`).emit('mention', {
+      messageId,
+      channelId,
+      serverId,
+      authorId: senderId,
+    });
+  }
 }

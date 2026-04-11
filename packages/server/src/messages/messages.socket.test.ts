@@ -108,11 +108,10 @@ describe('registerMessageHandlers', () => {
 
       assert.equal(mockEmitMentionsFromResult.mock.callCount(), 1);
       const args = mockEmitMentionsFromResult.mock.calls[0]!.arguments;
-      assert.equal(args[1], 'mock-token'); // senderToken
-      assert.equal(args[2], 'user-1');     // senderId
-      assert.equal(args[3], 's1');         // serverId
-      assert.equal(args[4], 'c1');         // channelId
-      assert.deepEqual(args[5], responseData); // resultData
+      assert.equal(args[1], 'user-1');     // senderId
+      assert.equal(args[2], 's1');         // serverId
+      assert.equal(args[3], 'c1');         // channelId
+      assert.deepEqual(args[4], responseData); // resultData
     });
 
     it('does not call emitMentionsFromResult on non-201', async () => {

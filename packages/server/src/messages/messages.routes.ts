@@ -19,7 +19,7 @@ messagesRouter.post('/', mutationLimiters.message, async (req: AuthRequest, res)
     const room = `server:${req.params['serverId'] as string}:channel:${req.params['channelId'] as string}`;
     ioRef.to(room).emit('new_message', result.data);
 
-    await emitMentionsFromResult(ioRef, req.token!, req.userId!, req.params['serverId'] as string, req.params['channelId'] as string, result.data);
+    await emitMentionsFromResult(ioRef, req.userId!, req.params['serverId'] as string, req.params['channelId'] as string, result.data);
   }
 
   res.status(result.status).json(result.data);
