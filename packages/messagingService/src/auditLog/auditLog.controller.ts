@@ -3,7 +3,8 @@ import { AuditLog } from './auditLog.model.js';
 
 export async function listAuditLog(req: Request, res: Response): Promise<void> {
   const { serverId } = req.params;
-  const limit = Math.min(Number(req.query['limit'] ?? 50), 100);
+  const rawLimit = Number(req.query['limit'] ?? 50);
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 50;
   const before = req.query['before'];
 
   const filter: Record<string, unknown> = { serverId };
