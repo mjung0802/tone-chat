@@ -210,6 +210,9 @@ importers:
       mongoose:
         specifier: ^8.14.1
         version: 8.23.0(socks@2.8.7)
+      tone-chat-logger:
+        specifier: workspace:*
+        version: link:../logger
     devDependencies:
       '@types/express':
         specifier: ^5.0.3
@@ -247,6 +250,9 @@ importers:
       socket.io:
         specifier: ^4.8.3
         version: 4.8.3
+      tone-chat-logger:
+        specifier: workspace:*
+        version: link:../logger
     devDependencies:
       '@types/cors':
         specifier: ^2.8.19
