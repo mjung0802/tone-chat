@@ -5,6 +5,9 @@
     handle /socket.io/* {
         reverse_proxy bff:4000
     }
+    handle /grafana* {
+        reverse_proxy grafana:3000
+    }
     handle {
         root * /srv/client
         try_files {path} /index.html
