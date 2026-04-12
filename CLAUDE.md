@@ -71,6 +71,11 @@ pnpm --filter tone-chat-client test:e2e       # Playwright E2E tests (starts Met
 pnpm --filter tone-chat-client test:e2e:ui    # Playwright UI mode (interactive debugging)
 ```
 
+**Running Jest from a `.worktrees` directory (Windows):** `pnpm --filter tone-chat-client test` fails in worktrees because the `.worktrees` path segment causes micromatch to misparse the absolute `testMatch` glob. Use this instead from the worktree root:
+```bash
+node_modules/.bin/jest --config packages/client/jest.config.js --rootDir packages/client
+```
+
 First time only — install the Chromium browser:
 ```bash
 pnpm --filter tone-chat-client exec playwright install chromium
