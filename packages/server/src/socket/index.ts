@@ -8,6 +8,7 @@ import { registerMessageHandlers } from '../messages/messages.socket.js';
 import { setIO } from '../messages/messages.routes.js';
 import { setDmIO } from '../dms/dms.routes.js';
 import { registerDmHandlers } from '../dms/dms.socket.js';
+import { logger } from '../shared/logger.js';
 
 let ioInstance: Server | null = null;
 
@@ -62,7 +63,7 @@ export function setupSocketIO(httpServer: HttpServer): Server {
   io.on('connection', (socket) => {
     const userId = socket.data['userId'] as string;
     const userToken = socket.data['userToken'] as string;
-    console.log(`Socket connected: ${userId}`);
+    logger.info({ userId }, 'Socket connected');
 
     // Join user-level room for targeted events (mentions)
     void socket.join(`user:${userId}`);
@@ -95,7 +96,7 @@ export function setupSocketIO(httpServer: HttpServer): Server {
     registerDmHandlers(io, socket, userToken, userId);
 
     socket.on('disconnect', () => {
-      console.log(`Socket disconnected: ${userId}`);
+      logger.info({ userId }, 'Socket disconnected');
     });
   });
 
