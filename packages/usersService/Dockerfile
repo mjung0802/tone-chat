@@ -2,9 +2,12 @@ FROM node:22-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@10.29.2 --activate
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
+COPY packages/logger/package.json packages/logger/tsconfig.json packages/logger/tsconfig.build.json packages/logger/
 COPY packages/usersService/package.json packages/usersService/tsconfig.json packages/usersService/tsconfig.build.json packages/usersService/
 RUN pnpm --filter usersservice install --frozen-lockfile
 COPY test-types.d.ts ./
+COPY packages/logger/src packages/logger/src
+RUN pnpm --filter tone-chat-logger build
 COPY packages/usersService/src packages/usersService/src
 RUN pnpm --filter usersservice build && \
     mkdir -p packages/usersService/dist/db/migrations && \
@@ -14,8 +17,10 @@ FROM node:22-alpine
 RUN corepack enable && corepack prepare pnpm@10.29.2 --activate
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/logger/package.json packages/logger/
 COPY packages/usersService/package.json packages/usersService/
 RUN pnpm --filter usersservice install --frozen-lockfile --prod
+COPY --from=builder /app/packages/logger/dist packages/logger/dist
 COPY --from=builder /app/packages/usersService/dist packages/usersService/dist
 WORKDIR /app/packages/usersService
 USER node

@@ -2,9 +2,12 @@ FROM node:22-alpine AS builder
 RUN corepack enable && corepack prepare pnpm@10.29.2 --activate
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json ./
+COPY packages/logger/package.json packages/logger/tsconfig.json packages/logger/tsconfig.build.json packages/logger/
 COPY packages/messagingService/package.json packages/messagingService/tsconfig.json packages/messagingService/tsconfig.build.json packages/messagingService/
 RUN pnpm --filter messagingservice install --frozen-lockfile
 COPY test-types.d.ts ./
+COPY packages/logger/src packages/logger/src
+RUN pnpm --filter tone-chat-logger build
 COPY packages/messagingService/src packages/messagingService/src
 RUN pnpm --filter messagingservice build
 
@@ -12,8 +15,10 @@ FROM node:22-alpine
 RUN corepack enable && corepack prepare pnpm@10.29.2 --activate
 WORKDIR /app
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/logger/package.json packages/logger/
 COPY packages/messagingService/package.json packages/messagingService/
 RUN pnpm --filter messagingservice install --frozen-lockfile --prod
+COPY --from=builder /app/packages/logger/dist packages/logger/dist
 COPY --from=builder /app/packages/messagingService/dist packages/messagingService/dist
 WORKDIR /app/packages/messagingService
 USER node
