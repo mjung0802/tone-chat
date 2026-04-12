@@ -205,7 +205,7 @@ export default function ChannelScreen() {
       };
     }
     return map;
-  }, [members, userId, actorRole, actorIsOwner, server?.ownerId, unmuteMember]);
+  }, [members, userId, actorRole, actorIsOwner, server?.ownerId, unmuteMember.mutate]);
 
   const typingUserNames = Array.from(typingUsers.keys()).map(
     (id) => authorNames[id] ?? 'Someone',

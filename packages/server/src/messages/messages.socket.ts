@@ -59,7 +59,7 @@ export function registerMessageHandlers(io: Server, socket: Socket, userToken: s
       const room = `server:${data.serverId}:channel:${data.channelId}`;
       io.to(room).emit('new_message', result.data);
 
-      await emitMentionsFromResult(io, userToken, userId, data.serverId, data.channelId, result.data);
+      emitMentionsFromResult(io, userId, data.serverId, data.channelId, result.data);
     } else {
       const errorData = result.data as { error?: { code?: string; message?: string; mutedUntil?: string } } | null;
       socket.emit('message_error', {

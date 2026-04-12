@@ -23,9 +23,14 @@ membersRouter.get('/', async (req: AuthRequest, res) => {
   if (userIds.length > 0) {
     const BATCH_SIZE = 100;
     const userMap = new Map<string, { id: string; username: string; display_name: string | null; avatar_url: string | null }>();
+    const batches: string[][] = [];
     for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
-      const batch = userIds.slice(i, i + BATCH_SIZE);
-      const usersResult = await usersClient.getUsersBatch(req.token!, batch);
+      batches.push(userIds.slice(i, i + BATCH_SIZE));
+    }
+    const batchResults = await Promise.all(
+      batches.map((batch) => usersClient.getUsersBatch(req.token!, batch)),
+    );
+    for (const usersResult of batchResults) {
       if (usersResult.status === 200) {
         const { users } = usersResult.data as { users: Array<{ id: string; username: string; display_name: string | null; avatar_url: string | null }> };
         for (const u of users) {

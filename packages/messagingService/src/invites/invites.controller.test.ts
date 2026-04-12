@@ -104,15 +104,18 @@ describe('createInvite', () => {
 });
 
 describe('listInvites', () => {
-  it('queries with revoked: false and returns 200', async () => {
+  it('queries with revoked: false, a 100-item limit, and returns 200', async () => {
     const invites = [{ code: 'a' }, { code: 'b' }];
     mockInviteFind.mock.mockImplementation(async () => invites);
 
     const res = makeRes();
     await listInvites(makeReq({ params: { serverId: 's1' } }), res);
+
     assert.equal(res.statusCode, 200);
     assert.deepEqual((res._json as { invites: unknown[] }).invites, invites);
-    assert.equal((mockInviteFind.mock.calls[0]!.arguments[0] as { revoked: boolean }).revoked, false);
+    const args = mockInviteFind.mock.calls[0]!.arguments;
+    assert.equal((args[0] as { revoked: boolean }).revoked, false);
+    assert.equal((args[2] as { limit: number }).limit, 100);
   });
 });
 

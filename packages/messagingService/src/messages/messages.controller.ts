@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { Message } from './message.model.js';
 import { ServerMember } from '../members/serverMember.model.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
+import { parseQueryLimit } from '../shared/parseQueryLimit.js';
 
 export async function createMessage(req: Request, res: Response): Promise<void> {
   const userId = req.userId!;
@@ -107,8 +108,7 @@ export async function createMessage(req: Request, res: Response): Promise<void> 
 
 export async function listMessages(req: Request, res: Response): Promise<void> {
   const { channelId } = req.params;
-  const rawLimit = Number(req.query['limit'] ?? 50);
-  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 50;
+  const limit = parseQueryLimit(req.query['limit']);
   const before = req.query['before'] as string | undefined;
 
   const filter: Record<string, unknown> = { channelId };

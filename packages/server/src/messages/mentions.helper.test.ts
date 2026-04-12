@@ -1,22 +1,14 @@
 import { mock, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 
-type GetMemberFn = (userToken: string, serverId: string, targetUserId: string) => Promise<{ status: number }>;
-const mockGetMember = mock.fn<GetMemberFn>();
-mock.module('../members/members.client.js', {
-  namedExports: { getMember: mockGetMember },
-});
-
 const { emitMentionEvents } = await import('./mentions.helper.js');
 
 describe('emitMentionEvents', () => {
-  // Using `any` here to use a simple mock for the Socket.IO server, since we only care about the emitted events in this test suite.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let io: any;
   let emittedEvents: Array<{ room: string; event: string; data: unknown }>;
 
   beforeEach(() => {
-    mockGetMember.mock.resetCalls();
     emittedEvents = [];
     io = {
       to: mock.fn((room: string) => ({
@@ -27,43 +19,38 @@ describe('emitMentionEvents', () => {
     };
   });
 
-  it('emits mention event to each mentioned user room', async () => {
-    mockGetMember.mock.mockImplementation(async () => ({ status: 200 }));
-
-    await emitMentionEvents(io, 'tok1', 'sender1', 'srv1', 'ch1', 'msg1', ['user2', 'user3']);
+  it('emits mention event to each unique mentioned user room', () => {
+    emitMentionEvents(io, 'sender1', 'srv1', 'ch1', 'msg1', ['user2', 'user3']);
 
     assert.equal(emittedEvents.length, 2);
     assert.equal(emittedEvents[0]!.room, 'user:user2');
     assert.equal(emittedEvents[0]!.event, 'mention');
-    assert.deepEqual(emittedEvents[0]!.data, { messageId: 'msg1', channelId: 'ch1', serverId: 'srv1', authorId: 'sender1' });
+    assert.deepEqual(emittedEvents[0]!.data, {
+      messageId: 'msg1',
+      channelId: 'ch1',
+      serverId: 'srv1',
+      authorId: 'sender1',
+    });
     assert.equal(emittedEvents[1]!.room, 'user:user3');
   });
 
-  it('excludes sender from mention events', async () => {
-    mockGetMember.mock.mockImplementation(async () => ({ status: 200 }));
-
-    await emitMentionEvents(io, 'tok1', 'sender1', 'srv1', 'ch1', 'msg1', ['sender1', 'user2']);
+  it('excludes sender from mention events', () => {
+    emitMentionEvents(io, 'sender1', 'srv1', 'ch1', 'msg1', ['sender1', 'user2']);
 
     assert.equal(emittedEvents.length, 1);
     assert.equal(emittedEvents[0]!.room, 'user:user2');
   });
 
-  it('skips non-members silently', async () => {
-    mockGetMember.mock.mockImplementation(async (_uid: string, _sid: string, targetId: string) => {
-      if (targetId === 'user2') return { status: 200 };
-      return { status: 404 };
-    });
-
-    await emitMentionEvents(io, 'tok1', 'sender1', 'srv1', 'ch1', 'msg1', ['user2', 'nonmember']);
+  it('deduplicates repeated user IDs', () => {
+    emitMentionEvents(io, 'sender1', 'srv1', 'ch1', 'msg1', ['user2', 'user2']);
 
     assert.equal(emittedEvents.length, 1);
     assert.equal(emittedEvents[0]!.room, 'user:user2');
   });
 
-  it('does nothing for empty mentions', async () => {
-    await emitMentionEvents(io, 'tok1', 'sender1', 'srv1', 'ch1', 'msg1', []);
+  it('does nothing for empty mentions', () => {
+    emitMentionEvents(io, 'sender1', 'srv1', 'ch1', 'msg1', []);
 
     assert.equal(emittedEvents.length, 0);
-    assert.equal(mockGetMember.mock.callCount(), 0);
   });
 });

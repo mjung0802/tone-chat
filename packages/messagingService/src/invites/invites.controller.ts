@@ -61,7 +61,7 @@ export async function createInvite(req: Request, res: Response): Promise<void> {
 }
 
 export async function listInvites(req: Request, res: Response): Promise<void> {
-  const invites = await Invite.find({ serverId: req.params['serverId'], revoked: false });
+  const invites = await Invite.find({ serverId: req.params['serverId'], revoked: false }, null, { limit: 100 });
   res.json({ invites });
 }
 
