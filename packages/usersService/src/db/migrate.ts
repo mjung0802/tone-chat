@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { sql } from '../config/database.js';
+import { logger } from '../shared/logger.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -20,22 +21,22 @@ async function migrate(): Promise<void> {
   for (const file of files) {
     const [applied] = await sql`SELECT name FROM _migrations WHERE name = ${file}`;
     if (applied) {
-      console.log(`Skipping ${file} (already applied)`);
+      logger.info(`Skipping ${file} (already applied)`);
       continue;
     }
 
     const content = await readFile(join(migrationsDir, file), 'utf-8');
-    console.log(`Applying ${file}...`);
+    logger.info(`Applying ${file}...`);
     await sql.unsafe(content);
     await sql`INSERT INTO _migrations (name) VALUES (${file})`;
-    console.log(`Applied ${file}`);
+    logger.info(`Applied ${file}`);
   }
 
-  console.log('All migrations applied');
+  logger.info('All migrations applied');
   await sql.end();
 }
 
 migrate().catch((err) => {
-  console.error('Migration failed:', err);
+  logger.error({ err }, 'Migration failed');
   process.exit(1);
 });
