@@ -59,7 +59,8 @@ export async function listConversations(req: Request, res: Response): Promise<vo
 
 export async function listDmMessages(req: Request, res: Response): Promise<void> {
   const { conversationId } = req.params;
-  const limit = Math.min(Number(req.query['limit'] ?? 50), 100);
+  const rawLimit = Number(req.query['limit'] ?? 50);
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 50;
   const before = req.query['before'];
 
   // NoSQL injection guard on before
