@@ -4,28 +4,28 @@ interface CreateMessageResult {
   message: { _id: string; mentions?: string[] };
 }
 
-export async function emitMentionsFromResult(
+export function emitMentionsFromResult(
   io: Server,
   senderId: string,
   serverId: string,
   channelId: string,
   resultData: unknown,
-): Promise<void> {
+): void {
   const msg = (resultData as CreateMessageResult).message;
   const mentions = msg.mentions ?? [];
   if (mentions.length > 0) {
-    await emitMentionEvents(io, senderId, serverId, channelId, msg._id, mentions);
+    emitMentionEvents(io, senderId, serverId, channelId, msg._id, mentions);
   }
 }
 
-export async function emitMentionEvents(
+export function emitMentionEvents(
   io: Server,
   senderId: string,
   serverId: string,
   channelId: string,
   messageId: string,
   mentions: string[],
-): Promise<void> {
+): void {
   const uniqueMentions = [...new Set(mentions)].filter((uid) => uid !== senderId);
   if (uniqueMentions.length === 0) return;
 

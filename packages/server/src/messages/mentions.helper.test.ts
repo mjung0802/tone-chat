@@ -19,8 +19,8 @@ describe('emitMentionEvents', () => {
     };
   });
 
-  it('emits mention event to each unique mentioned user room', async () => {
-    await emitMentionEvents(io, 'sender1', 'srv1', 'ch1', 'msg1', ['user2', 'user3']);
+  it('emits mention event to each unique mentioned user room', () => {
+    emitMentionEvents(io, 'sender1', 'srv1', 'ch1', 'msg1', ['user2', 'user3']);
 
     assert.equal(emittedEvents.length, 2);
     assert.equal(emittedEvents[0]!.room, 'user:user2');
@@ -34,22 +34,22 @@ describe('emitMentionEvents', () => {
     assert.equal(emittedEvents[1]!.room, 'user:user3');
   });
 
-  it('excludes sender from mention events', async () => {
-    await emitMentionEvents(io, 'sender1', 'srv1', 'ch1', 'msg1', ['sender1', 'user2']);
+  it('excludes sender from mention events', () => {
+    emitMentionEvents(io, 'sender1', 'srv1', 'ch1', 'msg1', ['sender1', 'user2']);
 
     assert.equal(emittedEvents.length, 1);
     assert.equal(emittedEvents[0]!.room, 'user:user2');
   });
 
-  it('deduplicates repeated user IDs', async () => {
-    await emitMentionEvents(io, 'sender1', 'srv1', 'ch1', 'msg1', ['user2', 'user2']);
+  it('deduplicates repeated user IDs', () => {
+    emitMentionEvents(io, 'sender1', 'srv1', 'ch1', 'msg1', ['user2', 'user2']);
 
     assert.equal(emittedEvents.length, 1);
     assert.equal(emittedEvents[0]!.room, 'user:user2');
   });
 
-  it('does nothing for empty mentions', async () => {
-    await emitMentionEvents(io, 'sender1', 'srv1', 'ch1', 'msg1', []);
+  it('does nothing for empty mentions', () => {
+    emitMentionEvents(io, 'sender1', 'srv1', 'ch1', 'msg1', []);
 
     assert.equal(emittedEvents.length, 0);
   });

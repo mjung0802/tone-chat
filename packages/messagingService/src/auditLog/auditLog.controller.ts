@@ -1,10 +1,10 @@
 import type { Request, Response } from 'express';
 import { AuditLog } from './auditLog.model.js';
+import { parseQueryLimit } from '../shared/parseQueryLimit.js';
 
 export async function listAuditLog(req: Request, res: Response): Promise<void> {
   const { serverId } = req.params;
-  const rawLimit = Number(req.query['limit'] ?? 50);
-  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 50;
+  const limit = parseQueryLimit(req.query['limit']);
   const before = req.query['before'];
 
   const filter: Record<string, unknown> = { serverId };
