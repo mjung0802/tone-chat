@@ -69,6 +69,9 @@ importers:
       postgres:
         specifier: ^3.4.7
         version: 3.4.8
+      tone-chat-logger:
+        specifier: workspace:*
+        version: link:../logger
     devDependencies:
       '@types/express':
         specifier: ^5.0.3
