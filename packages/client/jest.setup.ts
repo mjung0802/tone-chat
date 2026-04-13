@@ -47,7 +47,9 @@ afterEach(() => {
 });
 
 // Silence noisy warnings in test output
+// eslint-disable-next-line no-console
 const originalConsoleError = console.error;
+// eslint-disable-next-line no-console
 console.error = (...args: unknown[]) => {
   const msg = typeof args[0] === 'string' ? args[0] : '';
   if (msg.includes('VirtualizedLists should never be nested')) return;
