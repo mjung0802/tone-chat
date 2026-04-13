@@ -95,6 +95,15 @@ describe('registerDmHandlers', () => {
       assert.equal(socket.join.mock.callCount(), 1);
       assert.equal(socket.join.mock.calls[0]!.arguments[0], 'dm:conv-1');
     });
+
+    it('emits error when getConversation throws', async () => {
+      mockGetConversation.mock.mockImplementation(async () => { throw new Error('Network error'); });
+
+      await handlers['join_dm']!({ conversationId: 'conv-1' });
+
+      assert.equal(socket.emit.mock.callCount(), 1);
+      assert.equal(socket.emit.mock.calls[0]!.arguments[0], 'error');
+    });
   });
 
   describe('dm:send', () => {
@@ -199,6 +208,20 @@ describe('registerDmHandlers', () => {
       };
       assert.equal(notification.senderName, 'Someone');
     });
+
+    it('emits dm_error when sendDmMessage throws', async () => {
+      mockGetConversation.mock.mockImplementation(async () => ({
+        status: 200,
+        data: { conversation: { participantIds: ['user-1', 'user-2'] } },
+      }));
+      mockIsBlockedBidirectional.mock.mockImplementation(async () => false);
+      mockSendDmMessage.mock.mockImplementation(async () => { throw new Error('Service down'); });
+
+      await handlers['dm:send']!({ conversationId: 'conv-1', content: 'hello' });
+
+      assert.equal(socket.emit.mock.callCount(), 1);
+      assert.equal(socket.emit.mock.calls[0]!.arguments[0], 'dm_error');
+    });
   });
 
   describe('dm:typing', () => {
@@ -261,6 +284,28 @@ describe('registerDmHandlers', () => {
     it('ignores invalid data (missing emoji)', async () => {
       await handlers['dm:react']!({ conversationId: 'conv-1', messageId: 'm1' });
       assert.equal(mockReactToDmMessage.mock.callCount(), 0);
+    });
+
+    it('emits error on non-200 status', async () => {
+      mockReactToDmMessage.mock.mockImplementation(async () => ({ status: 500, data: null }));
+
+      const ioEmit = mock.fn();
+      io.to = mock.fn(() => ({ emit: ioEmit }));
+
+      await handlers['dm:react']!({ conversationId: 'conv-1', messageId: 'm1', emoji: '👍' });
+
+      assert.equal(ioEmit.mock.callCount(), 0);
+      assert.equal(socket.emit.mock.callCount(), 1);
+      assert.equal(socket.emit.mock.calls[0]!.arguments[0], 'error');
+    });
+
+    it('emits error when reactToDmMessage throws', async () => {
+      mockReactToDmMessage.mock.mockImplementation(async () => { throw new Error('Network error'); });
+
+      await handlers['dm:react']!({ conversationId: 'conv-1', messageId: 'm1', emoji: '👍' });
+
+      assert.equal(socket.emit.mock.callCount(), 1);
+      assert.equal(socket.emit.mock.calls[0]!.arguments[0], 'error');
     });
   });
 });

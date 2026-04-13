@@ -70,20 +70,24 @@ export function setupSocketIO(httpServer: HttpServer): Server {
 
     // Room management — verify membership and channel existence before joining
     socket.on('join_channel', async (data: { serverId: string; channelId: string }) => {
-      const [memberResult, channelResult] = await Promise.all([
-        getMember(userToken, data.serverId, userId),
-        getChannel(userToken, data.serverId, data.channelId),
-      ]);
-      if (memberResult.status !== 200) {
-        socket.emit('error', { message: 'Not a member of this server' });
-        return;
+      try {
+        const [memberResult, channelResult] = await Promise.all([
+          getMember(userToken, data.serverId, userId),
+          getChannel(userToken, data.serverId, data.channelId),
+        ]);
+        if (memberResult.status !== 200) {
+          socket.emit('error', { message: 'Not a member of this server' });
+          return;
+        }
+        if (channelResult.status !== 200) {
+          socket.emit('error', { message: 'Channel not found' });
+          return;
+        }
+        const room = `server:${data.serverId}:channel:${data.channelId}`;
+        void socket.join(room);
+      } catch {
+        socket.emit('error', { message: 'Failed to join channel' });
       }
-      if (channelResult.status !== 200) {
-        socket.emit('error', { message: 'Channel not found' });
-        return;
-      }
-      const room = `server:${data.serverId}:channel:${data.channelId}`;
-      void socket.join(room);
     });
 
     socket.on('leave_channel', (data: { serverId: string; channelId: string }) => {

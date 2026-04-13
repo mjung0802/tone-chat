@@ -85,16 +85,20 @@ export function registerDmHandlers(io: Server, socket: Socket, userToken: string
   socket.on('join_dm', async (data: unknown) => {
     if (!isValidConversationRef(data)) return;
 
-    const result = await dmsClient.getConversation(userToken, data.conversationId);
-    if (result.status !== 200) {
-      socket.emit('error', { message: 'Conversation not found or access denied' });
-      return;
+    try {
+      const result = await dmsClient.getConversation(userToken, data.conversationId);
+      if (result.status !== 200) {
+        socket.emit('error', { message: 'Conversation not found or access denied' });
+        return;
+      }
+
+      const participantIds = parseParticipantIds(result.data);
+      participantCache.set(data.conversationId, participantIds);
+
+      void socket.join(`dm:${data.conversationId}`);
+    } catch {
+      socket.emit('error', { message: 'Failed to join conversation' });
     }
-
-    const participantIds = parseParticipantIds(result.data);
-    participantCache.set(data.conversationId, participantIds);
-
-    void socket.join(`dm:${data.conversationId}`);
   });
 
   socket.on('leave_dm', (data: unknown) => {
@@ -106,32 +110,36 @@ export function registerDmHandlers(io: Server, socket: Socket, userToken: string
   socket.on('dm:send', async (data: unknown) => {
     if (!isValidDmSend(data)) return;
 
-    const participantIds = await resolveParticipants(data.conversationId);
-    const otherUserId = participantIds.find((id) => id !== userId);
+    try {
+      const participantIds = await resolveParticipants(data.conversationId);
+      const otherUserId = participantIds.find((id) => id !== userId);
 
-    if (otherUserId !== undefined) {
-      const blocked = await isBlockedBidirectional(userToken, otherUserId, userId);
-      if (blocked) {
-        socket.emit('dm_error', { code: 'BLOCKED', message: 'You cannot message this user' });
-        return;
-      }
-    }
-
-    const { conversationId, ...body } = data;
-    const result = await dmsClient.sendDmMessage(userToken, conversationId, body);
-
-    if (result.status === 201) {
       if (otherUserId !== undefined) {
-        void broadcastDmAndNotify(io, conversationId, userId, otherUserId, result.data, data.content);
-      } else {
-        io.to(`dm:${conversationId}`).emit('dm:new_message', result.data);
+        const blocked = await isBlockedBidirectional(userToken, otherUserId, userId);
+        if (blocked) {
+          socket.emit('dm_error', { code: 'BLOCKED', message: 'You cannot message this user' });
+          return;
+        }
       }
-    } else {
-      const errorData = result.data as { error?: { code?: string; message?: string } } | null;
-      socket.emit('dm_error', {
-        code: errorData?.error?.code ?? 'SEND_FAILED',
-        message: errorData?.error?.message ?? 'Failed to send message',
-      });
+
+      const { conversationId, ...body } = data;
+      const result = await dmsClient.sendDmMessage(userToken, conversationId, body);
+
+      if (result.status === 201) {
+        if (otherUserId !== undefined) {
+          void broadcastDmAndNotify(io, conversationId, userId, otherUserId, result.data, data.content);
+        } else {
+          io.to(`dm:${conversationId}`).emit('dm:new_message', result.data);
+        }
+      } else {
+        const errorData = result.data as { error?: { code?: string; message?: string } } | null;
+        socket.emit('dm_error', {
+          code: errorData?.error?.code ?? 'SEND_FAILED',
+          message: errorData?.error?.message ?? 'Failed to send message',
+        });
+      }
+    } catch {
+      socket.emit('dm_error', { code: 'SEND_FAILED', message: 'Failed to send message' });
     }
   });
 
@@ -143,10 +151,16 @@ export function registerDmHandlers(io: Server, socket: Socket, userToken: string
   socket.on('dm:react', async (data: unknown) => {
     if (!isValidDmReact(data)) return;
 
-    const result = await dmsClient.reactToDmMessage(userToken, data.conversationId, data.messageId, { emoji: data.emoji });
+    try {
+      const result = await dmsClient.reactToDmMessage(userToken, data.conversationId, data.messageId, { emoji: data.emoji });
 
-    if (result.status === 200) {
-      io.to(`dm:${data.conversationId}`).emit('dm:reaction_updated', result.data);
+      if (result.status === 200) {
+        io.to(`dm:${data.conversationId}`).emit('dm:reaction_updated', result.data);
+      } else {
+        socket.emit('error', { message: 'Failed to update reaction' });
+      }
+    } catch {
+      socket.emit('error', { message: 'Failed to update reaction' });
     }
   });
 
