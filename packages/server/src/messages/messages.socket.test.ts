@@ -177,6 +177,15 @@ describe('registerMessageHandlers', () => {
       const body = mockCreateMessage.mock.calls[0]!.arguments[3] as Record<string, unknown>;
       assert.equal(body.tone, undefined);
     });
+
+    it('emits message_error when createMessage throws', async () => {
+      mockCreateMessage.mock.mockImplementation(async () => { throw new Error('Service down'); });
+
+      await handlers['send_message']!({ serverId: 's1', channelId: 'c1', content: 'hello' });
+
+      assert.equal(socket.emit.mock.callCount(), 1);
+      assert.equal(socket.emit.mock.calls[0]!.arguments[0], 'message_error');
+    });
   });
 
   describe('typing', () => {
@@ -256,6 +265,28 @@ describe('registerMessageHandlers', () => {
     it('ignores non-string fields', async () => {
       await handlers['toggle_reaction']!({ serverId: 123, channelId: 'c1', messageId: 'm1', emoji: '👍' });
       assert.equal(mockToggleReaction.mock.callCount(), 0);
+    });
+
+    it('emits error on non-200 status', async () => {
+      mockToggleReaction.mock.mockImplementation(async () => ({ status: 500, data: null }));
+
+      const ioEmit = mock.fn();
+      io.to = mock.fn(() => ({ emit: ioEmit }));
+
+      await handlers['toggle_reaction']!({ serverId: 's1', channelId: 'c1', messageId: 'm1', emoji: '👍' });
+
+      assert.equal(ioEmit.mock.callCount(), 0);
+      assert.equal(socket.emit.mock.callCount(), 1);
+      assert.equal(socket.emit.mock.calls[0]!.arguments[0], 'error');
+    });
+
+    it('emits error when toggleReaction throws', async () => {
+      mockToggleReaction.mock.mockImplementation(async () => { throw new Error('Network error'); });
+
+      await handlers['toggle_reaction']!({ serverId: 's1', channelId: 'c1', messageId: 'm1', emoji: '👍' });
+
+      assert.equal(socket.emit.mock.callCount(), 1);
+      assert.equal(socket.emit.mock.calls[0]!.arguments[0], 'error');
     });
   });
 });

@@ -8,6 +8,7 @@ import { registerMessageHandlers } from '../messages/messages.socket.js';
 import { setIO } from '../messages/messages.routes.js';
 import { setDmIO } from '../dms/dms.routes.js';
 import { registerDmHandlers } from '../dms/dms.socket.js';
+import { logger } from '../shared/logger.js';
 
 let ioInstance: Server | null = null;
 
@@ -62,27 +63,31 @@ export function setupSocketIO(httpServer: HttpServer): Server {
   io.on('connection', (socket) => {
     const userId = socket.data['userId'] as string;
     const userToken = socket.data['userToken'] as string;
-    console.log(`Socket connected: ${userId}`);
+    logger.info({ userId }, 'Socket connected');
 
     // Join user-level room for targeted events (mentions)
     void socket.join(`user:${userId}`);
 
     // Room management — verify membership and channel existence before joining
     socket.on('join_channel', async (data: { serverId: string; channelId: string }) => {
-      const [memberResult, channelResult] = await Promise.all([
-        getMember(userToken, data.serverId, userId),
-        getChannel(userToken, data.serverId, data.channelId),
-      ]);
-      if (memberResult.status !== 200) {
-        socket.emit('error', { message: 'Not a member of this server' });
-        return;
+      try {
+        const [memberResult, channelResult] = await Promise.all([
+          getMember(userToken, data.serverId, userId),
+          getChannel(userToken, data.serverId, data.channelId),
+        ]);
+        if (memberResult.status !== 200) {
+          socket.emit('error', { message: 'Not a member of this server' });
+          return;
+        }
+        if (channelResult.status !== 200) {
+          socket.emit('error', { message: 'Channel not found' });
+          return;
+        }
+        const room = `server:${data.serverId}:channel:${data.channelId}`;
+        void socket.join(room);
+      } catch {
+        socket.emit('error', { message: 'Failed to join channel' });
       }
-      if (channelResult.status !== 200) {
-        socket.emit('error', { message: 'Channel not found' });
-        return;
-      }
-      const room = `server:${data.serverId}:channel:${data.channelId}`;
-      void socket.join(room);
     });
 
     socket.on('leave_channel', (data: { serverId: string; channelId: string }) => {
@@ -95,7 +100,7 @@ export function setupSocketIO(httpServer: HttpServer): Server {
     registerDmHandlers(io, socket, userToken, userId);
 
     socket.on('disconnect', () => {
-      console.log(`Socket disconnected: ${userId}`);
+      logger.info({ userId }, 'Socket disconnected');
     });
   });
 

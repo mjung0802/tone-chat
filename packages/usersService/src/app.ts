@@ -1,4 +1,6 @@
 import express from 'express';
+import { httpLogger } from 'tone-chat-logger';
+import { logger } from './shared/logger.js';
 import { authRouter } from './auth/auth.routes.js';
 import { usersRouter } from './users/users.routes.js';
 import { internalRouter } from './users/internal.routes.js';
@@ -9,6 +11,7 @@ import { errorHandler } from './shared/middleware/errorHandler.js';
 export const app = express();
 
 app.use(express.json());
+app.use(httpLogger(logger));
 
 // Health check (no auth required)
 app.get('/health', (_req, res) => {

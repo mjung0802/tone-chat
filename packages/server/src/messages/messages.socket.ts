@@ -45,28 +45,32 @@ export function registerMessageHandlers(io: Server, socket: Socket, userToken: s
   socket.on('send_message', async (data: unknown) => {
     if (!isValidSendMessage(data)) return;
 
-    const body: Record<string, unknown> = {
-      content: data.content,
-      attachmentIds: data.attachmentIds,
-    };
-    if (data.replyToId) body['replyToId'] = data.replyToId;
-    if (data.mentions) body['mentions'] = data.mentions;
-    if (data.tone) body['tone'] = data.tone;
+    try {
+      const body: Record<string, unknown> = {
+        content: data.content,
+        attachmentIds: data.attachmentIds,
+      };
+      if (data.replyToId) body['replyToId'] = data.replyToId;
+      if (data.mentions) body['mentions'] = data.mentions;
+      if (data.tone) body['tone'] = data.tone;
 
-    const result = await messagesClient.createMessage(userToken, data.serverId, data.channelId, body);
+      const result = await messagesClient.createMessage(userToken, data.serverId, data.channelId, body);
 
-    if (result.status === 201) {
-      const room = `server:${data.serverId}:channel:${data.channelId}`;
-      io.to(room).emit('new_message', result.data);
+      if (result.status === 201) {
+        const room = `server:${data.serverId}:channel:${data.channelId}`;
+        io.to(room).emit('new_message', result.data);
 
-      emitMentionsFromResult(io, userId, data.serverId, data.channelId, result.data);
-    } else {
-      const errorData = result.data as { error?: { code?: string; message?: string; mutedUntil?: string } } | null;
-      socket.emit('message_error', {
-        code: errorData?.error?.code ?? 'SEND_FAILED',
-        message: errorData?.error?.message ?? 'Failed to send message',
-        ...(errorData?.error?.mutedUntil ? { mutedUntil: errorData.error.mutedUntil } : {}),
-      });
+        emitMentionsFromResult(io, userId, data.serverId, data.channelId, result.data);
+      } else {
+        const errorData = result.data as { error?: { code?: string; message?: string; mutedUntil?: string } } | null;
+        socket.emit('message_error', {
+          code: errorData?.error?.code ?? 'SEND_FAILED',
+          message: errorData?.error?.message ?? 'Failed to send message',
+          ...(errorData?.error?.mutedUntil ? { mutedUntil: errorData.error.mutedUntil } : {}),
+        });
+      }
+    } catch {
+      socket.emit('message_error', { code: 'SEND_FAILED', message: 'Failed to send message' });
     }
   });
 
@@ -79,13 +83,19 @@ export function registerMessageHandlers(io: Server, socket: Socket, userToken: s
   socket.on('toggle_reaction', async (data: unknown) => {
     if (!isValidToggleReaction(data)) return;
 
-    const result = await messagesClient.toggleReaction(userToken, data.serverId, data.channelId, data.messageId, {
-      emoji: data.emoji,
-    });
+    try {
+      const result = await messagesClient.toggleReaction(userToken, data.serverId, data.channelId, data.messageId, {
+        emoji: data.emoji,
+      });
 
-    if (result.status === 200) {
-      const room = `server:${data.serverId}:channel:${data.channelId}`;
-      io.to(room).emit('reaction_updated', result.data);
+      if (result.status === 200) {
+        const room = `server:${data.serverId}:channel:${data.channelId}`;
+        io.to(room).emit('reaction_updated', result.data);
+      } else {
+        socket.emit('error', { message: 'Failed to update reaction' });
+      }
+    } catch {
+      socket.emit('error', { message: 'Failed to update reaction' });
     }
   });
 }

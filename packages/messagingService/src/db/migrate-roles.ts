@@ -1,9 +1,10 @@
 import mongoose from 'mongoose';
 import { config } from '../config/index.js';
+import { logger } from '../shared/logger.js';
 
 async function migrateRoles() {
   await mongoose.connect(config.mongoUri);
-  console.log('Connected to MongoDB');
+  logger.info('Connected to MongoDB');
 
   const db = mongoose.connection.db!;
   const collection = db.collection('servermembers');
@@ -13,26 +14,26 @@ async function migrateRoles() {
     { roles: 'admin' },
     { $set: { role: 'admin', mutedUntil: null }, $unset: { roles: '' } },
   );
-  console.log(`Migrated ${adminResult.modifiedCount} admin members`);
+  logger.info(`Migrated ${adminResult.modifiedCount} admin members`);
 
   const memberResult = await collection.updateMany(
     { roles: { $exists: true }, role: { $exists: false } },
     { $set: { role: 'member', mutedUntil: null }, $unset: { roles: '' } },
   );
-  console.log(`Migrated ${memberResult.modifiedCount} regular members`);
+  logger.info(`Migrated ${memberResult.modifiedCount} regular members`);
 
   // Catch any remaining docs without role field
   const remainingResult = await collection.updateMany(
     { role: { $exists: false } },
     { $set: { role: 'member', mutedUntil: null }, $unset: { roles: '' } },
   );
-  console.log(`Migrated ${remainingResult.modifiedCount} remaining members`);
+  logger.info(`Migrated ${remainingResult.modifiedCount} remaining members`);
 
   await mongoose.disconnect();
-  console.log('Migration complete');
+  logger.info('Migration complete');
 }
 
 migrateRoles().catch((err) => {
-  console.error('Migration failed:', err);
+  logger.error({ err }, 'Migration failed');
   process.exit(1);
 });

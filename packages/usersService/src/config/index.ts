@@ -1,3 +1,5 @@
+import { logger } from '../shared/logger.js';
+
 export const config = {
   port: Number(process.env['PORT'] ?? 3002),
   databaseUrl: process.env['DATABASE_URL'] ?? 'postgres://tone:tone_dev@localhost:5432/tone_users',
@@ -24,6 +26,6 @@ export function validateConfig(): void {
     throw new Error('INTERNAL_API_KEY must be set in production');
   }
   if (!config.smtpHost) {
-    console.warn('⚠ SMTP not configured — verification codes will be printed to this console only');
+    logger.warn('SMTP not configured — verification codes will be printed to this console only');
   }
 }

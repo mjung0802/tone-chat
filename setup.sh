@@ -26,6 +26,7 @@ INTERNAL_API_KEY=$(openssl rand -hex 32)
 DB_PASSWORD=$(openssl rand -hex 32)
 S3_ACCESS_KEY=$(openssl rand -hex 32)
 S3_SECRET_KEY=$(openssl rand -hex 32)
+GRAFANA_PASSWORD=$(openssl rand -hex 16)
 
 echo ""
 read -r -p "Domain (e.g. chat.example.com) [default: :80 for plain HTTP]: " DOMAIN
@@ -65,6 +66,7 @@ INTERNAL_API_KEY='${INTERNAL_API_KEY}'
 DB_PASSWORD='${DB_PASSWORD}'
 S3_ACCESS_KEY='${S3_ACCESS_KEY}'
 S3_SECRET_KEY='${S3_SECRET_KEY}'
+GRAFANA_PASSWORD='${GRAFANA_PASSWORD}'
 
 # === Deployment ===
 DOMAIN=${DOMAIN}
@@ -86,6 +88,8 @@ docker compose -f docker-compose.prod.yml up -d --build
 echo ""
 if [ "$DOMAIN" = ":80" ]; then
   echo "Done! Visit http://localhost:8080 to open Tone Chat."
+  echo "Grafana: http://localhost:8080/grafana (admin / ${GRAFANA_PASSWORD})"
 else
   echo "Done! Visit https://${DOMAIN} to open Tone Chat."
+  echo "Grafana: https://${DOMAIN}/grafana (admin / ${GRAFANA_PASSWORD})"
 fi

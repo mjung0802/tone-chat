@@ -1,0 +1,32 @@
+{
+  "name": "tone-chat-logger",
+  "version": "1.0.0",
+  "description": "Shared Pino logger for all Tone Chat backend services",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test --experimental-test-module-mocks \"src/**/*.test.ts\"",
+    "prepare": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "pino": "^9.6.0",
+    "pino-http": "^10.4.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "pino-pretty": "^13.0.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "license": "ISC"
+}

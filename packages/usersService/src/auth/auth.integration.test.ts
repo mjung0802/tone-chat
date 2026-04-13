@@ -6,6 +6,7 @@ import type { Server } from 'node:http';
 import jwt from 'jsonwebtoken';
 import { app } from '../app.js';
 import { sql } from '../config/database.js';
+import { logger } from '../shared/logger.js';
 
 function tokenFor(userId: string): string {
   return jwt.sign(
@@ -230,21 +231,28 @@ describe('POST /auth/refresh', () => {
   });
 });
 
-// Helper: register a user and capture the OTP from dev console.log
+// Helper: register a user and capture the OTP from the pino logger (dev mode)
 async function registerAndCaptureOtp(
   baseUrl: string,
   username: string,
   email: string,
 ): Promise<{ userId: string; code: string }> {
   let capturedCode: string | null = null;
-  const originalLog = console.log;
-  console.log = (...args: unknown[]) => {
-    if (typeof args[0] === 'string' && args[0].startsWith('[VERIFICATION] Code:')) {
-      const match = args[0].match(/Code: (\d+)/);
-      if (match) capturedCode = match[1]!;
+  const savedInfo = logger.info;
+
+  logger.info = ((obj: unknown, msg?: string) => {
+    if (
+      typeof obj === 'object' &&
+      obj !== null &&
+      msg === 'Verification email sent (dev mode — OTP logged)'
+    ) {
+      const record = obj as Record<string, unknown>;
+      if (typeof record['code'] === 'string') {
+        capturedCode = record['code'];
+      }
     }
-    originalLog.apply(console, args as Parameters<typeof console.log>);
-  };
+    savedInfo.call(logger, obj, msg);
+  }) as typeof logger.info;
 
   let userId: string;
   try {
@@ -256,13 +264,13 @@ async function registerAndCaptureOtp(
     const body = await res.json() as { user: { id: string } };
     userId = body.user.id;
 
-    // Wait for fire-and-forget sendVerificationOtp to complete and log the OTP
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Wait for fire-and-forget sendVerificationOtp to complete
+    await new Promise<void>((resolve) => setTimeout(resolve, 500));
   } finally {
-    console.log = originalLog;
+    logger.info = savedInfo;
   }
 
-  assert.ok(capturedCode, 'Expected OTP to be logged via [EMAIL DEV]');
+  assert.ok(capturedCode, 'Expected OTP code in pino logger (dev mode — OTP logged)');
   return { userId, code: capturedCode! };
 }
 

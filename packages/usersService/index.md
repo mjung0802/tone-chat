@@ -11,7 +11,7 @@ Express service on :3002 + PostgreSQL. Manages global user accounts, bcrypt auth
 | `auth/` | Registration, login, refresh, email OTP verification |
 | `email/` | Nodemailer SMTP wrapper; dev console fallback |
 | `users/` | User profile read/update; batch lookup; email stripped on all responses; friend management (send/accept/remove requests, list friends, friendship status) |
-| `shared/` | `User`/`RefreshToken` types + `hashSha256` + middleware |
+| `shared/` | `User`/`RefreshToken` types + `hashSha256` + middleware + pino logger |
 
 ## Key Files
 - `src/app.ts` — Express app with internalAuth on all routes
@@ -19,6 +19,7 @@ Express service on :3002 + PostgreSQL. Manages global user accounts, bcrypt auth
 - `src/auth/verification.service.ts` — OTP generation and verification
 - `src/users/users.service.ts` — DB queries; allowlisted update fields
 - `src/shared/types.ts` — canonical `User` interface
+- `src/shared/logger.ts` — pino logger; `createLogger('usersService')` from tone-chat-logger
 
 ## Integration Tests
 - `auth.integration.test.ts` / `users.integration.test.ts`

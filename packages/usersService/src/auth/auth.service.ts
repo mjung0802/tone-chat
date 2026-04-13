@@ -5,6 +5,7 @@ import { sql } from '../config/database.js';
 import { config } from '../config/index.js';
 import { hashSha256 } from '../shared/crypto.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
+import { logger } from '../shared/logger.js';
 import type { User } from '../shared/types.js';
 import { sendVerificationOtp } from './verification.service.js';
 
@@ -42,7 +43,7 @@ export async function registerUser(username: string, email: string, password: st
 
   // Fire-and-forget: SMTP failures don't block registration
   sendVerificationOtp(user!.id, email).catch((err: unknown) => {
-    console.error('[verification] failed to send OTP after registration:', err);
+    logger.error({ err }, 'Failed to send OTP after registration');
   });
 
   return { user: user!, accessToken, refreshToken };

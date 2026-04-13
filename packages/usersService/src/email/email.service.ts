@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config/index.js';
+import { logger } from '../shared/logger.js';
 
 let transporter: nodemailer.Transporter | null = null;
 
@@ -29,24 +30,20 @@ export async function sendVerificationEmail(to: string, code: string): Promise<v
     html: `<p>Your verification code is: <strong>${code}</strong></p><p>This code expires in 15 minutes.</p>`,
   });
 
-  // Always log verification code for debugging (especially useful during dev/testing)
-  console.log(`[VERIFICATION] Code: ${code} | To: ${to} | Message ID: ${info.messageId || 'N/A'}`);
-  
   if (!config.smtpHost) {
-    console.log('[EMAIL DEV] Raw info:', JSON.stringify(info));
+    logger.info({ to, code, messageId: info.messageId }, 'Verification email sent (dev mode — OTP logged)');
+  } else {
+    logger.info({ to, messageId: info.messageId }, 'Verification email sent');
   }
 }
 
 export async function sendTestEmail(): Promise<void> {
   if (!config.smtpHost) {
-    console.log('[SMTP TEST] Skipped - SMTP not configured (dev mode)');
+    logger.info('SMTP not configured — skipping startup test email (dev mode)');
     return;
   }
 
-  console.log('[SMTP TEST] Sending test email...');
-  console.log(`[SMTP TEST] Host: ${config.smtpHost}:${config.smtpPort}`);
-  console.log(`[SMTP TEST] From: ${config.smtpFrom}`);
-  console.log(`[SMTP TEST] User: ${config.smtpUser}`);
+  logger.info({ host: config.smtpHost, port: config.smtpPort, from: config.smtpFrom }, 'Sending SMTP test email');
 
   try {
     const transporter = getTransporter();
@@ -58,12 +55,8 @@ export async function sendTestEmail(): Promise<void> {
       html: `<h2>✅ SMTP Configuration Test</h2><p>This is a test email sent on startup to verify SMTP configuration.</p><p>If you received this, your email setup is working correctly!</p><p><small>Sent at: ${new Date().toISOString()}</small></p>`,
     });
 
-    console.log('[SMTP TEST] ✅ Test email sent successfully');
-    console.log(`[SMTP TEST] Message ID: ${info.messageId}`);
+    logger.info({ messageId: info.messageId }, 'SMTP test email sent successfully');
   } catch (error: unknown) {
-    console.error('[SMTP TEST] ❌ Failed to send test email:', error);
-    if (error instanceof Error) {
-      console.error(`[SMTP TEST] Error details: ${error.message}`);
-    }
+    logger.error({ err: error }, 'Failed to send SMTP test email');
   }
 }

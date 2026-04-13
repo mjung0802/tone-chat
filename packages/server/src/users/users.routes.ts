@@ -60,12 +60,12 @@ usersRouter.post('/me/friends/:userId', async (req: AuthRequest, res) => {
 
       if (responseData?.status === 'accepted') {
         io.to(`user:${targetId}`).emit('friend:request_accepted', {
-          accepterId: req.token!,
+          accepterId: req.userId!,
           accepterName: senderName,
         });
       } else {
         io.to(`user:${targetId}`).emit('friend:request_received', {
-          requesterId: req.token!,
+          requesterId: req.userId!,
           requesterName: senderName,
         });
       }
@@ -91,7 +91,7 @@ usersRouter.patch('/me/friends/:userId/accept', async (req: AuthRequest, res) =>
       const me = meResult.data as { user?: { display_name?: string | null; username?: string } } | null;
       const accepterName = me?.user?.display_name ?? me?.user?.username ?? 'Someone';
       io.to(`user:${requesterId}`).emit('friend:request_accepted', {
-        accepterId: req.token!,
+        accepterId: req.userId!,
         accepterName: accepterName,
       });
     }
