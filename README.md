@@ -42,6 +42,9 @@ docker compose -f docker-compose.prod.yml logs -f
 # View only users service logs (for verification codes)
 docker compose -f docker-compose.prod.yml logs -f users
 
+# Browse logs in Grafana — https://yourdomain.com/grafana
+# (user: admin, password: GRAFANA_PASSWORD from .env)
+
 # Stop
 docker compose -f docker-compose.prod.yml down
 
@@ -75,6 +78,7 @@ BFF Server (packages/server)  :4000   Express 5 + Socket.IO 4 + JWT auth
 | `messagingservice`   | 3001 | MongoDB            | Servers, channels, messages, members, invites        |
 | `usersservice`       | 3002 | PostgreSQL         | Global user accounts, auth, token lifecycle          |
 | `attachmentsservice` | 3003 | PostgreSQL + MinIO | File uploads and attachment metadata                 |
+| `tone-chat-logger`   | —    | —                  | Shared Pino logger factory used by all backend services |
 
 ---
 
@@ -131,4 +135,5 @@ pnpm lint
 - **TypeScript**: strict across all packages
 - **Client**: Expo 55, Expo Router v5, React Native Paper, TanStack Query v5, Zustand v5, Socket.IO v4
 - **Auth**: JWT access tokens (15 min) + rotating refresh tokens (7 days), per-instance scoping
+- **Logging**: Pino (structured JSON in prod, pretty-printed in dev), Grafana + Loki + Promtail (production log aggregation)
 - **Reverse proxy**: Caddy with automatic HTTPS (Let's Encrypt)

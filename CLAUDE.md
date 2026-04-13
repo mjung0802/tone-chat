@@ -123,11 +123,13 @@ BFF Server (packages/server)              :4000   Express 5 + Socket.IO 4
 - **messagingService** (`packages/messagingService`): MongoDB (Mongoose). Manages servers, channels, messages, and server-scoped members. Collections: `servers`, `channels`, `messages`, `serverMembers` (fields: `role: 'admin'|'mod'|'member'`, `mutedUntil: Date|null`), `serverBans`.
 - **usersService** (`packages/usersService`): PostgreSQL (postgres.js). Global user accounts, auth (bcrypt + JWT), token refresh/rotation. Tables: `users`, `refresh_tokens`.
 - **attachmentsService** (`packages/attachmentsService`): MinIO for file storage (S3-compatible, swappable to AWS S3). PostgreSQL for metadata. Async uploads so attachments don't block messages. `GET /attachments/:id` regenerates a presigned URL (15min TTL) on each request for `ready` attachments.
+- **logger** (`packages/logger`): Shared `tone-chat-logger` workspace package. Exports `createLogger(serviceName)` — returns a Pino child logger tagged with `{ service }` (pretty+debug in dev TTY, structured JSON+info in prod) — and `httpLogger(logger)` — pino-http Express middleware that auto-logs all requests, skipping `/health`. Each backend service creates a singleton at `src/shared/logger.ts` and mounts `httpLogger` near the top of the Express middleware stack.
 
 ### Auth Flow
 - JWT access tokens (15 min) + refresh tokens (7 day, rotated). BFF verifies JWTs locally.
-- BFF passes `X-User-Id` + `X-Internal-Key` headers to backend services (not internet-exposed).
-- Socket.IO auth via JWT in handshake `auth` field.
+- **Service boundary auth**: BFF forwards the raw JWT as `X-User-Token` + `X-Internal-Key` headers to backend services (not internet-exposed). Downstream services verify the JWT signature via `verifyUserToken` middleware using a shared `JWT_SECRET` — they no longer trust a plain `X-User-Id` header.
+- **Web token storage**: On web, the refresh token is stored in an httpOnly, Secure, SameSite=Strict cookie set by the BFF (not in localStorage). The client sends `credentials: 'include'` so the cookie is included automatically. Native platforms continue using expo-secure-store.
+- Socket.IO auth via JWT in handshake `auth` field; the BFF verifies the signature and stores `userToken` in `socket.data` for downstream service calls.
 - **Per-instance token scoping**: tokens are keyed by instance URL (`accessToken:https://…`, `refreshToken:https://…`). Switching `activeInstance` in `instanceStore` swaps the active token set — tokens from one server are never sent to a different server.
 
 ### Email Verification
@@ -207,9 +209,14 @@ All backend packages use strict TypeScript with `nodenext` module resolution, `n
 
 Production deployment is handled by three files at the repo root:
 
-- **`docker-compose.prod.yml`**: Full stack (caddy, bff, messaging, users, attachments, mongo, users-db, attachments-db, minio, minio-init). All services on internal `tone-net` network; only Caddy exposes ports 80/443.
-- **`Caddyfile`**: Reverse-proxies `/api/*` and `/socket.io/*` to the BFF; serves the Expo web build static files from `/srv/client` with SPA fallback. `{$DOMAIN}` is injected from the environment.
-- **`setup.sh`**: One-command first-time setup — generates secrets, prompts for domain and SMTP, writes `.env`, runs `docker compose -f docker-compose.prod.yml up -d --build`.
+- **`docker-compose.prod.yml`**: Full stack (caddy, bff, messaging, users, attachments, mongo, users-db, attachments-db, minio, minio-init, loki, promtail, grafana). All services on internal `tone-net` network; only Caddy exposes ports 80/443.
+- **`Caddyfile`**: Reverse-proxies `/api/*` and `/socket.io/*` to the BFF; proxies `/grafana*` to Grafana; serves the Expo web build static files from `/srv/client` with SPA fallback. `{$DOMAIN}` is injected from the environment.
+- **`setup.sh`**: One-command first-time setup — generates secrets (including `GRAFANA_PASSWORD`), prompts for domain and SMTP, writes `.env`, runs `docker compose -f docker-compose.prod.yml up -d --build`.
+
+The production stack includes a **Grafana + Loki + Promtail** log aggregation stack:
+- **Promtail** scrapes Docker container stdout/stderr via the Docker socket and labels each log line with the `service` name (extracted from container name)
+- **Loki** stores the compressed log data in the `loki-data` volume
+- **Grafana** is accessible at `{DOMAIN}/grafana` (user: `admin`, password: `GRAFANA_PASSWORD` from `.env`); Loki is auto-provisioned as the default datasource via `config/grafana/provisioning/`
 
 Each service has a multi-stage Dockerfile at `packages/<service>/Dockerfile`. All use `pnpm@10.29.2` (pinned), run as `USER node` (non-root), and use the repo root as build context (`context: .` in docker-compose). `.dockerignore` at repo root excludes `**/node_modules`, `**/dist`, `.git`.
 
