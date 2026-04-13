@@ -36,8 +36,8 @@ export function httpLogger(logger: pino.Logger): RequestHandler {
     serializers: isDev
       ? {}
       : {
-          req: (req) => ({ method: req.method, url: req.url }),
-          res: (res) => ({ statusCode: res.statusCode }),
-        },
+        req: (req) => ({ method: req.method, url: req.url }),
+        res: (res) => ({ statusCode: res.statusCode }),
+      },
   }) as RequestHandler;
 }
