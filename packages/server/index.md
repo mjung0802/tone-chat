@@ -20,13 +20,14 @@ Express 5 + Socket.IO 4 server on :4000. Verifies JWTs locally, proxies all clie
 | `servers/` | Server CRUD + custom tones proxy → messagingService |
 | `socket/` | Socket.IO setup, JWT auth, room join/leave, message handler registration |
 | `users/` | User profile proxy + friend management proxy → usersService; emits `friend:request_received` / `friend:request_accepted` socket events |
-| `shared/` | `serviceRequest()` HTTP utility + auth/error middleware |
+| `shared/` | `serviceRequest()` HTTP utility + auth/error middleware + pino logger |
 
 ## Key Files
 - `src/app.ts` — Express app with all routers mounted under `/api/v1`; includes health router
 - `src/health/health.routes.ts` — `GET /api/v1/health` → `{ ok: true, version }`, no auth required
 - `src/index.ts` — HTTP server entrypoint, Socket.IO setup, config validation
 - `src/shared/serviceClient.ts` — all inter-service HTTP calls go through this
+- `src/shared/logger.ts` — pino logger; `createLogger('server')` from tone-chat-logger
 - `src/messages/messages.socket.ts` — Socket.IO `send_message` handler with full validation
 - `src/socket/index.ts` — Socket.IO configuration and room management
 

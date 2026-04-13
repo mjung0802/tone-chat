@@ -16,12 +16,13 @@ Express service on :3001 + MongoDB. Manages servers, channels, messages, members
 | `bans/` | Ban enforcement + ServerBan records |
 | `auditLog/` | Moderation audit log — tracks mute/unmute/kick/ban/unban/promote/demote |
 | `dms/` | Direct conversation + direct message models |
-| `shared/` | Role utilities + `requireMember`/`requireRole` middleware |
+| `shared/` | Role utilities + `requireMember`/`requireRole` middleware + pino logger |
 
 ## Key Files
 - `src/app.ts` — Express app; `internalAuth` then `verifyUserToken` on all routes
 - `src/shared/roles.ts` — `getRoleLevel()`, `isAbove()` — import for all hierarchy checks
 - `src/shared/middleware/requireMember.ts` — every protected route uses this
+- `src/shared/logger.ts` — pino logger; `createLogger('messagingService')` from tone-chat-logger
 - `src/messages/message.model.ts` — full message schema (tone, reactions, mentions, replyTo)
 - `src/servers/server.model.ts` — server schema including customTones array
 
