@@ -22,10 +22,22 @@ export function createLogger(serviceName: string): pino.Logger {
 }
 
 export function httpLogger(logger: pino.Logger): RequestHandler {
+  const isDev = process.env['NODE_ENV'] !== 'production';
   return pinoHttp({
     logger,
     autoLogging: {
       ignore: (req) => req.url === '/health',
     },
+    customLogLevel: (_req, res, err) => {
+      if (err != null || res.statusCode >= 500) return 'error';
+      if (res.statusCode >= 400) return 'warn';
+      return isDev ? 'info' : 'trace';
+    },
+    serializers: isDev
+      ? {}
+      : {
+          req: (req) => ({ method: req.method, url: req.url }),
+          res: (res) => ({ statusCode: res.statusCode }),
+        },
   }) as RequestHandler;
 }
