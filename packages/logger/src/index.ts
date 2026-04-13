@@ -22,5 +22,10 @@ export function createLogger(serviceName: string): pino.Logger {
 }
 
 export function httpLogger(logger: pino.Logger): RequestHandler {
-  return pinoHttp({ logger }) as RequestHandler;
+  return pinoHttp({
+    logger,
+    autoLogging: {
+      ignore: (req) => req.url === '/health',
+    },
+  }) as RequestHandler;
 }

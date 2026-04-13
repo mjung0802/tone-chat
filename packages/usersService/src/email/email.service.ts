@@ -31,7 +31,6 @@ export async function sendVerificationEmail(to: string, code: string): Promise<v
   });
 
   if (!config.smtpHost) {
-    // Dev mode: log OTP to console since no SMTP is configured
     logger.info({ to, code, messageId: info.messageId }, 'Verification email sent (dev mode — OTP logged)');
   } else {
     logger.info({ to, messageId: info.messageId }, 'Verification email sent');
