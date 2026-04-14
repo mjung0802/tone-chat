@@ -154,7 +154,7 @@ function makeMockIo() {
 }
 
 describe('POST /:conversationId/messages', () => {
-  const postMessagesHandler = findHandler('/:conversationId/messages', 'post');
+  const postMessagesHandler = findLastHandler('/:conversationId/messages', 'post');
 
   beforeEach(() => {
     mockGetConversation.mock.resetCalls();

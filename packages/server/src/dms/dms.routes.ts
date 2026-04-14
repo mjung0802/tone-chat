@@ -4,6 +4,7 @@ import * as dmsClient from './dms.client.js';
 import { isBlockedBidirectional } from '../users/users.client.js';
 import { broadcastDmAndNotify } from './dms.broadcast.js';
 import { createPerUserRateLimiter } from '../shared/rateLimiters.js';
+import { validateBody, createMessageSchema, editMessageSchema, reactionSchema } from '../shared/validate.js';
 
 export const dmsRouter = Router();
 
@@ -59,7 +60,7 @@ dmsRouter.get('/:conversationId/messages', async (req: AuthRequest, res) => {
 });
 
 // POST /dms/:conversationId/messages — with bidirectional block check
-dmsRouter.post('/:conversationId/messages', async (req: AuthRequest, res) => {
+dmsRouter.post('/:conversationId/messages', validateBody(createMessageSchema), async (req: AuthRequest, res) => {
   const conversationId = req.params['conversationId'] as string;
 
   const convResult = await dmsClient.getConversation(req.token!, conversationId);
@@ -89,7 +90,7 @@ dmsRouter.post('/:conversationId/messages', async (req: AuthRequest, res) => {
 });
 
 // PATCH /dms/:conversationId/messages/:messageId
-dmsRouter.patch('/:conversationId/messages/:messageId', async (req: AuthRequest, res) => {
+dmsRouter.patch('/:conversationId/messages/:messageId', validateBody(editMessageSchema), async (req: AuthRequest, res) => {
   const result = await dmsClient.editDmMessage(
     req.token!,
     req.params['conversationId'] as string,
@@ -100,7 +101,7 @@ dmsRouter.patch('/:conversationId/messages/:messageId', async (req: AuthRequest,
 });
 
 // PUT /dms/:conversationId/messages/:messageId/reactions
-dmsRouter.put('/:conversationId/messages/:messageId/reactions', async (req: AuthRequest, res) => {
+dmsRouter.put('/:conversationId/messages/:messageId/reactions', validateBody(reactionSchema), async (req: AuthRequest, res) => {
   const result = await dmsClient.reactToDmMessage(
     req.token!,
     req.params['conversationId'] as string,
