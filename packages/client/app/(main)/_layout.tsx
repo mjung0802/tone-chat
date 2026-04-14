@@ -4,11 +4,10 @@ import { ServerRail } from '@/components/layout/ServerRail';
 import { ServerSidebar } from '@/components/layout/ServerSidebar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useDmNotifications } from '@/hooks/useDmNotifications';
+import { useFriendSocket } from '@/hooks/useFriendSocket';
 import { useMentionNotifications } from '@/hooks/useMentionNotifications';
 import { useAuthStore } from '@/stores/authStore';
-import { useSocketStore } from '@/stores/socketStore';
 import { useUiStore } from '@/stores/uiStore';
-import { useQueryClient } from '@tanstack/react-query';
 import { Slot } from 'expo-router';
 import React, { useEffect } from 'react';
 import { useWindowDimensions, View } from 'react-native';
@@ -22,10 +21,9 @@ export default function MainLayout() {
   const setSidebarOpen = useUiStore((s) => s.setSidebarOpen);
   const userId = useAuthStore((s) => s.userId);
 
-  const socket = useSocketStore((s) => s.socket);
-  const queryClient = useQueryClient();
   useMentionNotifications();
   useDmNotifications();
+  useFriendSocket();
 
   // Auto-collapse sidebar on narrow screens
   useEffect(() => {
@@ -36,30 +34,6 @@ export default function MainLayout() {
     }
     // Only run when isWide changes
   }, [isWide]);
-
-  // Friend request notification handler
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleRequestReceived = (event: { requesterId: string; requesterName: string }) => {
-      void queryClient.invalidateQueries({ queryKey: ['friends', 'pending'] });
-      void queryClient.invalidateQueries({ queryKey: ['friends', 'status', event.requesterId] });
-    };
-
-    const handleRequestAccepted = (event: { accepterId: string; accepterName: string }) => {
-      void queryClient.invalidateQueries({ queryKey: ['friends'] });
-      void queryClient.invalidateQueries({ queryKey: ['friends', 'pending'] });
-      void queryClient.invalidateQueries({ queryKey: ['friends', 'status', event.accepterId] });
-    };
-
-    socket.on('friend:request_received', handleRequestReceived);
-    socket.on('friend:request_accepted', handleRequestAccepted);
-
-    return () => {
-      socket.off('friend:request_received', handleRequestReceived);
-      socket.off('friend:request_accepted', handleRequestAccepted);
-    };
-  }, [socket, queryClient]);
 
   return (
     <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.colors.background }}>
