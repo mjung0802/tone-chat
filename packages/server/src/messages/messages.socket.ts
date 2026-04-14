@@ -1,6 +1,11 @@
 import type { Server, Socket } from 'socket.io';
 import * as messagesClient from './messages.client.js';
 import { emitMentionsFromResult } from './mentions.helper.js';
+import { createSocketRateLimiter } from '../shared/socketRateLimiter.js';
+
+// Created once at module level — shared across all socket connections
+const sendMessageLimiter = createSocketRateLimiter(60 * 1000, 30);   // 30 per minute
+const toggleReactionLimiter = createSocketRateLimiter(60 * 1000, 60); // 60 per minute
 
 function isValidSendMessage(data: unknown): data is { serverId: string; channelId: string; content: string; attachmentIds?: string[]; replyToId?: string; mentions?: string[]; tone?: string } {
   if (typeof data !== 'object' || data === null) return false;
@@ -45,6 +50,11 @@ export function registerMessageHandlers(io: Server, socket: Socket, userToken: s
   socket.on('send_message', async (data: unknown) => {
     if (!isValidSendMessage(data)) return;
 
+    if (!sendMessageLimiter(userId)) {
+      socket.emit('message_error', { code: 'RATE_LIMITED', message: 'Too many messages. Slow down.' });
+      return;
+    }
+
     try {
       const body: Record<string, unknown> = {
         content: data.content,
@@ -82,6 +92,11 @@ export function registerMessageHandlers(io: Server, socket: Socket, userToken: s
 
   socket.on('toggle_reaction', async (data: unknown) => {
     if (!isValidToggleReaction(data)) return;
+
+    if (!toggleReactionLimiter(userId)) {
+      socket.emit('error', { message: 'Too many reactions. Slow down.' });
+      return;
+    }
 
     try {
       const result = await messagesClient.toggleReaction(userToken, data.serverId, data.channelId, data.messageId, {
