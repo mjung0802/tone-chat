@@ -1,4 +1,5 @@
 import { config } from '../config/index.js';
+import { logger } from './logger.js';
 
 export interface ServiceResponse {
   status: number;
@@ -40,7 +41,8 @@ export async function serviceRequest(
   try {
     const data: unknown = await res.json();
     return { status: res.status, data };
-  } catch {
+  } catch (err) {
+    logger.warn({ err, status: res.status }, 'Failed to parse JSON response from downstream service');
     return { status: res.status, data: null };
   }
 }

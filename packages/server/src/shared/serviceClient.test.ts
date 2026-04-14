@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, describe, it, mock } from 'node:test';
 
+const mockWarn = mock.fn<AnyFn>();
+
+mock.module('./logger.js', {
+  namedExports: { logger: { warn: mockWarn, info: mock.fn<AnyFn>(), error: mock.fn<AnyFn>() } },
+});
+
 mock.module('../config/index.js', {
   namedExports: { config: { internalApiKey: 'test-key' } },
 });
@@ -15,6 +21,7 @@ describe('serviceRequest', () => {
     mockFetch = mock.fn<AnyFn>();
     // @ts-expect-error - Intentionally replacing global fetch with mock for testing
     globalThis.fetch = mockFetch;
+    mockWarn.mock.resetCalls();
   });
 
   afterEach(() => {
@@ -77,5 +84,17 @@ describe('serviceRequest', () => {
     }));
     const result = await serviceRequest('http://svc', '/path');
     assert.deepEqual(result, { status: 502, data: null });
+  });
+
+  it('logs a warning when JSON parsing fails', async () => {
+    mockFetch.mock.mockImplementation(async () => ({
+      status: 502,
+      json: async () => { throw new SyntaxError('Unexpected token < in JSON'); },
+    }));
+    await serviceRequest('http://svc', '/path');
+    assert.equal(mockWarn.mock.callCount(), 1);
+    const args = mockWarn.mock.calls[0]!.arguments;
+    assert.ok(typeof args[0] === 'object' && args[0] !== null, 'first arg should be context object');
+    assert.equal(args[1], 'Failed to parse JSON response from downstream service');
   });
 });
