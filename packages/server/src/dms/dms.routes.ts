@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import type { AuthRequest } from '../shared/middleware/auth.js';
-import rateLimit from 'express-rate-limit';
 import * as dmsClient from './dms.client.js';
 import { isBlockedBidirectional } from '../users/users.client.js';
 import { broadcastDmAndNotify } from './dms.broadcast.js';
+import { createPerUserRateLimiter } from '../shared/rateLimiters.js';
 
 export const dmsRouter = Router();
 
@@ -13,14 +13,12 @@ export function setDmIO(io: import('socket.io').Server | null): void {
   ioRef = io;
 }
 
-// Tightest rate limit on conversation creation (prevents flooding)
-const createConversationLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  limit: 20,
-  standardHeaders: 'draft-7',
-  legacyHeaders: false,
-  message: { error: { code: 'TOO_MANY_REQUESTS', message: 'Too many conversation requests. Try again later.', status: 429 } },
-});
+/** 20 new conversations per hour per user — keyed by userId like all other limiters */
+const createConversationLimiter = createPerUserRateLimiter(
+  60 * 60 * 1000,
+  20,
+  'Too many conversation requests. Try again later.',
+);
 
 // POST /dms/:otherUserId — get-or-create conversation
 dmsRouter.post('/:otherUserId', createConversationLimiter, async (req: AuthRequest, res) => {

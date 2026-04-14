@@ -1,7 +1,7 @@
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import type { Request } from 'express';
 
-function createPerUserRateLimiter(windowMs: number, limit: number, message: string) {
+export function createPerUserRateLimiter(windowMs: number, limit: number, message: string) {
   return rateLimit({
     windowMs,
     limit,
