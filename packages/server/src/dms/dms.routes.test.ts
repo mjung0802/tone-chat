@@ -71,17 +71,6 @@ function makeRes(): DmsRes {
   return res;
 }
 
-function findHandler(path: string, httpMethod: string): (req: DmsReq, res: DmsRes) => Promise<void> {
-  // @ts-expect-error - simplified RouterLayer type for testing
-  const layer = (dmsRouter.stack as RouterLayer[]).find(
-    (l) => l.route?.path === path && Boolean(l.route?.methods?.[httpMethod]),
-  );
-  const handle =
-    (layer?.route?.stack?.find((s: RouteStackEntry) => s.method === httpMethod)?.handle) ??
-    (async () => {});
-  return handle as (req: DmsReq, res: DmsRes) => Promise<void>;
-}
-
 // For POST /:otherUserId there are two handlers (rate limiter + async), pick the last one
 function findLastHandler(path: string, httpMethod: string): (req: DmsReq, res: DmsRes) => Promise<void> {
   // @ts-expect-error - simplified RouterLayer type for testing
