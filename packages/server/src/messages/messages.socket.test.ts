@@ -1,6 +1,19 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it, mock } from 'node:test';
 
+let sendMessageAllowed = true;
+let toggleReactionAllowed = true;
+
+mock.module('../shared/socketRateLimiter.js', {
+  namedExports: {
+    createSocketRateLimiter: mock.fn<AnyFn>((_windowMs: number, limit: number) => {
+      // Identify each limiter by its limit value (30 = send_message, 60 = toggle_reaction)
+      if (limit === 30) return () => sendMessageAllowed;
+      return () => toggleReactionAllowed;
+    }),
+  },
+});
+
 const mockCreateMessage = mock.fn<AnyFn>();
 const mockToggleReaction = mock.fn<AnyFn>();
 mock.module('./messages.client.js', {
@@ -34,6 +47,8 @@ describe('registerMessageHandlers', () => {
     mockCreateMessage.mock.resetCalls();
     mockToggleReaction.mock.resetCalls();
     mockEmitMentionsFromResult.mock.resetCalls();
+    sendMessageAllowed = true;
+    toggleReactionAllowed = true;
     handlers = {};
     const mockToEmit = mock.fn();
     socket = {
@@ -186,6 +201,16 @@ describe('registerMessageHandlers', () => {
       assert.equal(socket.emit.mock.callCount(), 1);
       assert.equal(socket.emit.mock.calls[0]!.arguments[0], 'message_error');
     });
+
+    it('emits message_error with RATE_LIMITED when send_message limit exceeded', async () => {
+      sendMessageAllowed = false;
+      await handlers['send_message']!({ serverId: 's1', channelId: 'c1', content: 'hello' });
+      assert.equal(mockCreateMessage.mock.callCount(), 0);
+      assert.equal(socket.emit.mock.callCount(), 1);
+      assert.equal(socket.emit.mock.calls[0]!.arguments[0], 'message_error');
+      const payload = socket.emit.mock.calls[0]!.arguments[1] as { code: string };
+      assert.equal(payload.code, 'RATE_LIMITED');
+    });
   });
 
   describe('typing', () => {
@@ -287,6 +312,16 @@ describe('registerMessageHandlers', () => {
 
       assert.equal(socket.emit.mock.callCount(), 1);
       assert.equal(socket.emit.mock.calls[0]!.arguments[0], 'error');
+    });
+
+    it('emits error when toggle_reaction limit exceeded', async () => {
+      toggleReactionAllowed = false;
+      await handlers['toggle_reaction']!({ serverId: 's1', channelId: 'c1', messageId: 'm1', emoji: '👍' });
+      assert.equal(mockToggleReaction.mock.callCount(), 0);
+      assert.equal(socket.emit.mock.callCount(), 1);
+      assert.equal(socket.emit.mock.calls[0]!.arguments[0], 'error');
+      const payload = socket.emit.mock.calls[0]!.arguments[1] as { message: string };
+      assert.ok(payload.message.length > 0);
     });
   });
 });
