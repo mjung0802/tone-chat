@@ -6,7 +6,7 @@ let toggleReactionAllowed = true;
 
 mock.module('../shared/socketRateLimiter.js', {
   namedExports: {
-    createSocketRateLimiter: mock.fn<AnyFn>((_windowMs: number, limit: number) => {
+    createSocketRateLimiter: mock.fn<AnyFn>((_windowMs: unknown, limit: unknown) => {
       // Identify each limiter by its limit value (30 = send_message, 60 = toggle_reaction)
       if (limit === 30) return () => sendMessageAllowed;
       return () => toggleReactionAllowed;
