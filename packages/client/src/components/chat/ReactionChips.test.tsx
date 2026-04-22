@@ -1,3 +1,49 @@
+// Inline Reanimated mock — avoids window.matchMedia issues in Jest JSDOM-lite env.
+// Pattern mirrors ToneTag.test.tsx.
+jest.mock('react-native-reanimated', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View, Text, Image } = require('react-native');
+  const NOOP = () => {};
+  // Use explicit function (not arrow) to avoid <T> being parsed as JSX in .tsx
+  function ID(t: unknown) { return t; }
+  return {
+    __esModule: true,
+    default: {
+      View,
+      Text,
+      Image,
+      createAnimatedComponent: ID,
+    },
+    useSharedValue: (init: unknown) => ({ value: init }),
+    useAnimatedStyle: (fn: () => object) => fn(),
+    withTiming: (toValue: unknown) => toValue,
+    withRepeat: ID,
+    withSequence: () => 0,
+    withDelay: (_delay: number, next: unknown) => next,
+    cancelAnimation: NOOP,
+    useReducedMotion: jest.fn(() => false),
+    Easing: {
+      linear: ID,
+      ease: ID,
+      quad: ID,
+      cubic: ID,
+      in: ID,
+      out: ID,
+      inOut: ID,
+      bezier: () => ({ factory: ID }),
+      back: ID,
+      bounce: ID,
+      elastic: ID,
+      poly: ID,
+      sin: ID,
+      circle: ID,
+      exp: ID,
+      steps: ID,
+      bezierFn: ID,
+    },
+  };
+});
+
 import React from 'react';
 import { fireEvent } from '@testing-library/react-native';
 import { ReactionChips } from './ReactionChips';
@@ -64,5 +110,52 @@ describe('ReactionChips', () => {
       <ReactionChips {...defaultProps} />,
     );
     expect(getByLabelText('Add reaction')).toBeTruthy();
+  });
+
+  describe('tone-aware chips', () => {
+    it('matched emoji gets tone color on its text', () => {
+      const { getByTestId } = renderWithProviders(
+        <ReactionChips
+          {...defaultProps}
+          toneMatchEmojis={['👍']}
+          toneColor="#ff0000"
+        />,
+      );
+      const thumbsUpText = getByTestId('reaction-chip-text-👍');
+      // Style is a nested array (Paper theme styles + our styles); flatten recursively
+      function flattenStyle(s: unknown): object[] {
+        if (Array.isArray(s)) return s.flatMap(flattenStyle);
+        if (s && typeof s === 'object') return [s];
+        return [];
+      }
+      const flatStyle = Object.assign({}, ...flattenStyle(thumbsUpText.props.style));
+      expect(flatStyle.color).toBe('#ff0000');
+    });
+
+    it('unmatched emoji retains default chip styling', () => {
+      const { getByTestId } = renderWithProviders(
+        <ReactionChips
+          {...defaultProps}
+          toneMatchEmojis={['👍']}
+          toneColor="#ff0000"
+        />,
+      );
+      const fireText = getByTestId('reaction-chip-text-🔥');
+      function flattenStyle(s: unknown): object[] {
+        if (Array.isArray(s)) return s.flatMap(flattenStyle);
+        if (s && typeof s === 'object') return [s];
+        return [];
+      }
+      const flatStyle = Object.assign({}, ...flattenStyle(fireText.props.style));
+      expect(flatStyle.color).not.toBe('#ff0000');
+    });
+
+    it('no tone props → all chips use default theme styling', () => {
+      const { getByText } = renderWithProviders(
+        <ReactionChips {...defaultProps} />,
+      );
+      expect(getByText('👍 2')).toBeTruthy();
+      expect(getByText('🔥 1')).toBeTruthy();
+    });
   });
 });
