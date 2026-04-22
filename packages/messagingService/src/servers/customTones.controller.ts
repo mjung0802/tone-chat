@@ -4,6 +4,8 @@ import { Server } from './server.model.js';
 const KEY_PATTERN = /^[a-z0-9]{1,10}$/;
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 const VALID_TEXT_STYLES = ['normal', 'italic', 'medium'] as const;
+const VALID_CHARS = ['bounce','tilt','lock','sway','wobble','rise','sink','breathe','jitter'] as const;
+const VALID_DRIFT_DIRS = ['UR','U','R','F'] as const;
 const MAX_CUSTOM_TONES = 20;
 
 export async function listCustomTones(req: Request, res: Response): Promise<void> {
@@ -23,13 +25,17 @@ export async function addCustomTone(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const { key, label, emoji, colorLight, colorDark, textStyle } = req.body as {
+  const { key, label, emoji, colorLight, colorDark, textStyle, char, emojiSet, driftDir, matchEmojis } = req.body as {
     key?: string;
     label?: string;
     emoji?: string;
     colorLight?: string;
     colorDark?: string;
     textStyle?: string;
+    char?: string;
+    emojiSet?: unknown;
+    driftDir?: string;
+    matchEmojis?: unknown;
   };
 
   if (!key || !KEY_PATTERN.test(key)) {
@@ -63,6 +69,34 @@ export async function addCustomTone(req: Request, res: Response): Promise<void> 
     return;
   }
 
+  // char: optional, must be one of the 9 enum values if present
+  if (char !== undefined && !(VALID_CHARS as readonly string[]).includes(char as string)) {
+    res.status(400).json({ error: { code: 'INVALID_TONE', message: 'char must be one of: bounce, tilt, lock, sway, wobble, rise, sink, breathe, jitter', status: 400 } });
+    return;
+  }
+
+  // emojiSet: optional array of 1-8 strings, each 1-10 chars
+  if (emojiSet !== undefined) {
+    if (!Array.isArray(emojiSet) || emojiSet.length < 1 || emojiSet.length > 8 || !emojiSet.every((e: unknown) => typeof e === 'string' && e.length >= 1 && e.length <= 10)) {
+      res.status(400).json({ error: { code: 'INVALID_TONE', message: 'emojiSet must be an array of 1-8 strings (each 1-10 chars)', status: 400 } });
+      return;
+    }
+  }
+
+  // driftDir: optional, must be one of 'UR', 'U', 'R', 'F' if present
+  if (driftDir !== undefined && !(VALID_DRIFT_DIRS as readonly string[]).includes(driftDir as string)) {
+    res.status(400).json({ error: { code: 'INVALID_TONE', message: 'driftDir must be one of: UR, U, R, F', status: 400 } });
+    return;
+  }
+
+  // matchEmojis: optional array of 0-20 strings, each 1-10 chars
+  if (matchEmojis !== undefined) {
+    if (!Array.isArray(matchEmojis) || matchEmojis.length > 20 || !matchEmojis.every((e: unknown) => typeof e === 'string' && e.length >= 1 && e.length <= 10)) {
+      res.status(400).json({ error: { code: 'INVALID_TONE', message: 'matchEmojis must be an array of 0-20 strings (each 1-10 chars)', status: 400 } });
+      return;
+    }
+  }
+
   if (server.customTones.length >= MAX_CUSTOM_TONES) {
     res.status(400).json({ error: { code: 'MAX_CUSTOM_TONES', message: 'Maximum 20 custom tones per server', status: 400 } });
     return;
@@ -73,7 +107,18 @@ export async function addCustomTone(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const newTone = { key, label, emoji, colorLight, colorDark, textStyle: resolvedTextStyle as 'normal' | 'italic' | 'medium' };
+  const newTone = {
+    key,
+    label,
+    emoji,
+    colorLight,
+    colorDark,
+    textStyle: resolvedTextStyle as 'normal' | 'italic' | 'medium',
+    ...(char !== undefined && { char: char as 'bounce' | 'tilt' | 'lock' | 'sway' | 'wobble' | 'rise' | 'sink' | 'breathe' | 'jitter' }),
+    ...(emojiSet !== undefined && { emojiSet: emojiSet as string[] }),
+    ...(driftDir !== undefined && { driftDir: driftDir as 'UR' | 'U' | 'R' | 'F' }),
+    ...(matchEmojis !== undefined && { matchEmojis: matchEmojis as string[] }),
+  };
   server.customTones.push(newTone);
   await server.save();
 
