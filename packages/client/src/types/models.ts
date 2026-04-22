@@ -64,6 +64,10 @@ export interface CustomToneDefinition {
   colorLight: string;
   colorDark: string;
   textStyle: 'normal' | 'italic' | 'medium';
+  char?: 'bounce' | 'tilt' | 'lock' | 'sway' | 'wobble' | 'rise' | 'sink' | 'breathe' | 'jitter' | undefined;
+  emojiSet?: string[] | undefined;
+  driftDir?: 'UR' | 'U' | 'R' | 'F' | undefined;
+  matchEmojis?: string[] | undefined;
 }
 
 export interface ServerMember {
