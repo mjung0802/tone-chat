@@ -50,6 +50,30 @@ jest.mock('../invites/ServerInviteCard', () => {
   };
 });
 
+jest.mock('./ToneKineticText', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Text } = require('react-native');
+  return {
+    ToneKineticText: ({ text }: { text: string }) => <Text>{text}</Text>,
+  };
+});
+
+jest.mock('./ToneTag', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View } = require('react-native');
+  return {
+    ToneTag: () => <View testID="tone-tag" />,
+  };
+});
+
+jest.mock('./ToneEmojiDrift', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View } = require('react-native');
+  return {
+    ToneEmojiDrift: () => <View testID="tone-emoji-drift" />,
+  };
+});
+
 describe('MessageBubble', () => {
   it('renders message content', () => {
     const msg = makeMessage({ content: 'Test message' });

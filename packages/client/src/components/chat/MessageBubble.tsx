@@ -4,6 +4,9 @@ import { Text, Icon, IconButton, useTheme, Button } from 'react-native-paper';
 import { AttachmentBubble } from './AttachmentBubble';
 import { ReactionChips } from './ReactionChips';
 import { ServerInviteCard } from '../invites/ServerInviteCard';
+import { ToneKineticText } from './ToneKineticText';
+import { ToneTag } from './ToneTag';
+import { ToneEmojiDrift } from './ToneEmojiDrift';
 import { UserAvatar } from '../common/UserAvatar';
 import type { Message, Attachment, CustomToneDefinition } from '../../types/models';
 import { resolveTone } from '../../tone/toneRegistry';
@@ -199,6 +202,14 @@ export const MessageBubble = memo(function MessageBubble({
               (edited)
             </Text>
           ) : null}
+          {toneDef ? (
+            <ToneTag tone={toneDef} isDark={isDark} displayMode={toneDisplay} hovered={hovered} />
+          ) : null}
+        </View>
+      ) : null}
+      {isContinuation && toneDef ? (
+        <View style={styles.continuationToneTag}>
+          <ToneTag tone={toneDef} isDark={isDark} displayMode={toneDisplay} hovered={hovered} />
         </View>
       ) : null}
       <View style={styles.bubbleRow}>
@@ -263,9 +274,19 @@ export const MessageBubble = memo(function MessageBubble({
             const contentBlock = (
               <>
                 {message.content ? (
-                  <Text style={[{ color: effectiveTextColor }, toneTextStyle]}>
-                    {renderContentWithMentions(message.content, theme.colors.primary)}
-                  </Text>
+                  toneDef && toneDisplay === 'full' ? (
+                    <ToneKineticText
+                      text={message.content}
+                      tone={toneDef}
+                      isDark={isDark}
+                      displayMode={toneDisplay}
+                      mentionColor={theme.colors.primary}
+                    />
+                  ) : (
+                    <Text style={[{ color: effectiveTextColor }, toneTextStyle]}>
+                      {renderContentWithMentions(message.content, theme.colors.primary)}
+                    </Text>
+                  )
                 ) : null}
                 {hasAttachments ? (
                   <View style={styles.attachments}>
@@ -277,12 +298,7 @@ export const MessageBubble = memo(function MessageBubble({
               </>
             );
 
-            return toneDef && toneDisplay === 'full' ? (
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
-                <Text style={{ fontSize: 18 }}>{toneDef.emoji}</Text>
-                <View style={{ flex: 1 }}>{contentBlock}</View>
-              </View>
-            ) : contentBlock;
+            return contentBlock;
           })()}
           {message.serverInvite != null && (
             <ServerInviteCard
@@ -291,15 +307,11 @@ export const MessageBubble = memo(function MessageBubble({
               code={message.serverInvite.code}
             />
           )}
-          {toneDef ? (
-            <Text style={{
-              color: toneColor,
-              fontSize: 11,
-              marginTop: 2,
-              ...(toneDisplay === 'reduced' ? { opacity: 0.7 } : {}),
-            }}>
-              {toneDisplay === 'full' ? toneDef.label : `/${toneDef.key}`}
-            </Text>
+          {toneDef && toneDisplay === 'full' && toneDef.emojiSet ? (
+            <ToneEmojiDrift
+              emojiSet={toneDef.emojiSet}
+              driftDir={toneDef.driftDir ?? 'UR'}
+            />
           ) : null}
         </View>
         {(onAddReaction || onReply || onMute || onUnmute || onKick || onBan || (isOwn && (onSaveEdit || onDelete))) ? (
@@ -394,6 +406,8 @@ export const MessageBubble = memo(function MessageBubble({
           authorNames={authorNames}
           onToggle={(emoji) => onToggleReaction?.(message._id, emoji)}
           onAddReaction={() => onAddReaction?.(message._id)}
+          toneMatchEmojis={toneDef?.matchEmojis}
+          toneColor={toneDef && toneDisplay === 'full' ? toneColor : undefined}
         />
       ) : null}
       </View>
@@ -431,6 +445,7 @@ const styles = StyleSheet.create({
   },
   bubbleWrapper: {
     flex: 1,
+    position: 'relative',
   },
   bubble: {
     paddingHorizontal: 14,
@@ -496,5 +511,10 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 4,
     marginTop: 4,
+  },
+  continuationToneTag: {
+    position: 'absolute',
+    top: 4,
+    right: 8,
   },
 });
