@@ -49,8 +49,6 @@ function ChipWithTooltip({
       entryScale.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.back(2)) });
       entryOpacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.back(2)) });
     }
-    // Intentionally run once on mount only
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const entryAnimStyle = useAnimatedStyle(() => ({

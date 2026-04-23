@@ -107,8 +107,6 @@ function EmojiSprite({ emoji, driftDir, position, delayMs }: EmojiSpriteProps) {
         ),
       );
     }
-    // config values are stable — intentionally excluded from deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({

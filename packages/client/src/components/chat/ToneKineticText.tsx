@@ -153,8 +153,6 @@ function AnimatedWord({ children, index, char, wordStyle }: AnimatedWordProps) {
         );
         break;
     }
-    // char and index are stable props — intentionally excluded from deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({
