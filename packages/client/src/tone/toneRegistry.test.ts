@@ -78,12 +78,11 @@ describe('toneRegistry', () => {
   });
 
   describe('base tones animation data', () => {
-    it('all 9 base tones have char and driftDir populated', () => {
+    it('all 9 base tones have char, emojiSet, and matchEmojis populated', () => {
       const keys = ['j', 's', 'srs', 'lh', 'hj', 'pos', 'neg', 'gen', 't'];
       for (const key of keys) {
         const tone = getBaseTone(key);
         expect(tone?.char).toBeDefined();
-        expect(tone?.driftDir).toBeDefined();
         expect(tone?.emojiSet).toBeDefined();
         expect(tone?.matchEmojis).toBeDefined();
       }
@@ -97,10 +96,10 @@ describe('toneRegistry', () => {
       expect(tone?.matchEmojis).toEqual(['😂', '🤣']);
     });
 
-    it('negative tone has char=sink and driftDir=F', () => {
+    it('negative tone has char=sink', () => {
       const tone = getBaseTone('neg');
       expect(tone?.char).toBe('sink');
-      expect(tone?.driftDir).toBe('F');
+      expect(tone?.driftDir).toBeUndefined();
     });
   });
 

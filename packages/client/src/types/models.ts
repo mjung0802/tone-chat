@@ -70,7 +70,7 @@ export type CharAnimation =
   | 'breathe'
   | 'jitter';
 
-export type DriftDir = 'UR' | 'U' | 'R' | 'F';
+export type DriftDir = 'UL' | 'UR' | 'DL' | 'DR';
 
 export interface CustomToneDefinition {
   key: string;

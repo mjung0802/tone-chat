@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, Platform, StyleSheet, type DimensionValue } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -15,7 +15,6 @@ import type { DriftDir } from '../../tone/toneRegistry';
 
 interface ToneEmojiDriftProps {
   emojiSet: string[];
-  driftDir: DriftDir;
 }
 
 interface EmojiSpriteProps {
@@ -35,11 +34,13 @@ type DriftConfig = {
 };
 
 const DRIFT_CONFIGS: Record<DriftDir, DriftConfig> = {
-  UR: { txStart: 0, txEnd: 12, tyStart: 6, tyEnd: -26, rotStart: 6, rotEnd: 14 },
-  U: { txStart: 0, txEnd: 4, tyStart: 6, tyEnd: -28, rotStart: 0, rotEnd: 0 },
-  R: { txStart: -2, txEnd: 16, tyStart: 2, tyEnd: -10, rotStart: -4, rotEnd: 8 },
-  F: { txStart: 0, txEnd: 4, tyStart: -4, tyEnd: 22, rotStart: 0, rotEnd: 0 },
+  UL: { txStart: 0, txEnd: -12, tyStart: 0, tyEnd: -64, rotStart: -6, rotEnd: -14 },
+  UR: { txStart: 0, txEnd: 12, tyStart: 0, tyEnd: -64, rotStart: 6, rotEnd: 14 },
+  DL: { txStart: 0, txEnd: -4, tyStart: 0, tyEnd: 60, rotStart: 6, rotEnd: -6 },
+  DR: { txStart: 0, txEnd: 4, tyStart: 0, tyEnd: 60, rotStart: -6, rotEnd: 6 },
 };
+
+const ALL_DIRS: DriftDir[] = ['UL', 'UR', 'DL', 'DR'];
 
 function loopAnim(
   shared: SharedValue<number>,
@@ -120,42 +121,65 @@ function EmojiSprite({ emoji, driftDir, position, delayMs }: EmojiSpriteProps) {
   );
 }
 
-const SPRITE_SLOTS: Array<{ left: DimensionValue; top: DimensionValue }> = [
-  { left: '66%', top: '58%' },
-  { left: '78%', top: '72%' },
-  { left: '88%', top: '48%' },
-  { left: '96%', top: '66%' },
+const SPRITE_SLOTS_UP: Array<{ left: DimensionValue; top: DimensionValue }> = [
+  { left: '66%', top: '80%' },
+  { left: '78%', top: '88%' },
+  { left: '88%', top: '76%' },
+  { left: '96%', top: '84%' },
 ];
 
-export function ToneEmojiDrift({ emojiSet, driftDir }: ToneEmojiDriftProps) {
+const SPRITE_SLOTS_DOWN: Array<{ left: DimensionValue; top: DimensionValue }> = [
+  { left: '66%', top: '10%' },
+  { left: '78%', top: '18%' },
+  { left: '88%', top: '6%' },
+  { left: '96%', top: '14%' },
+];
+
+function getSpriteSlots(driftDir: DriftDir) {
+  return driftDir === 'DL' || driftDir === 'DR' ? SPRITE_SLOTS_DOWN : SPRITE_SLOTS_UP;
+}
+
+export function ToneEmojiDrift({ emojiSet }: ToneEmojiDriftProps) {
   const reducedMotion = useReducedMotion();
+  const count = Math.min(emojiSet.length, SPRITE_SLOTS_UP.length);
+
+  const stableRef = useRef<{ dirs: DriftDir[]; baseOffset: number } | null>(null);
+  if (stableRef.current === null) {
+    stableRef.current = {
+      dirs: Array.from(
+        { length: count },
+        () => ALL_DIRS[Math.floor(Math.random() * ALL_DIRS.length)] ?? 'UR',
+      ),
+      baseOffset: Math.floor(Math.random() * 4000),
+    };
+  }
+  const { dirs: spriteDirections, baseOffset } = stableRef.current;
 
   if (reducedMotion) {
     const firstEmoji = emojiSet[0] ?? '';
     return (
       <View style={styles.overlay} pointerEvents="none">
-        <View style={[styles.sprite, { left: '78%', top: '68%', opacity: 0.4 }]}>
+        <View style={[styles.sprite, { left: '78%', top: '80%', opacity: 0.4 }]}>
           <Text style={styles.emoji}>{firstEmoji}</Text>
         </View>
       </View>
     );
   }
 
-  const count = Math.min(emojiSet.length, SPRITE_SLOTS.length);
-
   return (
     <View style={styles.overlay} pointerEvents="none">
       {Array.from({ length: count }, (_, i) => {
-        const slot = SPRITE_SLOTS[i];
+        const spriteDriftDir = spriteDirections[i] ?? 'UR';
+        const slot = getSpriteSlots(spriteDriftDir)[i];
         const emoji = emojiSet[i];
         if (slot === undefined || emoji === undefined) return null;
         return (
           <EmojiSprite
             key={i}
             emoji={emoji}
-            driftDir={driftDir}
+            driftDir={spriteDriftDir}
             position={slot}
-            delayMs={i * 1000}
+            delayMs={baseOffset + i * 1000}
           />
         );
       })}

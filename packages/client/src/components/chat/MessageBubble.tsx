@@ -304,10 +304,7 @@ export const MessageBubble = memo(function MessageBubble({
             />
           )}
           {toneFullActive && toneDef?.emojiSet ? (
-            <ToneEmojiDrift
-              emojiSet={toneDef.emojiSet}
-              driftDir={toneDef.driftDir ?? 'UR'}
-            />
+            <ToneEmojiDrift emojiSet={toneDef.emojiSet} />
           ) : null}
         </View>
         {hasHoverAction ? (

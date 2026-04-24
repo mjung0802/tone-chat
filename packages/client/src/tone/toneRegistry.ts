@@ -22,13 +22,13 @@ export interface ToneDefinition {
 
 export const BASE_TONES: ToneDefinition[] = [
   { key: 'j', tag: '/j', label: 'joking', emoji: '😄', color: { light: '#92400e', dark: '#fcd34d' }, textStyle: 'italic', char: 'bounce', emojiSet: ['😂', '✨'], driftDir: 'UR', matchEmojis: ['😂', '🤣'] },
-  { key: 's', tag: '/s', label: 'sarcasm', emoji: '🙄', color: { light: '#6b21a8', dark: '#d8b4fe' }, textStyle: 'italic', char: 'tilt', emojiSet: ['🙄', '💭'], driftDir: 'R', matchEmojis: ['🙃', '😒'] },
-  { key: 'srs', tag: '/srs', label: 'serious', emoji: '💙', color: { light: '#1e40af', dark: '#bfdbfe' }, textStyle: 'medium', char: 'lock', emojiSet: ['💙'], driftDir: 'U', matchEmojis: ['✋', '💯'] },
+  { key: 's', tag: '/s', label: 'sarcasm', emoji: '🙄', color: { light: '#6b21a8', dark: '#d8b4fe' }, textStyle: 'italic', char: 'tilt', emojiSet: ['🙄', '💭'], matchEmojis: ['🙃', '😒'] },
+  { key: 'srs', tag: '/srs', label: 'serious', emoji: '💙', color: { light: '#1e40af', dark: '#bfdbfe' }, textStyle: 'medium', char: 'lock', emojiSet: ['💙'], matchEmojis: ['✋', '💯'] },
   { key: 'lh', tag: '/lh', label: 'lighthearted', emoji: '😊', color: { light: '#92400e', dark: '#fde68a' }, textStyle: 'normal', char: 'sway', emojiSet: ['🌱', '☀️'], driftDir: 'UR', matchEmojis: ['🌱', '☀️'] },
   { key: 'hj', tag: '/hj', label: 'half-joking', emoji: '😏', color: { light: '#92400e', dark: '#fbbf24' }, textStyle: 'italic', char: 'wobble', emojiSet: ['😏', '💭'], driftDir: 'UR', matchEmojis: ['😏', '😬'] },
-  { key: 'pos', tag: '/pos', label: 'positive', emoji: '🌟', color: { light: '#166534', dark: '#bbf7d0' }, textStyle: 'normal', char: 'rise', emojiSet: ['🎉', '🌟', '💫'], driftDir: 'U', matchEmojis: ['🎉', '✨'] },
-  { key: 'neg', tag: '/neg', label: 'negative', emoji: '😞', color: { light: '#991b1b', dark: '#fca5a5' }, textStyle: 'normal', char: 'sink', emojiSet: ['💧', '😞'], driftDir: 'F', matchEmojis: ['😔', '💀'] },
-  { key: 'gen', tag: '/gen', label: 'genuine', emoji: '🤝', color: { light: '#115e59', dark: '#99f6e4' }, textStyle: 'normal', char: 'breathe', emojiSet: ['💗', '🫶'], driftDir: 'U', matchEmojis: ['🤝', '🫶'] },
+  { key: 'pos', tag: '/pos', label: 'positive', emoji: '🌟', color: { light: '#166534', dark: '#bbf7d0' }, textStyle: 'normal', char: 'rise', emojiSet: ['🎉', '🌟', '💫'], matchEmojis: ['🎉', '✨'] },
+  { key: 'neg', tag: '/neg', label: 'negative', emoji: '😞', color: { light: '#991b1b', dark: '#fca5a5' }, textStyle: 'normal', char: 'sink', emojiSet: ['💧', '😞'], matchEmojis: ['😔', '💀'] },
+  { key: 'gen', tag: '/gen', label: 'genuine', emoji: '🤝', color: { light: '#115e59', dark: '#99f6e4' }, textStyle: 'normal', char: 'breathe', emojiSet: ['💗', '🫶'], matchEmojis: ['🤝', '🫶'] },
   { key: 't', tag: '/t', label: 'teasing', emoji: '😜', color: { light: '#9d174d', dark: '#f9a8d4' }, textStyle: 'italic', char: 'jitter', emojiSet: ['😜', '💫'], driftDir: 'UR', matchEmojis: ['😜', '👀'] },
 ];
 

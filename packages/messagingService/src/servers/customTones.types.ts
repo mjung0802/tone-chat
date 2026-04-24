@@ -10,7 +10,7 @@ export const VALID_CHARS = [
   'breathe',
   'jitter',
 ] as const;
-export const VALID_DRIFT_DIRS = ['UR', 'U', 'R', 'F'] as const;
+export const VALID_DRIFT_DIRS = ['UL', 'UR', 'DL', 'DR'] as const;
 
 export type ToneTextStyle = (typeof VALID_TEXT_STYLES)[number];
 export type CharAnimation = (typeof VALID_CHARS)[number];

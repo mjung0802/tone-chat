@@ -90,7 +90,7 @@ function parseToneBody(body: unknown, res: Response): CustomToneEntry | null {
   let toneDriftDir: DriftDir | undefined;
   if (driftDir !== undefined) {
     if (!isValidEnum(driftDir, VALID_DRIFT_DIRS)) {
-      bad(res, 400, 'INVALID_TONE', 'driftDir must be one of: UR, U, R, F');
+      bad(res, 400, 'INVALID_TONE', 'driftDir must be one of: UL, UR, DL, DR');
       return null;
     }
     toneDriftDir = driftDir;
