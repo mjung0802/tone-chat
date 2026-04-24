@@ -10,11 +10,9 @@ export const VALID_CHARS = [
   'breathe',
   'jitter',
 ] as const;
-export const VALID_DRIFT_DIRS = ['UL', 'UR', 'DL', 'DR'] as const;
 
 export type ToneTextStyle = (typeof VALID_TEXT_STYLES)[number];
 export type CharAnimation = (typeof VALID_CHARS)[number];
-export type DriftDir = (typeof VALID_DRIFT_DIRS)[number];
 
 export interface CustomToneEntry {
   key: string;
@@ -25,6 +23,5 @@ export interface CustomToneEntry {
   textStyle: ToneTextStyle;
   char?: CharAnimation | undefined;
   emojiSet?: string[] | undefined;
-  driftDir?: DriftDir | undefined;
   matchEmojis?: string[] | undefined;
 }

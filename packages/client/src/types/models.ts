@@ -70,8 +70,6 @@ export type CharAnimation =
   | 'breathe'
   | 'jitter';
 
-export type DriftDir = 'UL' | 'UR' | 'DL' | 'DR';
-
 export interface CustomToneDefinition {
   key: string;
   label: string;
@@ -81,7 +79,6 @@ export interface CustomToneDefinition {
   textStyle: ToneTextStyle;
   char?: CharAnimation | undefined;
   emojiSet?: string[] | undefined;
-  driftDir?: DriftDir | undefined;
   matchEmojis?: string[] | undefined;
 }
 

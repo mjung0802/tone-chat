@@ -1,7 +1,6 @@
 import mongoose, { Schema, type Document } from 'mongoose';
 import {
   VALID_CHARS,
-  VALID_DRIFT_DIRS,
   VALID_TEXT_STYLES,
   type CustomToneEntry,
 } from './customTones.types.js';
@@ -36,7 +35,6 @@ const serverSchema = new Schema<IServer>(
         textStyle: { type: String, enum: [...VALID_TEXT_STYLES], default: 'normal' },
         char: { type: String, enum: [...VALID_CHARS] },
         emojiSet: { type: [String], default: undefined },
-        driftDir: { type: String, enum: [...VALID_DRIFT_DIRS] },
         matchEmojis: { type: [String], default: undefined },
         _id: false,
       }],

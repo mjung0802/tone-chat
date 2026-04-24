@@ -196,7 +196,7 @@ describe('addCustomTone', () => {
     assert.equal((res._json as { error: { code: string } }).error.code, 'SERVER_NOT_FOUND');
   });
 
-  it('returns 201 with all 4 new animation fields provided as valid', async () => {
+  it('returns 201 with animation fields provided as valid', async () => {
     mockServerUpdateOne.mock.mockImplementationOnce(async () => ({ matchedCount: 1, modifiedCount: 1 }));
 
     const req = makeReq({
@@ -204,7 +204,6 @@ describe('addCustomTone', () => {
       body: validToneBody({
         char: 'bounce',
         emojiSet: ['✨', '🌟'],
-        driftDir: 'UR',
         matchEmojis: ['😊', '😄'],
       }),
     });
@@ -212,24 +211,14 @@ describe('addCustomTone', () => {
     await addCustomTone(req, res);
 
     assert.equal(res.statusCode, 201);
-    const result = res._json as { customTone: { char: string; emojiSet: string[]; driftDir: string; matchEmojis: string[] } };
+    const result = res._json as { customTone: { char: string; emojiSet: string[]; matchEmojis: string[] } };
     assert.equal(result.customTone.char, 'bounce');
     assert.deepEqual(result.customTone.emojiSet, ['✨', '🌟']);
-    assert.equal(result.customTone.driftDir, 'UR');
     assert.deepEqual(result.customTone.matchEmojis, ['😊', '😄']);
   });
 
   it('returns 400 for char with invalid enum value', async () => {
     const req = makeReq({ params: { serverId: 's1' }, body: validToneBody({ char: 'spin' }) });
-    const res = makeRes();
-    await addCustomTone(req, res);
-
-    assert.equal(res.statusCode, 400);
-    assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_TONE');
-  });
-
-  it('returns 400 for driftDir with invalid value', async () => {
-    const req = makeReq({ params: { serverId: 's1' }, body: validToneBody({ driftDir: 'DOWN' }) });
     const res = makeRes();
     await addCustomTone(req, res);
 

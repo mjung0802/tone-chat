@@ -55,12 +55,11 @@ describe('toneRegistry', () => {
       const custom: CustomToneDefinition = {
         key: 'vibe', label: 'vibe', emoji: '✌️',
         colorLight: '#111111', colorDark: '#eeeeee', textStyle: 'normal',
-        char: 'bounce', emojiSet: ['✌️'], driftDir: 'UR', matchEmojis: ['✌️'],
+        char: 'bounce', emojiSet: ['✌️'], matchEmojis: ['✌️'],
       };
       const def = customToneToDefinition(custom);
       expect(def.char).toBe('bounce');
       expect(def.emojiSet).toEqual(['✌️']);
-      expect(def.driftDir).toBe('UR');
       expect(def.matchEmojis).toEqual(['✌️']);
     });
 
@@ -72,7 +71,6 @@ describe('toneRegistry', () => {
       const def = customToneToDefinition(custom);
       expect(def.char).toBeUndefined();
       expect(def.emojiSet).toBeUndefined();
-      expect(def.driftDir).toBeUndefined();
       expect(def.matchEmojis).toBeUndefined();
     });
   });
@@ -88,10 +86,9 @@ describe('toneRegistry', () => {
       }
     });
 
-    it('joking tone has char=bounce and driftDir=UR', () => {
+    it('joking tone has char=bounce', () => {
       const tone = getBaseTone('j');
       expect(tone?.char).toBe('bounce');
-      expect(tone?.driftDir).toBe('UR');
       expect(tone?.emojiSet).toEqual(['😂', '✨']);
       expect(tone?.matchEmojis).toEqual(['😂', '🤣']);
     });
@@ -99,7 +96,6 @@ describe('toneRegistry', () => {
     it('negative tone has char=sink', () => {
       const tone = getBaseTone('neg');
       expect(tone?.char).toBe('sink');
-      expect(tone?.driftDir).toBeUndefined();
     });
   });
 

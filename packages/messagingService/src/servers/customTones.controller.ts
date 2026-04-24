@@ -2,11 +2,9 @@ import type { Request, Response } from 'express';
 import { Server } from './server.model.js';
 import {
   VALID_CHARS,
-  VALID_DRIFT_DIRS,
   VALID_TEXT_STYLES,
   type CharAnimation,
   type CustomToneEntry,
-  type DriftDir,
   type ToneTextStyle,
 } from './customTones.types.js';
 
@@ -39,7 +37,7 @@ function isValidStringArray(
 
 function parseToneBody(body: unknown, res: Response): CustomToneEntry | null {
   const b = (body ?? {}) as Record<string, unknown>;
-  const { key, label, emoji, colorLight, colorDark, textStyle, char, emojiSet, driftDir, matchEmojis } = b;
+  const { key, label, emoji, colorLight, colorDark, textStyle, char, emojiSet, matchEmojis } = b;
 
   if (typeof key !== 'string' || !KEY_PATTERN.test(key)) {
     bad(res, 400, 'INVALID_TONE', 'key must match /^[a-z0-9]{1,10}$/');
@@ -87,15 +85,6 @@ function parseToneBody(body: unknown, res: Response): CustomToneEntry | null {
     toneEmojiSet = emojiSet;
   }
 
-  let toneDriftDir: DriftDir | undefined;
-  if (driftDir !== undefined) {
-    if (!isValidEnum(driftDir, VALID_DRIFT_DIRS)) {
-      bad(res, 400, 'INVALID_TONE', 'driftDir must be one of: UL, UR, DL, DR');
-      return null;
-    }
-    toneDriftDir = driftDir;
-  }
-
   let toneMatchEmojis: string[] | undefined;
   if (matchEmojis !== undefined) {
     if (!isValidStringArray(matchEmojis, 0, 20, 1, 10)) {
@@ -114,7 +103,6 @@ function parseToneBody(body: unknown, res: Response): CustomToneEntry | null {
     textStyle: toneTextStyle,
     ...(toneChar !== undefined && { char: toneChar }),
     ...(toneEmojiSet !== undefined && { emojiSet: toneEmojiSet }),
-    ...(toneDriftDir !== undefined && { driftDir: toneDriftDir }),
     ...(toneMatchEmojis !== undefined && { matchEmojis: toneMatchEmojis }),
   };
 }

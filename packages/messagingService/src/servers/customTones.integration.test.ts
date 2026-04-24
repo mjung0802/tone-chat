@@ -53,7 +53,7 @@ beforeEach(async () => {
 });
 
 describe('POST /servers/:serverId/tones — animation fields', () => {
-  it('persists all 4 animation fields and returns them via GET', async () => {
+  it('persists animation fields and returns them via GET', async () => {
     const serverId = await createTestServer('admin-1');
 
     const postRes = await fetch(`${baseUrl}/servers/${serverId}/tones`, {
@@ -67,7 +67,6 @@ describe('POST /servers/:serverId/tones — animation fields', () => {
         colorDark: '#eeeeee',
         char: 'bounce',
         emojiSet: ['✌️', '🌟'],
-        driftDir: 'UR',
         matchEmojis: ['✌️', '🎉'],
       }),
     });
@@ -83,13 +82,11 @@ describe('POST /servers/:serverId/tones — animation fields', () => {
       key: string;
       char?: string;
       emojiSet?: string[];
-      driftDir?: string;
       matchEmojis?: string[];
     }> };
     assert.equal(getBody.customTones.length, 1);
     const tone = getBody.customTones[0]!;
     assert.equal(tone.char, 'bounce');
-    assert.equal(tone.driftDir, 'UR');
     assert.deepEqual(tone.emojiSet, ['✌️', '🌟']);
     assert.deepEqual(tone.matchEmojis, ['✌️', '🎉']);
   });
@@ -121,7 +118,6 @@ describe('POST /servers/:serverId/tones — animation fields', () => {
     const tone = getBody.customTones[0]!;
     assert.equal('char' in tone ? tone['char'] : undefined, undefined);
     assert.equal('emojiSet' in tone ? tone['emojiSet'] : undefined, undefined);
-    assert.equal('driftDir' in tone ? tone['driftDir'] : undefined, undefined);
     assert.equal('matchEmojis' in tone ? tone['matchEmojis'] : undefined, undefined);
   });
 
