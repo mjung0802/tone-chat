@@ -2,56 +2,6 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import { BASE_TONES } from '../../tone/toneRegistry';
 import type { ToneDefinition } from '../../tone/toneRegistry';
-
-// Provide a minimal inline Reanimated mock that avoids window.matchMedia issues.
-// The jest-expo preset doesn't auto-mock react-native-reanimated and the real
-// mock file (react-native-reanimated/mock) pulls in code that calls
-// window.matchMedia which isn't available in the Jest JSDOM-lite env.
-jest.mock('react-native-reanimated', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { View, Text, Image } = require('react-native');
-  const NOOP = () => {};
-  // Use explicit function (not arrow) to avoid <T> being parsed as JSX in .tsx
-  function ID(t: unknown) { return t; }
-  return {
-    __esModule: true,
-    default: {
-      View,
-      Text,
-      Image,
-      createAnimatedComponent: ID,
-    },
-    useSharedValue: (init: unknown) => ({ value: init }),
-    useAnimatedStyle: (fn: () => object) => fn(),
-    withRepeat: ID,
-    withTiming: (toValue: unknown) => toValue,
-    withSequence: () => 0,
-    withDelay: (_delay: number, next: unknown) => next,
-    cancelAnimation: NOOP,
-    useReducedMotion: jest.fn(() => false),
-    Easing: {
-      linear: ID,
-      ease: ID,
-      quad: ID,
-      cubic: ID,
-      in: ID,
-      out: ID,
-      inOut: ID,
-      bezier: () => ({ factory: ID }),
-      back: ID,
-      bounce: ID,
-      elastic: ID,
-      poly: ID,
-      sin: ID,
-      circle: ID,
-      exp: ID,
-      steps: ID,
-      bezierFn: ID,
-    },
-  };
-});
-
-// Import after mock is registered
 import { ToneKineticText } from './ToneKineticText';
 
 const MENTION_COLOR = '#6200ee';

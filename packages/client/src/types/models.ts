@@ -57,16 +57,31 @@ export interface Message {
   createdAt: string;
 }
 
+export type ToneTextStyle = 'normal' | 'italic' | 'medium';
+
+export type CharAnimation =
+  | 'bounce'
+  | 'tilt'
+  | 'lock'
+  | 'sway'
+  | 'wobble'
+  | 'rise'
+  | 'sink'
+  | 'breathe'
+  | 'jitter';
+
+export type DriftDir = 'UR' | 'U' | 'R' | 'F';
+
 export interface CustomToneDefinition {
   key: string;
   label: string;
   emoji: string;
   colorLight: string;
   colorDark: string;
-  textStyle: 'normal' | 'italic' | 'medium';
-  char?: 'bounce' | 'tilt' | 'lock' | 'sway' | 'wobble' | 'rise' | 'sink' | 'breathe' | 'jitter' | undefined;
+  textStyle: ToneTextStyle;
+  char?: CharAnimation | undefined;
   emojiSet?: string[] | undefined;
-  driftDir?: 'UR' | 'U' | 'R' | 'F' | undefined;
+  driftDir?: DriftDir | undefined;
   matchEmojis?: string[] | undefined;
 }
 

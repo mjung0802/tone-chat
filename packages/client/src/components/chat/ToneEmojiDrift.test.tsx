@@ -1,53 +1,5 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
-
-// Inline Reanimated mock — avoids window.matchMedia issues in Jest JSDOM-lite env.
-// Pattern mirrors ToneKineticText.test.tsx and ToneTag.test.tsx.
-jest.mock('react-native-reanimated', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { View, Text, Image } = require('react-native');
-  const NOOP = () => {};
-  // Use explicit function (not arrow) to avoid <T> being parsed as JSX in .tsx
-  function ID(t: unknown) { return t; }
-  return {
-    __esModule: true,
-    default: {
-      View,
-      Text,
-      Image,
-      createAnimatedComponent: ID,
-    },
-    useSharedValue: (init: unknown) => ({ value: init }),
-    useAnimatedStyle: (fn: () => object) => fn(),
-    withTiming: (toValue: unknown) => toValue,
-    withRepeat: ID,
-    withSequence: () => 0,
-    withDelay: (_delay: number, next: unknown) => next,
-    cancelAnimation: NOOP,
-    useReducedMotion: jest.fn(() => false),
-    Easing: {
-      linear: ID,
-      ease: ID,
-      quad: ID,
-      cubic: ID,
-      in: ID,
-      out: ID,
-      inOut: ID,
-      bezier: () => ({ factory: ID }),
-      back: ID,
-      bounce: ID,
-      elastic: ID,
-      poly: ID,
-      sin: ID,
-      circle: ID,
-      exp: ID,
-      steps: ID,
-      bezierFn: ID,
-    },
-  };
-});
-
-// Import after mock is registered
 import { ToneEmojiDrift } from './ToneEmojiDrift';
 
 const THREE_EMOJI = ['😂', '✨', '💫'];

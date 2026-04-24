@@ -6,10 +6,15 @@ type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers'>> & 
 type TestResponse = Response & { statusCode: number; _json: unknown };
 
 const mockServerFindById = mock.fn<AnyFn>();
+const mockServerUpdateOne = mock.fn<AnyFn>();
+const mockServerExists = mock.fn<AnyFn>();
+
 mock.module('./server.model.js', {
   namedExports: {
     Server: {
       findById: mockServerFindById,
+      updateOne: mockServerUpdateOne,
+      exists: mockServerExists,
     },
   },
 });
@@ -39,12 +44,25 @@ function validToneBody(overrides: Record<string, unknown> = {}) {
   };
 }
 
+// findById returns a Query-like object whose .lean() resolves to the doc/null.
+function mockFindByIdOnce(doc: unknown): void {
+  mockServerFindById.mock.mockImplementationOnce(() => ({
+    lean: async () => doc,
+  }));
+}
+
+function resetAllMocks(): void {
+  mockServerFindById.mock.resetCalls();
+  mockServerUpdateOne.mock.resetCalls();
+  mockServerExists.mock.resetCalls();
+}
+
 describe('listCustomTones', () => {
-  beforeEach(() => mockServerFindById.mock.resetCalls());
+  beforeEach(resetAllMocks);
 
   it('returns customTones from server', async () => {
     const tones = [{ key: 'fun', label: 'Fun', emoji: '🎉', colorLight: '#FF0000', colorDark: '#880000', textStyle: 'normal' }];
-    mockServerFindById.mock.mockImplementation(async () => ({ customTones: tones }));
+    mockFindByIdOnce({ customTones: tones });
 
     const req = makeReq({ params: { serverId: 's1' } });
     const res = makeRes();
@@ -55,7 +73,7 @@ describe('listCustomTones', () => {
   });
 
   it('returns empty array when no custom tones', async () => {
-    mockServerFindById.mock.mockImplementation(async () => ({ customTones: [] }));
+    mockFindByIdOnce({ customTones: [] });
 
     const req = makeReq({ params: { serverId: 's1' } });
     const res = makeRes();
@@ -66,7 +84,7 @@ describe('listCustomTones', () => {
   });
 
   it('returns 404 when server not found', async () => {
-    mockServerFindById.mock.mockImplementation(async () => null);
+    mockFindByIdOnce(null);
 
     const req = makeReq({ params: { serverId: 'bad' } });
     const res = makeRes();
@@ -78,12 +96,10 @@ describe('listCustomTones', () => {
 });
 
 describe('addCustomTone', () => {
-  beforeEach(() => mockServerFindById.mock.resetCalls());
+  beforeEach(resetAllMocks);
 
-  it('returns 201 with valid data', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = { customTones: [] as unknown[], save: mockSave };
-    mockServerFindById.mock.mockImplementation(async () => server);
+  it('returns 201 with valid data via atomic updateOne', async () => {
+    mockServerUpdateOne.mock.mockImplementationOnce(async () => ({ matchedCount: 1, modifiedCount: 1 }));
 
     const req = makeReq({ params: { serverId: 's1' }, body: validToneBody() });
     const res = makeRes();
@@ -92,28 +108,27 @@ describe('addCustomTone', () => {
     assert.equal(res.statusCode, 201);
     const result = res._json as { customTone: { key: string } };
     assert.equal(result.customTone.key, 'chill');
-    assert.equal(mockSave.mock.callCount(), 1);
-    assert.equal(server.customTones.length, 1);
+    assert.equal(mockServerUpdateOne.mock.callCount(), 1);
+
+    // Verify the query guards against duplicates and max tones
+    const [filter, update] = mockServerUpdateOne.mock.calls[0]!.arguments as [Record<string, unknown>, Record<string, unknown>];
+    assert.equal(filter['_id'], 's1');
+    assert.deepEqual(filter['customTones.key'], { $ne: 'chill' });
+    assert.ok('$expr' in filter);
+    assert.ok('$push' in update);
   });
 
-  it('returns 400 for missing key', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = { customTones: [] as unknown[], save: mockSave };
-    mockServerFindById.mock.mockImplementation(async () => server);
-
+  it('returns 400 for missing key (no DB call)', async () => {
     const req = makeReq({ params: { serverId: 's1' }, body: validToneBody({ key: undefined }) });
     const res = makeRes();
     await addCustomTone(req, res);
 
     assert.equal(res.statusCode, 400);
     assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_TONE');
+    assert.equal(mockServerUpdateOne.mock.callCount(), 0);
   });
 
   it('returns 400 for key with invalid pattern', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = { customTones: [] as unknown[], save: mockSave };
-    mockServerFindById.mock.mockImplementation(async () => server);
-
     const req = makeReq({ params: { serverId: 's1' }, body: validToneBody({ key: 'UPPER_CASE!' }) });
     const res = makeRes();
     await addCustomTone(req, res);
@@ -123,10 +138,6 @@ describe('addCustomTone', () => {
   });
 
   it('returns 400 for key exceeding 10 chars', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = { customTones: [] as unknown[], save: mockSave };
-    mockServerFindById.mock.mockImplementation(async () => server);
-
     const req = makeReq({ params: { serverId: 's1' }, body: validToneBody({ key: 'abcdefghijk' }) });
     const res = makeRes();
     await addCustomTone(req, res);
@@ -136,10 +147,6 @@ describe('addCustomTone', () => {
   });
 
   it('returns 400 for invalid hex color', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = { customTones: [] as unknown[], save: mockSave };
-    mockServerFindById.mock.mockImplementation(async () => server);
-
     const req = makeReq({ params: { serverId: 's1' }, body: validToneBody({ colorLight: 'notacolor' }) });
     const res = makeRes();
     await addCustomTone(req, res);
@@ -148,13 +155,11 @@ describe('addCustomTone', () => {
     assert.equal((res._json as { error: { code: string } }).error.code, 'INVALID_TONE');
   });
 
-  it('returns 409 for duplicate key', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = {
+  it('returns 409 for duplicate key (updateOne no-match → findById reveals duplicate)', async () => {
+    mockServerUpdateOne.mock.mockImplementationOnce(async () => ({ matchedCount: 0, modifiedCount: 0 }));
+    mockFindByIdOnce({
       customTones: [{ key: 'chill', label: 'Chill', emoji: '😎', colorLight: '#AABBCC', colorDark: '#112233', textStyle: 'normal' }],
-      save: mockSave,
-    };
-    mockServerFindById.mock.mockImplementation(async () => server);
+    });
 
     const req = makeReq({ params: { serverId: 's1' }, body: validToneBody() });
     const res = makeRes();
@@ -164,13 +169,12 @@ describe('addCustomTone', () => {
     assert.equal((res._json as { error: { code: string } }).error.code, 'DUPLICATE_TONE_KEY');
   });
 
-  it('returns 400 when server has 20 custom tones', async () => {
-    const mockSave = mock.fn(async () => {});
+  it('returns 400 when server has 20 custom tones (updateOne no-match → findById shows capacity)', async () => {
+    mockServerUpdateOne.mock.mockImplementationOnce(async () => ({ matchedCount: 0, modifiedCount: 0 }));
     const tones = Array.from({ length: 20 }, (_, i) => ({
       key: `tone${i}`, label: `Tone ${i}`, emoji: '🎵', colorLight: '#AABBCC', colorDark: '#112233', textStyle: 'normal' as const,
     }));
-    const server = { customTones: tones, save: mockSave };
-    mockServerFindById.mock.mockImplementation(async () => server);
+    mockFindByIdOnce({ customTones: tones });
 
     const req = makeReq({ params: { serverId: 's1' }, body: validToneBody({ key: 'new1' }) });
     const res = makeRes();
@@ -180,10 +184,20 @@ describe('addCustomTone', () => {
     assert.equal((res._json as { error: { code: string } }).error.code, 'MAX_CUSTOM_TONES');
   });
 
+  it('returns 404 when updateOne misses and server is not found', async () => {
+    mockServerUpdateOne.mock.mockImplementationOnce(async () => ({ matchedCount: 0, modifiedCount: 0 }));
+    mockFindByIdOnce(null);
+
+    const req = makeReq({ params: { serverId: 'missing' }, body: validToneBody() });
+    const res = makeRes();
+    await addCustomTone(req, res);
+
+    assert.equal(res.statusCode, 404);
+    assert.equal((res._json as { error: { code: string } }).error.code, 'SERVER_NOT_FOUND');
+  });
+
   it('returns 201 with all 4 new animation fields provided as valid', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = { customTones: [] as unknown[], save: mockSave };
-    mockServerFindById.mock.mockImplementation(async () => server);
+    mockServerUpdateOne.mock.mockImplementationOnce(async () => ({ matchedCount: 1, modifiedCount: 1 }));
 
     const req = makeReq({
       params: { serverId: 's1' },
@@ -206,10 +220,6 @@ describe('addCustomTone', () => {
   });
 
   it('returns 400 for char with invalid enum value', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = { customTones: [] as unknown[], save: mockSave };
-    mockServerFindById.mock.mockImplementation(async () => server);
-
     const req = makeReq({ params: { serverId: 's1' }, body: validToneBody({ char: 'spin' }) });
     const res = makeRes();
     await addCustomTone(req, res);
@@ -219,10 +229,6 @@ describe('addCustomTone', () => {
   });
 
   it('returns 400 for driftDir with invalid value', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = { customTones: [] as unknown[], save: mockSave };
-    mockServerFindById.mock.mockImplementation(async () => server);
-
     const req = makeReq({ params: { serverId: 's1' }, body: validToneBody({ driftDir: 'DOWN' }) });
     const res = makeRes();
     await addCustomTone(req, res);
@@ -232,10 +238,6 @@ describe('addCustomTone', () => {
   });
 
   it('returns 400 for emojiSet not an array', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = { customTones: [] as unknown[], save: mockSave };
-    mockServerFindById.mock.mockImplementation(async () => server);
-
     const req = makeReq({ params: { serverId: 's1' }, body: validToneBody({ emojiSet: '✨' }) });
     const res = makeRes();
     await addCustomTone(req, res);
@@ -245,10 +247,6 @@ describe('addCustomTone', () => {
   });
 
   it('returns 400 for emojiSet exceeding 8 items', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = { customTones: [] as unknown[], save: mockSave };
-    mockServerFindById.mock.mockImplementation(async () => server);
-
     const req = makeReq({
       params: { serverId: 's1' },
       body: validToneBody({ emojiSet: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'] }),
@@ -261,10 +259,6 @@ describe('addCustomTone', () => {
   });
 
   it('returns 400 for matchEmojis exceeding 20 items', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = { customTones: [] as unknown[], save: mockSave };
-    mockServerFindById.mock.mockImplementation(async () => server);
-
     const req = makeReq({
       params: { serverId: 's1' },
       body: validToneBody({ matchEmojis: Array.from({ length: 21 }, (_, i) => `e${i}`) }),
@@ -278,29 +272,26 @@ describe('addCustomTone', () => {
 });
 
 describe('removeCustomTone', () => {
-  beforeEach(() => mockServerFindById.mock.resetCalls());
+  beforeEach(resetAllMocks);
 
-  it('removes tone by key and returns 204', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = {
-      customTones: [{ key: 'chill', label: 'Chill', emoji: '😎', colorLight: '#AABBCC', colorDark: '#112233', textStyle: 'normal' }],
-      save: mockSave,
-    };
-    mockServerFindById.mock.mockImplementation(async () => server);
+  it('removes tone by key via atomic $pull and returns 204', async () => {
+    mockServerUpdateOne.mock.mockImplementationOnce(async () => ({ matchedCount: 1, modifiedCount: 1 }));
 
     const req = makeReq({ params: { serverId: 's1', toneKey: 'chill' } });
     const res = makeRes();
     await removeCustomTone(req, res);
 
     assert.equal(res.statusCode, 204);
-    assert.equal(server.customTones.length, 0);
-    assert.equal(mockSave.mock.callCount(), 1);
+    assert.equal(mockServerUpdateOne.mock.callCount(), 1);
+    const [filter, update] = mockServerUpdateOne.mock.calls[0]!.arguments as [Record<string, unknown>, Record<string, unknown>];
+    assert.equal(filter['_id'], 's1');
+    assert.equal(filter['customTones.key'], 'chill');
+    assert.deepEqual(update['$pull'], { customTones: { key: 'chill' } });
   });
 
-  it('returns 404 when key not found', async () => {
-    const mockSave = mock.fn(async () => {});
-    const server = { customTones: [], save: mockSave };
-    mockServerFindById.mock.mockImplementation(async () => server);
+  it('returns 404 TONE_NOT_FOUND when server exists but tone key missing', async () => {
+    mockServerUpdateOne.mock.mockImplementationOnce(async () => ({ matchedCount: 0, modifiedCount: 0 }));
+    mockServerExists.mock.mockImplementationOnce(async () => ({ _id: 's1' }));
 
     const req = makeReq({ params: { serverId: 's1', toneKey: 'nope' } });
     const res = makeRes();
@@ -308,5 +299,17 @@ describe('removeCustomTone', () => {
 
     assert.equal(res.statusCode, 404);
     assert.equal((res._json as { error: { code: string } }).error.code, 'TONE_NOT_FOUND');
+  });
+
+  it('returns 404 SERVER_NOT_FOUND when server itself is missing', async () => {
+    mockServerUpdateOne.mock.mockImplementationOnce(async () => ({ matchedCount: 0, modifiedCount: 0 }));
+    mockServerExists.mock.mockImplementationOnce(async () => null);
+
+    const req = makeReq({ params: { serverId: 'missing', toneKey: 'whatever' } });
+    const res = makeRes();
+    await removeCustomTone(req, res);
+
+    assert.equal(res.statusCode, 404);
+    assert.equal((res._json as { error: { code: string } }).error.code, 'SERVER_NOT_FOUND');
   });
 });

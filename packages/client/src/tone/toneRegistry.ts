@@ -1,4 +1,11 @@
-import type { CustomToneDefinition } from '../types/models';
+import type {
+  CustomToneDefinition,
+  CharAnimation,
+  DriftDir,
+  ToneTextStyle,
+} from '../types/models';
+
+export type { CharAnimation, DriftDir, ToneTextStyle } from '../types/models';
 
 export interface ToneDefinition {
   key: string;
@@ -6,10 +13,10 @@ export interface ToneDefinition {
   label: string;
   emoji: string;
   color: { light: string; dark: string };
-  textStyle: 'normal' | 'italic' | 'medium';
-  char?: 'bounce' | 'tilt' | 'lock' | 'sway' | 'wobble' | 'rise' | 'sink' | 'breathe' | 'jitter' | undefined;
+  textStyle: ToneTextStyle;
+  char?: CharAnimation | undefined;
   emojiSet?: string[] | undefined;
-  driftDir?: 'UR' | 'U' | 'R' | 'F' | undefined;
+  driftDir?: DriftDir | undefined;
   matchEmojis?: string[] | undefined;
 }
 
@@ -52,6 +59,21 @@ export function resolveTone(key: string, customTones?: CustomToneDefinition[]): 
     return customToneToDefinition(custom);
   }
   return baseToneMap.get(key);
+}
+
+export function resolveToneColor(tone: ToneDefinition, isDark: boolean): string {
+  return isDark ? tone.color.dark : tone.color.light;
+}
+
+export interface ToneTextStyleProps {
+  fontStyle?: 'italic';
+  fontWeight?: '500';
+}
+
+export function toneTextStyleProps(textStyle: ToneTextStyle): ToneTextStyleProps {
+  if (textStyle === 'italic') return { fontStyle: 'italic' };
+  if (textStyle === 'medium') return { fontWeight: '500' };
+  return {};
 }
 
 const TONE_TAG_REGEX = /(?:^|\s)\/([a-zA-Z]{1,10})$/;

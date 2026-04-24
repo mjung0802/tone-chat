@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -8,9 +8,16 @@ import Animated, {
   withSequence,
   withDelay,
   useReducedMotion,
+  cancelAnimation,
   Easing,
 } from 'react-native-reanimated';
-import type { ToneDefinition } from '../../tone/toneRegistry';
+import {
+  resolveToneColor,
+  toneTextStyleProps,
+  type ToneDefinition,
+  type CharAnimation,
+} from '../../tone/toneRegistry';
+import { parseMentionSegments } from '../../utils/mentions';
 
 export interface ToneKineticTextProps {
   text: string;
@@ -20,8 +27,6 @@ export interface ToneKineticTextProps {
   mentionColor: string;
 }
 
-type CharAnimation = NonNullable<ToneDefinition['char']>;
-
 interface AnimatedWordProps {
   children: React.ReactNode;
   index: number;
@@ -30,7 +35,6 @@ interface AnimatedWordProps {
 }
 
 function AnimatedWord({ children, index, char, wordStyle }: AnimatedWordProps) {
-  // All shared values initialised at neutral / entry-start positions
   const isEntryOnly = char === 'lock' || char === 'rise' || char === 'sink';
 
   const translateX = useSharedValue(char === 'lock' ? 8 : 0);
@@ -153,7 +157,15 @@ function AnimatedWord({ children, index, char, wordStyle }: AnimatedWordProps) {
         );
         break;
     }
-  }, []);
+
+    return () => {
+      cancelAnimation(translateX);
+      cancelAnimation(translateY);
+      cancelAnimation(rotateDeg);
+      cancelAnimation(scale);
+      cancelAnimation(opacity);
+    };
+  }, [char, index, translateX, translateY, rotateDeg, scale, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
@@ -166,9 +178,7 @@ function AnimatedWord({ children, index, char, wordStyle }: AnimatedWordProps) {
   }));
 
   return (
-    <Animated.View style={[styles.wordWrapper, animatedStyle]}>
-      <Text style={wordStyle}>{children}</Text>
-    </Animated.View>
+    <Animated.Text style={[wordStyle, animatedStyle]}>{children}</Animated.Text>
   );
 }
 
@@ -181,47 +191,53 @@ export function ToneKineticText({
 }: ToneKineticTextProps) {
   const reducedMotion = useReducedMotion();
 
-  const toneColor = isDark ? tone.color.dark : tone.color.light;
+  const toneColor = resolveToneColor(tone, isDark);
 
-  const wordTextStyle: object = {
-    color: toneColor,
-    ...(tone.textStyle === 'italic' ? { fontStyle: 'italic' as const } : {}),
-    ...(tone.textStyle === 'medium' ? { fontWeight: '500' as const } : {}),
-  };
+  const wordTextStyle = useMemo<object>(
+    () => ({ color: toneColor, ...toneTextStyleProps(tone.textStyle) }),
+    [toneColor, tone.textStyle],
+  );
 
-  // Fallback: plain text rendering
-  if (displayMode !== 'full' || reducedMotion || tone.char === undefined) {
-    const parts = renderPlainWithMentions(text, mentionColor, toneColor, tone);
-    return <Text style={wordTextStyle}>{parts}</Text>;
-  }
+  const fallback = displayMode !== 'full' || reducedMotion || tone.char === undefined;
 
-  // Full animated mode — tone.char is defined here
-  const charAnim: CharAnimation = tone.char;
-
-  // Split text into mention and plain-text segments, then words
-  const segments = parseSegments(text);
-  const nodes: React.ReactNode[] = [];
-  let wordIndex = 0;
-
-  for (const segment of segments) {
-    if (segment.type === 'mention') {
-      nodes.push(
-        <Text
-          key={`mention-${segment.start}`}
-          style={{ color: mentionColor, fontWeight: 'bold' }}
-        >
-          {segment.value}
-        </Text>,
+  const nodes = useMemo<React.ReactNode[]>(() => {
+    if (fallback) {
+      return parseMentionSegments(text).map((segment) =>
+        segment.type === 'mention' ? (
+          <Text key={`m-${segment.start}`} style={{ color: mentionColor, fontWeight: 'bold' }}>
+            {segment.value}
+          </Text>
+        ) : (
+          segment.value
+        ),
       );
-      nodes.push(
-        <Text key={`mention-space-${segment.start}`} style={wordTextStyle}>{' '}</Text>,
-      );
-    } else {
-      // Split plain text by whitespace into individual words
-      const words = segment.value.split(/\s+/).filter((w) => w.length > 0);
+    }
+
+    const charAnim = tone.char as CharAnimation;
+    const result: React.ReactNode[] = [];
+    let wordIndex = 0;
+
+    for (const segment of parseMentionSegments(text)) {
+      if (segment.type === 'mention') {
+        result.push(
+          <Text
+            key={`mention-${segment.start}`}
+            style={{ color: mentionColor, fontWeight: 'bold' }}
+          >
+            {segment.value}
+          </Text>,
+        );
+        result.push(
+          <Text key={`mention-space-${segment.start}`} style={wordTextStyle}>{' '}</Text>,
+        );
+        continue;
+      }
+
+      const words = segment.value.trim().split(/\s+/);
       for (const word of words) {
+        if (!word) continue;
         const currentIndex = wordIndex;
-        nodes.push(
+        result.push(
           <AnimatedWord
             key={`word-${segment.start}-${currentIndex}`}
             index={currentIndex}
@@ -231,17 +247,20 @@ export function ToneKineticText({
             {word}
           </AnimatedWord>,
         );
-        nodes.push(
-          <Text
-            key={`space-${segment.start}-${currentIndex}`}
-            style={wordTextStyle}
-          >
+        result.push(
+          <Text key={`space-${segment.start}-${currentIndex}`} style={wordTextStyle}>
             {' '}
           </Text>,
         );
         wordIndex++;
       }
     }
+
+    return result;
+  }, [fallback, text, tone.char, wordTextStyle, mentionColor]);
+
+  if (fallback) {
+    return <Text style={wordTextStyle}>{nodes}</Text>;
   }
 
   return (
@@ -251,89 +270,9 @@ export function ToneKineticText({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-interface Segment {
-  type: 'text' | 'mention';
-  value: string;
-  start: number;
-}
-
-function parseSegments(text: string): Segment[] {
-  const segments: Segment[] = [];
-  const regex = /@\w+/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      segments.push({
-        type: 'text',
-        value: text.slice(lastIndex, match.index),
-        start: lastIndex,
-      });
-    }
-    segments.push({ type: 'mention', value: match[0], start: match.index });
-    lastIndex = regex.lastIndex;
-  }
-
-  if (lastIndex < text.length) {
-    segments.push({ type: 'text', value: text.slice(lastIndex), start: lastIndex });
-  }
-
-  return segments;
-}
-
-function renderPlainWithMentions(
-  text: string,
-  mentionColor: string,
-  toneColor: string,
-  tone: ToneDefinition,
-): React.ReactNode[] {
-  const parts: React.ReactNode[] = [];
-  const regex = /@\w+/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  const plainStyle: object = {
-    color: toneColor,
-    ...(tone.textStyle === 'italic' ? { fontStyle: 'italic' as const } : {}),
-    ...(tone.textStyle === 'medium' ? { fontWeight: '500' as const } : {}),
-  };
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(
-        <Text key={`plain-${lastIndex}`} style={plainStyle}>
-          {text.slice(lastIndex, match.index)}
-        </Text>,
-      );
-    }
-    parts.push(
-      <Text key={`mention-${match.index}`} style={{ color: mentionColor, fontWeight: 'bold' }}>
-        {match[0]}
-      </Text>,
-    );
-    lastIndex = regex.lastIndex;
-  }
-
-  if (lastIndex < text.length) {
-    parts.push(
-      <Text key={`plain-end-${lastIndex}`} style={plainStyle}>
-        {text.slice(lastIndex)}
-      </Text>,
-    );
-  }
-
-  return parts;
-}
-
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
-  wordWrapper: {},
 });

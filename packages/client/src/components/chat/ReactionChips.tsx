@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Pressable, Platform, StyleSheet } from 'react-native';
 import { Text, IconButton, useTheme, type MD3Theme } from 'react-native-paper';
 import Animated, {
@@ -22,7 +22,7 @@ interface ReactionChipsProps {
 function ChipWithTooltip({
   reaction,
   isActive,
-  tooltipText,
+  authorNames,
   onToggle,
   theme,
   toneMatchEmojis,
@@ -30,7 +30,7 @@ function ChipWithTooltip({
 }: {
   reaction: { emoji: string; userIds: string[] };
   isActive: boolean;
-  tooltipText: string;
+  authorNames?: Record<string, string> | undefined;
   onToggle: () => void;
   theme: MD3Theme;
   toneMatchEmojis?: string[] | undefined;
@@ -38,14 +38,20 @@ function ChipWithTooltip({
 }) {
   const [showTooltip, setShowTooltip] = useState(false);
 
-  const isToneMatched = (toneMatchEmojis?.includes(reaction.emoji)) === true;
+  const isToneMatched = toneMatchEmojis?.includes(reaction.emoji) === true;
   const reducedMotion = useReducedMotion();
+  const shouldAnimateEntry = isToneMatched && !reducedMotion;
 
-  const entryScale = useSharedValue(isToneMatched && !reducedMotion ? 0.7 : 1);
-  const entryOpacity = useSharedValue(isToneMatched && !reducedMotion ? 0 : 1);
+  const tooltipText = useMemo(
+    () => reaction.userIds.map((id) => authorNames?.[id] ?? id).join(', '),
+    [reaction.userIds, authorNames],
+  );
+
+  const entryScale = useSharedValue(shouldAnimateEntry ? 0.7 : 1);
+  const entryOpacity = useSharedValue(shouldAnimateEntry ? 0 : 1);
 
   useEffect(() => {
-    if (isToneMatched && !reducedMotion) {
+    if (shouldAnimateEntry) {
       entryScale.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.back(2)) });
       entryOpacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.back(2)) });
     }
@@ -121,16 +127,12 @@ export function ReactionChips({
     <View style={styles.container}>
       {reactions.map((reaction) => {
         const isActive = currentUserId != null && reaction.userIds.includes(currentUserId);
-        const tooltipText = reaction.userIds
-          .map((id) => authorNames?.[id] ?? id)
-          .join(', ');
-
         return (
           <ChipWithTooltip
             key={reaction.emoji}
             reaction={reaction}
             isActive={isActive}
-            tooltipText={tooltipText}
+            authorNames={authorNames}
             onToggle={() => onToggle(reaction.emoji)}
             theme={theme}
             toneMatchEmojis={toneMatchEmojis}

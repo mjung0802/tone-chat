@@ -1,4 +1,10 @@
 import mongoose, { Schema, type Document } from 'mongoose';
+import {
+  VALID_CHARS,
+  VALID_DRIFT_DIRS,
+  VALID_TEXT_STYLES,
+  type CustomToneEntry,
+} from './customTones.types.js';
 
 export interface IServer extends Document {
   name: string;
@@ -7,18 +13,7 @@ export interface IServer extends Document {
   description?: string;
   visibility: 'public' | 'private';
   allowMemberInvites: boolean;
-  customTones: {
-    key: string;
-    label: string;
-    emoji: string;
-    colorLight: string;
-    colorDark: string;
-    textStyle: 'normal' | 'italic' | 'medium';
-    char?: 'bounce' | 'tilt' | 'lock' | 'sway' | 'wobble' | 'rise' | 'sink' | 'breathe' | 'jitter' | undefined;
-    emojiSet?: string[] | undefined;
-    driftDir?: 'UR' | 'U' | 'R' | 'F' | undefined;
-    matchEmojis?: string[] | undefined;
-  }[];
+  customTones: CustomToneEntry[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,10 +33,10 @@ const serverSchema = new Schema<IServer>(
         emoji: { type: String, required: true },
         colorLight: { type: String, required: true },
         colorDark: { type: String, required: true },
-        textStyle: { type: String, enum: ['normal', 'italic', 'medium'], default: 'normal' },
-        char: { type: String, enum: ['bounce','tilt','lock','sway','wobble','rise','sink','breathe','jitter'] },
+        textStyle: { type: String, enum: [...VALID_TEXT_STYLES], default: 'normal' },
+        char: { type: String, enum: [...VALID_CHARS] },
         emojiSet: { type: [String], default: undefined },
-        driftDir: { type: String, enum: ['UR','U','R','F'] },
+        driftDir: { type: String, enum: [...VALID_DRIFT_DIRS] },
         matchEmojis: { type: [String], default: undefined },
         _id: false,
       }],
