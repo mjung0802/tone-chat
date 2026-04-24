@@ -63,15 +63,14 @@ function AnimatedWord({ children, index, char, wordStyle }: AnimatedWordProps) {
 
       case 'tilt':
         translateX.value = withDelay(
-          index * 40,
+          index * 15,
           withRepeat(
             withSequence(
-              withTiming(3, { duration: 100 }),
-              withTiming(-3, { duration: 200 }),
-              withTiming(0, { duration: 100 }),
+              withTiming(1.5, { duration: 450, easing: Easing.inOut(Easing.sin) }),
+              withTiming(-1.5, { duration: 450, easing: Easing.inOut(Easing.sin) }),
             ),
             -1,
-            false,
+            true,
           ),
         );
         break;
@@ -141,16 +140,16 @@ function AnimatedWord({ children, index, char, wordStyle }: AnimatedWordProps) {
       case 'jitter':
         translateX.value = withRepeat(
           withSequence(
-            withTiming(0.5, { duration: 50 }),
-            withTiming(-0.5, { duration: 50 }),
+            withTiming(0.5, { duration: 100 }),
+            withTiming(-0.5, { duration: 100 }),
           ),
           -1,
           false,
         );
         translateY.value = withRepeat(
           withSequence(
-            withTiming(-0.5, { duration: 50 }),
-            withTiming(0.5, { duration: 50 }),
+            withTiming(-0.5, { duration: 120 }),
+            withTiming(0.5, { duration: 120 }),
           ),
           -1,
           false,
