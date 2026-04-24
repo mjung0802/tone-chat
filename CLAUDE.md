@@ -190,6 +190,7 @@ All backend packages use strict TypeScript with `nodenext` module resolution, `n
 - `src/stores/` — Zustand: `authStore` (JWT + SecureStore persistence), `instanceStore` (saved deployment URLs, `activeInstance`, `isHydrated` flag; persisted to localStorage/SecureStore), `socketStore` (Socket.IO lifecycle), `uiStore` (theme, sidebar), `notificationStore` (mention notifications, channel-aware suppression)
 - `src/hooks/` — TanStack Query hooks per domain. `useMessages` uses `useInfiniteQuery` (cursor pagination). `useSocket` manages room join/leave and injects `new_message` events into query cache.
 - `src/components/` — `chat/`, `servers/`, `channels/`, `members/`, `invites/`, `common/`
+- `src/tone/` — tone tag registry: 9 base tones + `parseToneTag()`, `resolveTone()`, `customToneToDefinition()`
 - `src/theme/` — WCAG 2.1 AA color palette (4.5:1 contrast), light/dark, min 16px body text
 - `src/types/` — `models.ts`, `api.types.ts`, `socket.types.ts`
 
