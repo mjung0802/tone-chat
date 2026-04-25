@@ -63,9 +63,14 @@ jest.mock('./ToneKineticText', () => {
 
 jest.mock('./ToneTag', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { View } = require('react-native');
+  const { View, Text } = require('react-native');
   return {
-    ToneTag: () => <View testID="tone-tag" />,
+    ToneTag: ({ tone }: { tone: { key: string; label: string } }) => (
+      <View testID="tone-tag">
+        <Text testID="tone-tag-label">{tone.label}</Text>
+        <Text testID="tone-tag-key">{tone.key}</Text>
+      </View>
+    ),
   };
 });
 
@@ -469,6 +474,8 @@ describe('MessageBubble', () => {
   });
 
   describe('tone rendering', () => {
+    // These tests mutate `toneDisplay` only — reset it after each so a 'reduced' setting
+    // from one test doesn't leak into the next.
     afterEach(() => {
       useUiStore.setState({ toneDisplay: 'full' });
     });
@@ -563,6 +570,24 @@ describe('MessageBubble', () => {
         />,
       );
       expect(getByLabelText(/tone: extra-jokey/)).toBeTruthy();
+    });
+
+    it('passes resolved custom tone (not base tone) into ToneTag when customTones override the key', () => {
+      const msg = makeMessage({ content: 'Hey', tone: 'j' });
+      const customTones = [
+        {
+          key: 'j',
+          label: 'extra-jokey',
+          emoji: '🤣',
+          colorLight: '#ff0000',
+          colorDark: '#ff5555',
+          textStyle: 'italic' as const,
+        },
+      ];
+      const { getByTestId } = renderWithProviders(
+        <MessageBubble message={msg} isOwn={false} authorName="Alice" customTones={customTones} />,
+      );
+      expect(getByTestId('tone-tag-label').props.children).toBe('extra-jokey');
     });
   });
 });

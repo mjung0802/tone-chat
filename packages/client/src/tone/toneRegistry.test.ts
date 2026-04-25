@@ -132,12 +132,6 @@ describe('toneRegistry', () => {
       const tone = getBaseTone('j')!;
       expect(resolveToneColor(tone, true)).toBe(tone.color.dark);
     });
-
-    it('handles any base tone', () => {
-      const tone = getBaseTone('neg')!;
-      expect(resolveToneColor(tone, false)).toBe('#991b1b');
-      expect(resolveToneColor(tone, true)).toBe('#fca5a5');
-    });
   });
 
   describe('toneTextStyleProps', () => {

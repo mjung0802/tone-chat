@@ -449,4 +449,9 @@ test('sending message with /j inline tag strips tag, sets tone, and renders badg
 
   // Rendered message should show the joking tone in its accessible label
   await expect(page.getByLabel(/tone: joking/)).toBeVisible();
+
+  // Content rendered without the inline tag suffix
+  await expect(page.getByText('Hello everyone', { exact: true })).toBeVisible();
+  // Inline /j tag must not leak into rendered content
+  await expect(page.getByText('Hello everyone /j')).toHaveCount(0);
 });

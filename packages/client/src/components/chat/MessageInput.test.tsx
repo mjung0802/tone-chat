@@ -497,7 +497,7 @@ describe('MessageInput', () => {
     });
 
     it('selecting a tone shows the tone preview and closes picker', () => {
-      const { getByLabelText, getByTestId, queryByTestId } = renderWithProviders(
+      const { getByLabelText, getByTestId, queryByTestId, getByText } = renderWithProviders(
         <MessageInput onSend={jest.fn()} />,
       );
 
@@ -506,7 +506,8 @@ describe('MessageInput', () => {
 
       // Picker closes
       expect(queryByTestId('mock-tonepicker-select-j')).toBeNull();
-      // Preview shows the resolved label + remove button
+      // Preview shows the resolved label, emoji, and remove button
+      expect(getByText(/joking/)).toBeTruthy();
       expect(getByLabelText('Remove tone')).toBeTruthy();
     });
 
@@ -552,10 +553,7 @@ describe('MessageInput', () => {
       expect(onSend).toHaveBeenCalledWith('hello world', [], expect.objectContaining({ tone: 'j' }));
     });
 
-    it('explicit selectedTone takes precedence over inline tag (and inline tag still gets stripped from content)', () => {
-      // Per MessageInput.tsx:60-63, parseToneTag always runs. When selectedTone is set,
-      // selectedTone wins via `selectedTone ?? toneKey`, but cleanContent (with the inline
-      // tag stripped) is still the value passed to onSend.
+    it('uses selectedTone as the tone but still strips the inline tag from content', () => {
       const onSend = jest.fn();
       const { getByLabelText, getByTestId } = renderWithProviders(
         <MessageInput onSend={onSend} />,
@@ -584,6 +582,18 @@ describe('MessageInput', () => {
 
       const optionsArg = onSend.mock.calls[0]?.[2];
       expect(optionsArg?.tone).toBeUndefined();
+    });
+
+    it('sends bare tag literally when content is just an inline tag and no picker tone is set', () => {
+      const onSend = jest.fn();
+      const { getByLabelText } = renderWithProviders(<MessageInput onSend={onSend} />);
+
+      fireEvent.changeText(getByLabelText('Message input'), '/j');
+      fireEvent.press(getByLabelText('Send message'));
+
+      // parseToneTag yields cleanContent='', toneKey='j'.
+      // finalContent falls back to trimmed ('/j') because cleanContent is empty.
+      expect(onSend).toHaveBeenCalledWith('/j', [], expect.objectContaining({ tone: 'j' }));
     });
   });
 });

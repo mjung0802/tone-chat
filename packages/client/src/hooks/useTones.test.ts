@@ -38,9 +38,7 @@ describe('useCustomTones', () => {
     expect(tonesApi.getCustomTones).not.toHaveBeenCalled();
     expect(result.current.fetchStatus).toBe('idle');
   });
-});
 
-describe('useCustomTones — success', () => {
   it('fetches and returns customTones when auth is ready', async () => {
     useAuthStore.setState({ isHydrated: true, isAuthenticated: true });
 
@@ -97,6 +95,28 @@ describe('useAddCustomTone', () => {
     });
     expect(spy).toHaveBeenCalledWith({ queryKey: ['servers', SERVER_ID, 'customTones'] });
   });
+
+  it('does not invalidate customTones query when the API call fails', async () => {
+    jest.mocked(tonesApi.addCustomTone).mockRejectedValueOnce(new Error('boom'));
+
+    const queryClient = createTestQueryClient();
+    const spy = jest.spyOn(queryClient, 'invalidateQueries');
+
+    const { result } = renderHook(() => useAddCustomTone(SERVER_ID), {
+      wrapper: createHookWrapper(queryClient),
+    });
+
+    result.current.mutate({
+      key: 'chill',
+      label: 'chill',
+      emoji: '😎',
+      colorLight: '#111111',
+      colorDark: '#eeeeee',
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(spy).not.toHaveBeenCalled();
+  });
 });
 
 describe('useRemoveCustomTone', () => {
@@ -116,5 +136,21 @@ describe('useRemoveCustomTone', () => {
 
     expect(tonesApi.removeCustomTone).toHaveBeenCalledWith(SERVER_ID, 'chill');
     expect(spy).toHaveBeenCalledWith({ queryKey: ['servers', SERVER_ID, 'customTones'] });
+  });
+
+  it('does not invalidate customTones query when the API call fails', async () => {
+    jest.mocked(tonesApi.removeCustomTone).mockRejectedValueOnce(new Error('boom'));
+
+    const queryClient = createTestQueryClient();
+    const spy = jest.spyOn(queryClient, 'invalidateQueries');
+
+    const { result } = renderHook(() => useRemoveCustomTone(SERVER_ID), {
+      wrapper: createHookWrapper(queryClient),
+    });
+
+    result.current.mutate('chill');
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(spy).not.toHaveBeenCalled();
   });
 });
