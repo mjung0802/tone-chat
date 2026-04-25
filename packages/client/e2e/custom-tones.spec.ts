@@ -169,3 +169,26 @@ test('message displays with custom tone styling', async ({ page }) => {
   const tonedMessage = page.getByLabel(/, tone: Silly/);
   await expect(tonedMessage).toBeVisible();
 });
+
+test('TonePicker shows base tones alongside custom tones', async ({ page }) => {
+  await mockSocketIO(page);
+  await mockUsersRoutes(page);
+  await mockServersRoutes(page);
+  await mockChannelsRoutes(page);
+  await mockMembersRoutes(page);
+  await mockMessagesRoutes(page);
+  await mockTonesRoutes(page, [MOCK_CUSTOM_TONE]);
+
+  await page.goto(CHANNEL_URL);
+
+  // Open the tone picker
+  await page.getByLabel('Select tone').click();
+
+  // Base tones should be visible
+  await expect(page.getByLabel('joking tone', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('sarcasm tone', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('serious tone', { exact: true })).toBeVisible();
+
+  // Custom tone should also appear
+  await expect(page.getByLabel('Silly tone')).toBeVisible();
+});

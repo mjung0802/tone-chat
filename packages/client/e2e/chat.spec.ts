@@ -385,3 +385,68 @@ test('shows avatar next to messages when member has avatar_url', async ({ page }
   const avatarImages = page.getByLabel('Test User\'s avatar').locator('img');
   await expect(avatarImages.first()).toBeVisible();
 });
+
+test('sending message with /j inline tag strips tag, sets tone, and renders badge', async ({ page }) => {
+  let capturedBody: unknown = null;
+
+  // Custom route to capture POST body and echo tone back in response
+  await page.route(
+    /http:\/\/localhost:4000\/api\/v1\/servers\/[^/]+\/channels\/[^/]+\/messages(\?.*)?$/,
+    async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ messages: [] }),
+        });
+      } else if (route.request().method() === 'POST') {
+        capturedBody = route.request().postDataJSON();
+        const body = capturedBody as { content?: string; tone?: string };
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            message: {
+              _id: 'msg-inline-tone',
+              channelId: 'channel-001',
+              serverId: 'server-001',
+              authorId: 'user-001',
+              content: body.content ?? '',
+              attachmentIds: [],
+              reactions: [],
+              tone: body.tone,
+              createdAt: new Date().toISOString(),
+            },
+          }),
+        });
+      } else {
+        await route.continue();
+      }
+    },
+  );
+
+  // No custom tones needed — testing a base tone (/j)
+  await page.route(
+    /http:\/\/localhost:4000\/api\/v1\/servers\/[^/]+\/tones(\?.*)?$/,
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ customTones: [] }),
+      });
+    },
+  );
+
+  await page.goto(CHANNEL_URL);
+
+  // Type message with inline tone tag suffix
+  await page.getByLabel('Message input').fill('Hello everyone /j');
+  await page.getByLabel('Send message').click();
+
+  // parseToneTag should have stripped the tag from content and set tone='j'
+  expect((capturedBody as { content?: string }).content).toBe('Hello everyone');
+  expect((capturedBody as { tone?: string }).tone).toBe('j');
+
+  // Rendered message should show the joking tone in its accessible label
+  await expect(page.getByLabel(/tone: joking/)).toBeVisible();
+});
