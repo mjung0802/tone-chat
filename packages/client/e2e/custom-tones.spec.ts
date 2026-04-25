@@ -190,5 +190,5 @@ test('TonePicker shows base tones alongside custom tones', async ({ page }) => {
   await expect(page.getByLabel('serious tone', { exact: true })).toBeVisible();
 
   // Custom tone should also appear
-  await expect(page.getByLabel('Silly tone')).toBeVisible();
+  await expect(page.getByLabel('Silly tone', { exact: true })).toBeVisible();
 });
