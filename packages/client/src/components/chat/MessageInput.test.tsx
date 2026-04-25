@@ -10,6 +10,32 @@ jest.mock('expo-document-picker', () => ({
 }));
 jest.mock('../../hooks/useAttachments');
 
+jest.mock('./TonePicker', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Pressable, Text } = require('react-native');
+  return {
+    TonePicker: ({
+      visible,
+      onSelect,
+      onDismiss,
+    }: {
+      visible: boolean;
+      onSelect: (key: string) => void;
+      onDismiss: () => void;
+    }) =>
+      visible ? (
+        <>
+          <Pressable testID="mock-tonepicker-select-j" onPress={() => onSelect('j')}>
+            <Text>pick j</Text>
+          </Pressable>
+          <Pressable testID="mock-tonepicker-dismiss" onPress={onDismiss}>
+            <Text>dismiss</Text>
+          </Pressable>
+        </>
+      ) : null,
+  };
+});
+
 const DocumentPicker = jest.requireMock('expo-document-picker') as { getDocumentAsync: jest.Mock };
 
 // Helpers to mock global fetch for the blob conversion in handlePick
@@ -457,5 +483,107 @@ describe('MessageInput', () => {
     fireEvent.press(getByLabelText('Send message'));
 
     expect(queryByText('a.png')).toBeNull();
+  });
+
+  describe('tone integration', () => {
+    it('opens TonePicker when "Select tone" button is pressed', () => {
+      const { getByLabelText, getByTestId, queryByTestId } = renderWithProviders(
+        <MessageInput onSend={jest.fn()} />,
+      );
+
+      expect(queryByTestId('mock-tonepicker-select-j')).toBeNull();
+      fireEvent.press(getByLabelText('Select tone'));
+      expect(getByTestId('mock-tonepicker-select-j')).toBeTruthy();
+    });
+
+    it('selecting a tone shows the tone preview and closes picker', () => {
+      const { getByLabelText, getByTestId, queryByTestId } = renderWithProviders(
+        <MessageInput onSend={jest.fn()} />,
+      );
+
+      fireEvent.press(getByLabelText('Select tone'));
+      fireEvent.press(getByTestId('mock-tonepicker-select-j'));
+
+      // Picker closes
+      expect(queryByTestId('mock-tonepicker-select-j')).toBeNull();
+      // Preview shows the resolved label + remove button
+      expect(getByLabelText('Remove tone')).toBeTruthy();
+    });
+
+    it('forwards selected tone in onSend options', () => {
+      const onSend = jest.fn();
+      const { getByLabelText, getByTestId } = renderWithProviders(
+        <MessageInput onSend={onSend} />,
+      );
+
+      fireEvent.press(getByLabelText('Select tone'));
+      fireEvent.press(getByTestId('mock-tonepicker-select-j'));
+      fireEvent.changeText(getByLabelText('Message input'), 'hello');
+      fireEvent.press(getByLabelText('Send message'));
+
+      expect(onSend).toHaveBeenCalledWith('hello', [], expect.objectContaining({ tone: 'j' }));
+    });
+
+    it('clearing tone via "Remove tone" omits tone from onSend options', () => {
+      const onSend = jest.fn();
+      const { getByLabelText, getByTestId } = renderWithProviders(
+        <MessageInput onSend={onSend} />,
+      );
+
+      fireEvent.press(getByLabelText('Select tone'));
+      fireEvent.press(getByTestId('mock-tonepicker-select-j'));
+      fireEvent.press(getByLabelText('Remove tone'));
+      fireEvent.changeText(getByLabelText('Message input'), 'hello');
+      fireEvent.press(getByLabelText('Send message'));
+
+      const optionsArg = onSend.mock.calls[0]?.[2];
+      expect(optionsArg?.tone).toBeUndefined();
+    });
+
+    it('parses inline /j tag, strips it from content, and sets tone', () => {
+      const onSend = jest.fn();
+      const { getByLabelText } = renderWithProviders(
+        <MessageInput onSend={onSend} />,
+      );
+
+      fireEvent.changeText(getByLabelText('Message input'), 'hello world /j');
+      fireEvent.press(getByLabelText('Send message'));
+
+      expect(onSend).toHaveBeenCalledWith('hello world', [], expect.objectContaining({ tone: 'j' }));
+    });
+
+    it('explicit selectedTone takes precedence over inline tag (and inline tag still gets stripped from content)', () => {
+      // Per MessageInput.tsx:60-63, parseToneTag always runs. When selectedTone is set,
+      // selectedTone wins via `selectedTone ?? toneKey`, but cleanContent (with the inline
+      // tag stripped) is still the value passed to onSend.
+      const onSend = jest.fn();
+      const { getByLabelText, getByTestId } = renderWithProviders(
+        <MessageInput onSend={onSend} />,
+      );
+
+      fireEvent.press(getByLabelText('Select tone'));
+      fireEvent.press(getByTestId('mock-tonepicker-select-j'));
+      fireEvent.changeText(getByLabelText('Message input'), 'hello /srs');
+      fireEvent.press(getByLabelText('Send message'));
+
+      expect(onSend).toHaveBeenCalledWith(
+        'hello',
+        [],
+        expect.objectContaining({ tone: 'j' }),
+      );
+    });
+
+    it('omits tone option entirely when no tone is set', () => {
+      const onSend = jest.fn();
+      const { getByLabelText } = renderWithProviders(
+        <MessageInput onSend={onSend} />,
+      );
+
+      fireEvent.changeText(getByLabelText('Message input'), 'plain message');
+      fireEvent.press(getByLabelText('Send message'));
+
+      const optionsArg = onSend.mock.calls[0]?.[2];
+      expect(optionsArg?.tone).toBeUndefined();
+    });
   });
 });
