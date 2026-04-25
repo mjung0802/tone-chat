@@ -1,4 +1,4 @@
-import { getBaseTone, resolveTone, parseToneTag, customToneToDefinition } from './toneRegistry';
+import { getBaseTone, resolveTone, parseToneTag, customToneToDefinition, resolveToneColor, toneTextStyleProps } from './toneRegistry';
 import type { CustomToneDefinition } from '../types/models';
 
 describe('toneRegistry', () => {
@@ -119,6 +119,38 @@ describe('toneRegistry', () => {
 
     it('parses multi-char tags', () => {
       expect(parseToneTag('hey /srs')).toEqual({ cleanContent: 'hey', toneKey: 'srs' });
+    });
+  });
+
+  describe('resolveToneColor', () => {
+    it('returns light color when isDark is false', () => {
+      const tone = getBaseTone('j')!;
+      expect(resolveToneColor(tone, false)).toBe(tone.color.light);
+    });
+
+    it('returns dark color when isDark is true', () => {
+      const tone = getBaseTone('j')!;
+      expect(resolveToneColor(tone, true)).toBe(tone.color.dark);
+    });
+
+    it('handles any base tone', () => {
+      const tone = getBaseTone('neg')!;
+      expect(resolveToneColor(tone, false)).toBe('#991b1b');
+      expect(resolveToneColor(tone, true)).toBe('#fca5a5');
+    });
+  });
+
+  describe('toneTextStyleProps', () => {
+    it('returns fontStyle italic for "italic"', () => {
+      expect(toneTextStyleProps('italic')).toEqual({ fontStyle: 'italic' });
+    });
+
+    it('returns fontWeight 500 for "medium"', () => {
+      expect(toneTextStyleProps('medium')).toEqual({ fontWeight: '500' });
+    });
+
+    it('returns empty object for "normal"', () => {
+      expect(toneTextStyleProps('normal')).toEqual({});
     });
   });
 });
