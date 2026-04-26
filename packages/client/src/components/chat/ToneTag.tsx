@@ -49,7 +49,7 @@ export function ToneTag({ tone, isDark, displayMode, hovered }: ToneTagProps) {
     return (
       <View style={styles.container}>
         <Text style={[styles.tag, { color: toneColor, fontFamily: MONO_FONT }]}>
-          {`${tone.tag} · ${tone.label}`}
+          {`${tone.label} · ${tone.tag}`}
         </Text>
       </View>
     );
@@ -57,14 +57,14 @@ export function ToneTag({ tone, isDark, displayMode, hovered }: ToneTagProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.tag, { color: toneColor, fontFamily: MONO_FONT }]}>
-        {tone.tag}
-      </Text>
       <Animated.Text
         style={[styles.label, { color: toneColor, fontFamily: MONO_FONT }, animatedLabelStyle]}
       >
-        {` · ${tone.label}`}
+        {`${tone.label} · `}
       </Animated.Text>
+      <Text style={[styles.tag, { color: toneColor, fontFamily: MONO_FONT }]}>
+        {tone.tag}
+      </Text>
     </View>
   );
 }

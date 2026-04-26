@@ -206,14 +206,6 @@ export const MessageBubble = memo(function MessageBubble({
               (edited)
             </Text>
           ) : null}
-          {toneDef ? (
-            <ToneTag tone={toneDef} isDark={isDark} displayMode={toneDisplay} hovered={hovered} />
-          ) : null}
-        </View>
-      ) : null}
-      {isContinuation && toneDef ? (
-        <View style={styles.continuationToneTag}>
-          <ToneTag tone={toneDef} isDark={isDark} displayMode={toneDisplay} hovered={hovered} />
         </View>
       ) : null}
       <View style={styles.bubbleRow}>
@@ -271,30 +263,37 @@ export const MessageBubble = memo(function MessageBubble({
               </View>
             </View>
           ) : (
-            <>
-              {message.content ? (
-                toneFullActive && toneDef ? (
-                  <ToneKineticText
-                    text={message.content}
-                    tone={toneDef}
-                    isDark={isDark}
-                    displayMode={toneDisplay}
-                    mentionColor={theme.colors.primary}
-                  />
-                ) : (
-                  <Text style={[{ color: effectiveTextColor }, toneTextStyle]}>
-                    {renderContentWithMentions(message.content, theme.colors.primary)}
-                  </Text>
-                )
-              ) : null}
-              {hasAttachments ? (
-                <View style={styles.attachments}>
-                  {message.attachmentIds.map((id) => (
-                    <AttachmentBubble key={id} attachmentId={id} onImagePress={onImagePress} />
-                  ))}
+            <View style={toneDef ? styles.contentRow : undefined}>
+              <View style={toneDef ? styles.contentRowText : undefined}>
+                {message.content ? (
+                  toneFullActive && toneDef ? (
+                    <ToneKineticText
+                      text={message.content}
+                      tone={toneDef}
+                      isDark={isDark}
+                      displayMode={toneDisplay}
+                      mentionColor={theme.colors.primary}
+                    />
+                  ) : (
+                    <Text style={[{ color: effectiveTextColor }, toneTextStyle]}>
+                      {renderContentWithMentions(message.content, theme.colors.primary)}
+                    </Text>
+                  )
+                ) : null}
+                {hasAttachments ? (
+                  <View style={styles.attachments}>
+                    {message.attachmentIds.map((id) => (
+                      <AttachmentBubble key={id} attachmentId={id} onImagePress={onImagePress} />
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+              {toneDef ? (
+                <View style={styles.inlineToneTag}>
+                  <ToneTag tone={toneDef} isDark={isDark} displayMode={toneDisplay} hovered={hovered} />
                 </View>
               ) : null}
-            </>
+            </View>
           )}
           {message.serverInvite != null && (
             <ServerInviteCard
@@ -505,9 +504,14 @@ const styles = StyleSheet.create({
     gap: 4,
     marginTop: 4,
   },
-  continuationToneTag: {
-    position: 'absolute',
-    top: 4,
-    right: 8,
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  contentRowText: {
+    flex: 1,
+  },
+  inlineToneTag: {
+    marginLeft: 6,
   },
 });

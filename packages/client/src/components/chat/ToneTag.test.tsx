@@ -42,7 +42,7 @@ describe('ToneTag', () => {
         <ToneTag tone={MOCK_TONE} isDark={false} displayMode="reduced" />,
       );
       expect(queryByText('joking')).toBeNull();
-      expect(queryByText('/j · joking')).toBeNull();
+      expect(queryByText('joking · /j')).toBeNull();
     });
 
     it('applies opacity 0.7 to the tag text', () => {
@@ -66,18 +66,18 @@ describe('ToneTag', () => {
       Object.defineProperty(Platform, 'OS', { value: 'web', writable: true });
     });
 
-    it('always shows tag · label concatenated', () => {
+    it('always shows label · tag concatenated', () => {
       const { getByText } = render(
         <ToneTag tone={MOCK_TONE} isDark={false} displayMode="full" />,
       );
-      expect(getByText('/j · joking')).toBeTruthy();
+      expect(getByText('joking · /j')).toBeTruthy();
     });
 
     it('shows label even without hovered prop', () => {
       const { getByText } = render(
         <ToneTag tone={MOCK_TONE} isDark={false} displayMode="full" />,
       );
-      expect(getByText('/j · joking')).toBeTruthy();
+      expect(getByText('joking · /j')).toBeTruthy();
     });
   });
 
@@ -97,7 +97,7 @@ describe('ToneTag', () => {
       );
       // The Reanimated mock: useSharedValue(0) returns {value:0},
       // useAnimatedStyle(fn) returns fn() which reads opacity.value === 0
-      const labelNode = getByText(' · joking');
+      const labelNode = getByText('joking · ');
       const flatStyle = Array.isArray(labelNode.props.style)
         ? Object.assign({}, ...labelNode.props.style)
         : labelNode.props.style;
@@ -109,7 +109,7 @@ describe('ToneTag', () => {
         <ToneTag tone={MOCK_TONE} isDark={false} displayMode="full" hovered={true} />,
       );
       // Label node should exist in the tree
-      expect(getByText(' · joking')).toBeTruthy();
+      expect(getByText('joking · ')).toBeTruthy();
     });
 
     it('uses dark tone color when isDark is true', () => {
