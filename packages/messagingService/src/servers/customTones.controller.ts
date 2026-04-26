@@ -1,101 +1,174 @@
 import type { Request, Response } from 'express';
 import { Server } from './server.model.js';
+import {
+  VALID_CHARS,
+  VALID_TEXT_STYLES,
+  type CharAnimation,
+  type CustomToneEntry,
+  type ToneTextStyle,
+} from './customTones.types.js';
 
 const KEY_PATTERN = /^[a-z0-9]{1,10}$/;
 const HEX_COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
-const VALID_TEXT_STYLES = ['normal', 'italic', 'medium'] as const;
 const MAX_CUSTOM_TONES = 20;
 
-export async function listCustomTones(req: Request, res: Response): Promise<void> {
-  const server = await Server.findById(req.params['serverId']);
-  if (!server) {
-    res.status(404).json({ error: { code: 'SERVER_NOT_FOUND', message: 'Server not found', status: 404 } });
-    return;
+function bad(res: Response, status: number, code: string, message: string): void {
+  res.status(status).json({ error: { code, message, status } });
+}
+
+function isValidEnum<T extends string>(value: unknown, allowed: readonly T[]): value is T {
+  return typeof value === 'string' && (allowed as readonly string[]).includes(value);
+}
+
+function isValidStringArray(
+  value: unknown,
+  minLen: number,
+  maxLen: number,
+  itemMin: number,
+  itemMax: number,
+): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length >= minLen &&
+    value.length <= maxLen &&
+    value.every((e) => typeof e === 'string' && e.length >= itemMin && e.length <= itemMax)
+  );
+}
+
+function parseToneBody(body: unknown, res: Response): CustomToneEntry | null {
+  const b = (body ?? {}) as Record<string, unknown>;
+  const { key, label, emoji, colorLight, colorDark, textStyle, char, emojiSet, matchEmojis } = b;
+
+  if (typeof key !== 'string' || !KEY_PATTERN.test(key)) {
+    bad(res, 400, 'INVALID_TONE', 'key must match /^[a-z0-9]{1,10}$/');
+    return null;
+  }
+  if (typeof label !== 'string' || label.length < 1 || label.length > 50) {
+    bad(res, 400, 'INVALID_TONE', 'label is required (1-50 chars)');
+    return null;
+  }
+  if (typeof emoji !== 'string' || emoji.length < 1 || emoji.length > 10) {
+    bad(res, 400, 'INVALID_TONE', 'emoji is required (1-10 chars)');
+    return null;
+  }
+  if (typeof colorLight !== 'string' || !HEX_COLOR_PATTERN.test(colorLight)) {
+    bad(res, 400, 'INVALID_TONE', 'colorLight must be a valid hex color');
+    return null;
+  }
+  if (typeof colorDark !== 'string' || !HEX_COLOR_PATTERN.test(colorDark)) {
+    bad(res, 400, 'INVALID_TONE', 'colorDark must be a valid hex color');
+    return null;
   }
 
+  const resolvedTextStyle: unknown = textStyle ?? 'normal';
+  if (!isValidEnum(resolvedTextStyle, VALID_TEXT_STYLES)) {
+    bad(res, 400, 'INVALID_TONE', 'textStyle must be normal, italic, or medium');
+    return null;
+  }
+  const toneTextStyle: ToneTextStyle = resolvedTextStyle;
+
+  let toneChar: CharAnimation | undefined;
+  if (char !== undefined) {
+    if (!isValidEnum(char, VALID_CHARS)) {
+      bad(res, 400, 'INVALID_TONE', 'char must be one of: bounce, tilt, lock, sway, wobble, rise, sink, breathe, jitter');
+      return null;
+    }
+    toneChar = char;
+  }
+
+  let toneEmojiSet: string[] | undefined;
+  if (emojiSet !== undefined) {
+    if (!isValidStringArray(emojiSet, 1, 8, 1, 10)) {
+      bad(res, 400, 'INVALID_TONE', 'emojiSet must be an array of 1-8 strings (each 1-10 chars)');
+      return null;
+    }
+    toneEmojiSet = emojiSet;
+  }
+
+  let toneMatchEmojis: string[] | undefined;
+  if (matchEmojis !== undefined) {
+    if (!isValidStringArray(matchEmojis, 0, 20, 1, 10)) {
+      bad(res, 400, 'INVALID_TONE', 'matchEmojis must be an array of 0-20 strings (each 1-10 chars)');
+      return null;
+    }
+    toneMatchEmojis = matchEmojis;
+  }
+
+  return {
+    key,
+    label,
+    emoji,
+    colorLight,
+    colorDark,
+    textStyle: toneTextStyle,
+    ...(toneChar !== undefined && { char: toneChar }),
+    ...(toneEmojiSet !== undefined && { emojiSet: toneEmojiSet }),
+    ...(toneMatchEmojis !== undefined && { matchEmojis: toneMatchEmojis }),
+  };
+}
+
+export async function listCustomTones(req: Request, res: Response): Promise<void> {
+  const server = await Server.findById(req.params['serverId'], 'customTones').lean();
+  if (!server) {
+    bad(res, 404, 'SERVER_NOT_FOUND', 'Server not found');
+    return;
+  }
   res.json({ customTones: server.customTones });
 }
 
 export async function addCustomTone(req: Request, res: Response): Promise<void> {
-  const server = await Server.findById(req.params['serverId']);
-  if (!server) {
-    res.status(404).json({ error: { code: 'SERVER_NOT_FOUND', message: 'Server not found', status: 404 } });
+  const serverId = req.params['serverId'];
+  const tone = parseToneBody(req.body, res);
+  if (!tone) return;
+
+  const result = await Server.updateOne(
+    {
+      _id: serverId,
+      'customTones.key': { $ne: tone.key },
+      $expr: { $lt: [{ $size: '$customTones' }, MAX_CUSTOM_TONES] },
+    },
+    { $push: { customTones: tone } },
+  );
+
+  if (result.matchedCount === 0) {
+    const existing = await Server.findById(serverId, 'customTones').lean();
+    if (!existing) {
+      bad(res, 404, 'SERVER_NOT_FOUND', 'Server not found');
+      return;
+    }
+    if (existing.customTones.some((t) => t.key === tone.key)) {
+      bad(res, 409, 'DUPLICATE_TONE_KEY', 'A tone with this key already exists');
+      return;
+    }
+    if (existing.customTones.length >= MAX_CUSTOM_TONES) {
+      bad(res, 400, 'MAX_CUSTOM_TONES', 'Maximum 20 custom tones per server');
+      return;
+    }
+    bad(res, 400, 'INVALID_TONE', 'Unable to add tone');
     return;
   }
 
-  const { key, label, emoji, colorLight, colorDark, textStyle } = req.body as {
-    key?: string;
-    label?: string;
-    emoji?: string;
-    colorLight?: string;
-    colorDark?: string;
-    textStyle?: string;
-  };
-
-  if (!key || !KEY_PATTERN.test(key)) {
-    res.status(400).json({ error: { code: 'INVALID_TONE', message: 'key must match /^[a-z0-9]{1,10}$/', status: 400 } });
-    return;
-  }
-
-  if (!label || typeof label !== 'string' || label.length < 1 || label.length > 50) {
-    res.status(400).json({ error: { code: 'INVALID_TONE', message: 'label is required (1-50 chars)', status: 400 } });
-    return;
-  }
-
-  if (!emoji || typeof emoji !== 'string' || emoji.length < 1 || emoji.length > 10) {
-    res.status(400).json({ error: { code: 'INVALID_TONE', message: 'emoji is required (1-10 chars)', status: 400 } });
-    return;
-  }
-
-  if (!colorLight || !HEX_COLOR_PATTERN.test(colorLight)) {
-    res.status(400).json({ error: { code: 'INVALID_TONE', message: 'colorLight must be a valid hex color', status: 400 } });
-    return;
-  }
-
-  if (!colorDark || !HEX_COLOR_PATTERN.test(colorDark)) {
-    res.status(400).json({ error: { code: 'INVALID_TONE', message: 'colorDark must be a valid hex color', status: 400 } });
-    return;
-  }
-
-  const resolvedTextStyle = textStyle ?? 'normal';
-  if (!(VALID_TEXT_STYLES as readonly string[]).includes(resolvedTextStyle)) {
-    res.status(400).json({ error: { code: 'INVALID_TONE', message: 'textStyle must be normal, italic, or medium', status: 400 } });
-    return;
-  }
-
-  if (server.customTones.length >= MAX_CUSTOM_TONES) {
-    res.status(400).json({ error: { code: 'MAX_CUSTOM_TONES', message: 'Maximum 20 custom tones per server', status: 400 } });
-    return;
-  }
-
-  if (server.customTones.some((t) => t.key === key)) {
-    res.status(409).json({ error: { code: 'DUPLICATE_TONE_KEY', message: 'A tone with this key already exists', status: 409 } });
-    return;
-  }
-
-  const newTone = { key, label, emoji, colorLight, colorDark, textStyle: resolvedTextStyle as 'normal' | 'italic' | 'medium' };
-  server.customTones.push(newTone);
-  await server.save();
-
-  res.status(201).json({ customTone: newTone });
+  res.status(201).json({ customTone: tone });
 }
 
 export async function removeCustomTone(req: Request, res: Response): Promise<void> {
-  const server = await Server.findById(req.params['serverId']);
-  if (!server) {
-    res.status(404).json({ error: { code: 'SERVER_NOT_FOUND', message: 'Server not found', status: 404 } });
-    return;
-  }
-
+  const serverId = req.params['serverId'];
   const toneKey = req.params['toneKey'] as string;
-  const index = server.customTones.findIndex((t) => t.key === toneKey);
-  if (index === -1) {
-    res.status(404).json({ error: { code: 'TONE_NOT_FOUND', message: 'Tone not found', status: 404 } });
+
+  const result = await Server.updateOne(
+    { _id: serverId, 'customTones.key': toneKey },
+    { $pull: { customTones: { key: toneKey } } },
+  );
+
+  if (result.matchedCount === 0) {
+    const exists = await Server.exists({ _id: serverId });
+    if (!exists) {
+      bad(res, 404, 'SERVER_NOT_FOUND', 'Server not found');
+      return;
+    }
+    bad(res, 404, 'TONE_NOT_FOUND', 'Tone not found');
     return;
   }
-
-  server.customTones.splice(index, 1);
-  await server.save();
 
   res.status(204).end();
 }

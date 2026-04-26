@@ -1,6 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Pressable, Platform, StyleSheet } from 'react-native';
 import { Text, IconButton, useTheme, type MD3Theme } from 'react-native-paper';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  useReducedMotion,
+} from 'react-native-reanimated';
 
 interface ReactionChipsProps {
   reactions: { emoji: string; userIds: string[] }[];
@@ -8,25 +15,55 @@ interface ReactionChipsProps {
   authorNames?: Record<string, string> | undefined;
   onToggle: (emoji: string) => void;
   onAddReaction: () => void;
+  toneMatchEmojis?: string[] | undefined;
+  toneColor?: string | undefined;
 }
 
 function ChipWithTooltip({
   reaction,
   isActive,
-  tooltipText,
+  authorNames,
   onToggle,
   theme,
+  toneMatchEmojis,
+  toneColor,
 }: {
   reaction: { emoji: string; userIds: string[] };
   isActive: boolean;
-  tooltipText: string;
+  authorNames?: Record<string, string> | undefined;
   onToggle: () => void;
   theme: MD3Theme;
+  toneMatchEmojis?: string[] | undefined;
+  toneColor?: string | undefined;
 }) {
   const [showTooltip, setShowTooltip] = useState(false);
 
+  const isToneMatched = toneMatchEmojis?.includes(reaction.emoji) === true;
+  const reducedMotion = useReducedMotion();
+  const shouldAnimateEntry = isToneMatched && !reducedMotion;
+
+  const tooltipText = useMemo(
+    () => reaction.userIds.map((id) => authorNames?.[id] ?? id).join(', '),
+    [reaction.userIds, authorNames],
+  );
+
+  const entryScale = useSharedValue(shouldAnimateEntry ? 0.7 : 1);
+  const entryOpacity = useSharedValue(shouldAnimateEntry ? 0 : 1);
+
+  useEffect(() => {
+    if (shouldAnimateEntry) {
+      entryScale.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.back(2)) });
+      entryOpacity.value = withTiming(1, { duration: 350, easing: Easing.out(Easing.back(2)) });
+    }
+  }, []);
+
+  const entryAnimStyle = useAnimatedStyle(() => ({
+    opacity: entryOpacity.value,
+    transform: [{ scale: entryScale.value }],
+  }));
+
   return (
-    <View style={styles.chipWrapper}>
+    <Animated.View style={[styles.chipWrapper, entryAnimStyle]}>
       {showTooltip ? (
         <View
           style={[
@@ -51,20 +88,25 @@ function ChipWithTooltip({
             backgroundColor: isActive
               ? theme.colors.primaryContainer
               : theme.colors.surfaceVariant,
-            borderColor: isActive
-              ? theme.colors.primary
-              : theme.colors.outlineVariant,
+            borderColor: isToneMatched && toneColor != null
+              ? toneColor
+              : isActive
+                ? theme.colors.primary
+                : theme.colors.outlineVariant,
           },
         ]}
         accessibilityRole="button"
         accessibilityLabel={`${reaction.emoji} ${reaction.userIds.length} reaction${reaction.userIds.length !== 1 ? 's' : ''}, ${tooltipText}`}
         testID={`reaction-chip-${reaction.emoji}`}
       >
-        <Text style={styles.chipText}>
+        <Text
+          style={[styles.chipText, isToneMatched ? { color: toneColor } : undefined]}
+          testID={`reaction-chip-text-${reaction.emoji}`}
+        >
           {reaction.emoji} {reaction.userIds.length}
         </Text>
       </Pressable>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -74,6 +116,8 @@ export function ReactionChips({
   authorNames,
   onToggle,
   onAddReaction,
+  toneMatchEmojis,
+  toneColor,
 }: ReactionChipsProps) {
   const theme = useTheme();
 
@@ -83,18 +127,16 @@ export function ReactionChips({
     <View style={styles.container}>
       {reactions.map((reaction) => {
         const isActive = currentUserId != null && reaction.userIds.includes(currentUserId);
-        const tooltipText = reaction.userIds
-          .map((id) => authorNames?.[id] ?? id)
-          .join(', ');
-
         return (
           <ChipWithTooltip
             key={reaction.emoji}
             reaction={reaction}
             isActive={isActive}
-            tooltipText={tooltipText}
+            authorNames={authorNames}
             onToggle={() => onToggle(reaction.emoji)}
             theme={theme}
+            toneMatchEmojis={toneMatchEmojis}
+            toneColor={toneColor}
           />
         );
       })}

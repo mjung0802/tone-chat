@@ -2,6 +2,7 @@ import { fireEvent } from '@testing-library/react-native';
 import React from 'react';
 import { makeMessage, makeReaction } from '../../test-utils/fixtures';
 import { renderWithProviders } from '../../test-utils/renderWithProviders';
+import { useUiStore } from '../../stores/uiStore';
 import { MessageBubble } from './MessageBubble';
 
 jest.mock('./AttachmentBubble', () => {
@@ -47,6 +48,37 @@ jest.mock('../invites/ServerInviteCard', () => {
     ServerInviteCard: ({ serverName, code }: { serverName: string; serverId: string; code: string }) => {
       return <View testID={`server-invite-card-${code}`} accessibilityLabel={serverName} />;
     },
+  };
+});
+
+jest.mock('./ToneKineticText', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Text } = require('react-native');
+  return {
+    ToneKineticText: ({ text }: { text: string }) => (
+      <Text testID="tone-kinetic-text">{text}</Text>
+    ),
+  };
+});
+
+jest.mock('./ToneTag', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View, Text } = require('react-native');
+  return {
+    ToneTag: ({ tone }: { tone: { key: string; label: string } }) => (
+      <View testID="tone-tag">
+        <Text testID="tone-tag-label">{tone.label}</Text>
+        <Text testID="tone-tag-key">{tone.key}</Text>
+      </View>
+    ),
+  };
+});
+
+jest.mock('./ToneEmojiDrift', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View } = require('react-native');
+  return {
+    ToneEmojiDrift: () => <View testID="tone-emoji-drift" />,
   };
 });
 
@@ -439,5 +471,123 @@ describe('MessageBubble', () => {
     expect(queryByLabelText('Unmute user')).toBeNull();
     expect(queryByLabelText('Kick user')).toBeNull();
     expect(queryByLabelText('Ban user')).toBeNull();
+  });
+
+  describe('tone rendering', () => {
+    // These tests mutate `toneDisplay` only — reset it after each so a 'reduced' setting
+    // from one test doesn't leak into the next.
+    afterEach(() => {
+      useUiStore.setState({ toneDisplay: 'full' });
+    });
+
+    it('renders ToneTag when message has a tone', () => {
+      const msg = makeMessage({ tone: 'j' });
+      const { getByTestId } = renderWithProviders(
+        <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+      );
+      expect(getByTestId('tone-tag')).toBeTruthy();
+    });
+
+    it('does not render ToneTag when message has no tone', () => {
+      const msg = makeMessage();
+      const { queryByTestId } = renderWithProviders(
+        <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+      );
+      expect(queryByTestId('tone-tag')).toBeNull();
+    });
+
+    it('includes tone label in accessibility label', () => {
+      const msg = makeMessage({ content: 'Hey', tone: 'j' });
+      const { getByLabelText } = renderWithProviders(
+        <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+      );
+      expect(getByLabelText(/tone: joking/)).toBeTruthy();
+    });
+
+    it('renders ToneKineticText when toneDisplay is full and tone has char', () => {
+      useUiStore.setState({ toneDisplay: 'full' });
+      const msg = makeMessage({ content: 'Hello world', tone: 'j' });
+      const { getByTestId } = renderWithProviders(
+        <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+      );
+      expect(getByTestId('tone-kinetic-text')).toBeTruthy();
+    });
+
+    it('renders plain text (no ToneKineticText) when toneDisplay is reduced', () => {
+      useUiStore.setState({ toneDisplay: 'reduced' });
+      const msg = makeMessage({ content: 'Hello world', tone: 'j' });
+      const { queryByTestId, getByText } = renderWithProviders(
+        <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+      );
+      expect(queryByTestId('tone-kinetic-text')).toBeNull();
+      expect(getByText('Hello world')).toBeTruthy();
+    });
+
+    it('renders ToneEmojiDrift when toneDisplay is full and tone has emojiSet', () => {
+      useUiStore.setState({ toneDisplay: 'full' });
+      const msg = makeMessage({ content: 'Hey', tone: 'j' });
+      const { getByTestId } = renderWithProviders(
+        <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+      );
+      expect(getByTestId('tone-emoji-drift')).toBeTruthy();
+    });
+
+    it('does not render ToneEmojiDrift when toneDisplay is reduced', () => {
+      useUiStore.setState({ toneDisplay: 'reduced' });
+      const msg = makeMessage({ content: 'Hey', tone: 'j' });
+      const { queryByTestId } = renderWithProviders(
+        <MessageBubble message={msg} isOwn={false} authorName="Alice" />,
+      );
+      expect(queryByTestId('tone-emoji-drift')).toBeNull();
+    });
+
+    it('renders ToneTag on continuation message with tone', () => {
+      const msg = makeMessage({ content: 'Hey', tone: 'j' });
+      const { getByTestId } = renderWithProviders(
+        <MessageBubble message={msg} isOwn={false} isContinuation={true} />,
+      );
+      expect(getByTestId('tone-tag')).toBeTruthy();
+    });
+
+    it('resolves custom tone label in accessibility label', () => {
+      const msg = makeMessage({ content: 'Hey', tone: 'j' });
+      const customTones = [
+        {
+          key: 'j',
+          label: 'extra-jokey',
+          emoji: '🤣',
+          colorLight: '#ff0000',
+          colorDark: '#ff5555',
+          textStyle: 'italic' as const,
+        },
+      ];
+      const { getByLabelText } = renderWithProviders(
+        <MessageBubble
+          message={msg}
+          isOwn={false}
+          authorName="Alice"
+          customTones={customTones}
+        />,
+      );
+      expect(getByLabelText(/tone: extra-jokey/)).toBeTruthy();
+    });
+
+    it('passes resolved custom tone (not base tone) into ToneTag when customTones override the key', () => {
+      const msg = makeMessage({ content: 'Hey', tone: 'j' });
+      const customTones = [
+        {
+          key: 'j',
+          label: 'extra-jokey',
+          emoji: '🤣',
+          colorLight: '#ff0000',
+          colorDark: '#ff5555',
+          textStyle: 'italic' as const,
+        },
+      ];
+      const { getByTestId } = renderWithProviders(
+        <MessageBubble message={msg} isOwn={false} authorName="Alice" customTones={customTones} />,
+      );
+      expect(getByTestId('tone-tag-label').props.children).toBe('extra-jokey');
+    });
   });
 });

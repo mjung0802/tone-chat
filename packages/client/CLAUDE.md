@@ -68,22 +68,25 @@ src/
     useSocket.ts              # Socket.IO room lifecycle, cache injection, typing
     useMentionNotifications.ts # Listens for `mention` socket events, suppresses if viewing that channel
   components/
-    chat/                     # MessageBubble, MessageInput, MessageList, TypingIndicator, AttachmentPicker, AttachmentPreview, AttachmentBubble, AttachmentViewer, EmojiPicker, emojiData, MentionAutocomplete
+    chat/                     # MessageBubble, MessageInput, MessageList, TypingIndicator, AttachmentPicker, AttachmentPreview, AttachmentBubble, AttachmentViewer, EmojiPicker, emojiData, MentionAutocomplete, ToneTag, ToneKineticText, ToneEmojiDrift, TonePicker
     servers/                  # ServerIcon, ServerListItem, CreateServerForm
     channels/                 # ChannelListItem, ChannelSidebar
     members/                  # MemberListItem, MemberList, MemberActionDialogs
     invites/                  # InviteCard, CreateInviteForm
     common/                   # LoadingSpinner, ErrorBoundary, EmptyState, ConfirmDialog, AccessiblePressable
+  tone/
+    toneRegistry.ts           # 9 base ToneDefinitions + customToneToDefinition(), resolveTone(), parseToneTag()
   theme/
     colors.ts                 # WCAG 2.1 AA palette (4.5:1 contrast), light + dark
     typography.ts             # Min 16px body, supports font scaling to 200%
     index.ts                  # Paper theme objects
   types/
-    models.ts                 # User, Server, Channel, Message, ServerMember, ServerBan, Invite, Attachment
+    models.ts                 # User, Server, Channel, Message, ServerMember, ServerBan, Invite, Attachment, CustomToneDefinition, CharAnimation, ToneTextStyle
     api.types.ts              # Request/response shapes matching BFF routes
     socket.types.ts           # Socket.IO event payloads
   utils/
     roles.ts                  # Role hierarchy: getRoleLevel(), isAbove(), getAvailableActions()
+    mentions.ts               # parseMentionSegments() — tokenises @mention text into typed segments
 ```
 
 ## TypeScript Rules
@@ -270,3 +273,4 @@ All routes prefixed `/api/v1`. Auth routes are public; all others require `Autho
 | Members | `/servers/:sid/members` | `POST` (join), `GET`, `PATCH /:uid`, `DELETE /:uid` (kick); moderation: `POST /:uid/mute`, `DELETE /:uid/mute`, `POST /:uid/promote`, `POST /:uid/demote`, `POST /:uid/ban`, `GET /bans`, `DELETE /bans/:uid` |
 | Invites | `/servers/:sid/invites` | `POST`, `GET`, `DELETE /:code`; `POST /invites/:code/join` (top-level) |
 | Attachments | `/attachments` | `POST /upload?filename=` (raw binary), `GET /:id` |
+| Custom Tones | `/servers/:sid/custom-tones` | `GET`, `POST`, `DELETE /:key` |

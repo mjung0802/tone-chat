@@ -38,6 +38,51 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn().mockResolvedValue(undefined),
 }));
 
+// Mock react-native-reanimated — the real mock pulls in window.matchMedia
+// which isn't available in Jest's JSDOM-lite env.
+jest.mock('react-native-reanimated', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { View, Text, Image } = require('react-native');
+  const NOOP = () => {};
+  function ID(t: unknown) { return t; }
+  return {
+    __esModule: true,
+    default: {
+      View,
+      Text,
+      Image,
+      createAnimatedComponent: ID,
+    },
+    useSharedValue: (init: unknown) => ({ value: init }),
+    useAnimatedStyle: (fn: () => object) => fn(),
+    withTiming: (toValue: unknown) => toValue,
+    withRepeat: ID,
+    withSequence: () => 0,
+    withDelay: (_delay: number, next: unknown) => next,
+    cancelAnimation: NOOP,
+    useReducedMotion: jest.fn(() => false),
+    Easing: {
+      linear: ID,
+      ease: ID,
+      quad: ID,
+      cubic: ID,
+      in: ID,
+      out: ID,
+      inOut: ID,
+      bezier: () => ({ factory: ID }),
+      back: ID,
+      bounce: ID,
+      elastic: ID,
+      poly: ID,
+      sin: ID,
+      circle: ID,
+      exp: ID,
+      steps: ID,
+      bezierFn: ID,
+    },
+  };
+});
+
 // Use fake timers so clearAllTimers actually clears React's scheduler timers
 // (setTimeout / setInterval) that keep the worker process alive after tests finish
 jest.useFakeTimers();

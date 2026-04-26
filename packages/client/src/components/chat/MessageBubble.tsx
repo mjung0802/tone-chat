@@ -1,42 +1,31 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import { View, Pressable, Platform, StyleSheet, useColorScheme, TextInput } from 'react-native';
 import { Text, Icon, IconButton, useTheme, Button } from 'react-native-paper';
 import { AttachmentBubble } from './AttachmentBubble';
 import { ReactionChips } from './ReactionChips';
 import { ServerInviteCard } from '../invites/ServerInviteCard';
+import { ToneKineticText } from './ToneKineticText';
+import { ToneTag } from './ToneTag';
+import { ToneEmojiDrift } from './ToneEmojiDrift';
 import { UserAvatar } from '../common/UserAvatar';
 import type { Message, Attachment, CustomToneDefinition } from '../../types/models';
-import { resolveTone } from '../../tone/toneRegistry';
+import { resolveTone, resolveToneColor, toneTextStyleProps } from '../../tone/toneRegistry';
+import { parseMentionSegments } from '../../utils/mentions';
 import { useUiStore } from '../../stores/uiStore';
-
-const MENTION_REGEX = /@\w+/g;
 
 function renderContentWithMentions(
   content: string,
   mentionColor: string,
 ): React.ReactNode[] {
-  const parts: React.ReactNode[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = MENTION_REGEX.exec(content)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(content.slice(lastIndex, match.index));
-    }
-    parts.push(
-      <Text key={match.index} style={{ color: mentionColor, fontWeight: 'bold' }}>
-        {match[0]}
-      </Text>,
-    );
-    lastIndex = MENTION_REGEX.lastIndex;
-  }
-  MENTION_REGEX.lastIndex = 0;
-
-  if (lastIndex < content.length) {
-    parts.push(content.slice(lastIndex));
-  }
-
-  return parts;
+  return parseMentionSegments(content).map((segment) =>
+    segment.type === 'mention' ? (
+      <Text key={`m-${segment.start}`} style={{ color: mentionColor, fontWeight: 'bold' }}>
+        {segment.value}
+      </Text>
+    ) : (
+      segment.value
+    ),
+  );
 }
 
 interface MessageBubbleProps {
@@ -101,41 +90,55 @@ export const MessageBubble = memo(function MessageBubble({
   const openProfileModal = useUiStore((s) => s.openProfileModal);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const toneDef = message.tone ? resolveTone(message.tone, customTones) : undefined;
-  const toneColor = toneDef ? (isDark ? toneDef.color.dark : toneDef.color.light) : undefined;
+
+  const toneDef = useMemo(
+    () => (message.tone ? resolveTone(message.tone, customTones) : undefined),
+    [message.tone, customTones],
+  );
+  const toneColor = toneDef ? resolveToneColor(toneDef, isDark) : undefined;
+  const toneFullActive = Boolean(toneDef && toneColor && toneDisplay === 'full');
 
   const isMentioned = message.mentions?.includes(currentUserId ?? '') ?? false;
 
-  const bubbleStyle = isOwn
-    ? [styles.bubble, { backgroundColor: theme.colors.primaryContainer }]
-    : [
-        styles.bubble,
-        { backgroundColor: theme.colors.surfaceVariant },
-        isMentioned && { backgroundColor: theme.colors.tertiaryContainer + '4D' },
-      ];
+  const bubbleStyle = useMemo(
+    () =>
+      isOwn
+        ? [styles.bubble, { backgroundColor: theme.colors.primaryContainer }]
+        : [
+            styles.bubble,
+            { backgroundColor: theme.colors.surfaceVariant },
+            isMentioned && { backgroundColor: theme.colors.tertiaryContainer + '4D' },
+          ],
+    [isOwn, isMentioned, theme.colors.primaryContainer, theme.colors.surfaceVariant, theme.colors.tertiaryContainer],
+  );
 
   const textColor = isOwn
     ? theme.colors.onPrimaryContainer
     : theme.colors.onSurfaceVariant;
 
-  const toneBubbleStyle = (toneDef && toneColor && toneDisplay === 'full') ? {
-    borderWidth: 1.5,
-    borderColor: toneColor,
-    ...(Platform.OS === 'web' ? { boxShadow: `0 0 12px ${toneColor}66, 0 0 28px ${toneColor}1A` } : {
-      shadowColor: toneColor,
-      shadowRadius: 8,
-      shadowOpacity: 0.35,
-      shadowOffset: { width: 0, height: 0 },
-      elevation: 4,
-    }),
-  } : undefined;
+  const toneBubbleStyle = useMemo(() => {
+    if (!toneFullActive || !toneColor) return undefined;
+    return {
+      borderWidth: 1.5,
+      borderColor: toneColor,
+      ...(Platform.OS === 'web'
+        ? { boxShadow: `0 0 12px ${toneColor}66, 0 0 28px ${toneColor}1A` }
+        : {
+            shadowColor: toneColor,
+            shadowRadius: 8,
+            shadowOpacity: 0.35,
+            shadowOffset: { width: 0, height: 0 },
+            elevation: 4,
+          }),
+    };
+  }, [toneFullActive, toneColor]);
 
-  const effectiveTextColor = (toneDef && toneColor && toneDisplay === 'full') ? toneColor : textColor;
+  const effectiveTextColor = toneFullActive && toneColor ? toneColor : textColor;
 
-  const toneTextStyle = toneDef && toneDisplay === 'full' ? {
-    ...(toneDef.textStyle === 'italic' ? { fontStyle: 'italic' as const } : {}),
-    ...(toneDef.textStyle === 'medium' ? { fontWeight: '500' as const } : {}),
-  } : {};
+  const toneTextStyle = useMemo(
+    () => (toneDef && toneDisplay === 'full' ? toneTextStyleProps(toneDef.textStyle) : {}),
+    [toneDef, toneDisplay],
+  );
 
   const handleAuthorPress = serverId ? () => openProfileModal(message.authorId, serverId) : undefined;
 
@@ -145,6 +148,10 @@ export const MessageBubble = memo(function MessageBubble({
     : '';
 
   const hasReactions = (message.reactions?.length ?? 0) > 0;
+
+  const hasHoverAction = Boolean(
+    onAddReaction || onReply || onMute || onUnmute || onKick || onBan || (isOwn && (onSaveEdit || onDelete)),
+  );
 
   const contentDescription = message.serverInvite != null && !message.content
     ? `invited you to join ${message.serverInvite.serverName}`
@@ -222,50 +229,56 @@ export const MessageBubble = memo(function MessageBubble({
               </Text>
             </Pressable>
           ) : null}
-          {(() => {
-            if (isEditing) {
-              return (
-                <View>
-                  <TextInput
-                    value={editContent}
-                    onChangeText={setEditContent}
-                    multiline
-                    autoFocus
-                    style={[styles.editInput, { color: effectiveTextColor, borderColor: theme.colors.primary }]}
-                    accessibilityLabel="Edit message content"
-                  />
-                  <View style={styles.editActions}>
-                    <Button
-                      mode="text"
-                      compact
-                      onPress={() => setIsEditing(false)}
-                      accessibilityLabel="Cancel edit"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      mode="contained"
-                      compact
-                      onPress={() => {
-                        onSaveEdit?.(message._id, editContent);
-                        setIsEditing(false);
-                      }}
-                      disabled={!editContent.trim()}
-                      accessibilityLabel="Save edit"
-                    >
-                      Save
-                    </Button>
-                  </View>
-                </View>
-              );
-            }
-
-            const contentBlock = (
-              <>
+          {isEditing ? (
+            <View>
+              <TextInput
+                value={editContent}
+                onChangeText={setEditContent}
+                multiline
+                autoFocus
+                style={[styles.editInput, { color: effectiveTextColor, borderColor: theme.colors.primary }]}
+                accessibilityLabel="Edit message content"
+              />
+              <View style={styles.editActions}>
+                <Button
+                  mode="text"
+                  compact
+                  onPress={() => setIsEditing(false)}
+                  accessibilityLabel="Cancel edit"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  mode="contained"
+                  compact
+                  onPress={() => {
+                    onSaveEdit?.(message._id, editContent);
+                    setIsEditing(false);
+                  }}
+                  disabled={!editContent.trim()}
+                  accessibilityLabel="Save edit"
+                >
+                  Save
+                </Button>
+              </View>
+            </View>
+          ) : (
+            <View style={toneDef ? styles.contentRow : undefined}>
+              <View style={toneDef ? styles.contentRowText : undefined}>
                 {message.content ? (
-                  <Text style={[{ color: effectiveTextColor }, toneTextStyle]}>
-                    {renderContentWithMentions(message.content, theme.colors.primary)}
-                  </Text>
+                  toneFullActive && toneDef ? (
+                    <ToneKineticText
+                      text={message.content}
+                      tone={toneDef}
+                      isDark={isDark}
+                      displayMode={toneDisplay}
+                      mentionColor={theme.colors.primary}
+                    />
+                  ) : (
+                    <Text style={[{ color: effectiveTextColor }, toneTextStyle]}>
+                      {renderContentWithMentions(message.content, theme.colors.primary)}
+                    </Text>
+                  )
                 ) : null}
                 {hasAttachments ? (
                   <View style={styles.attachments}>
@@ -274,16 +287,14 @@ export const MessageBubble = memo(function MessageBubble({
                     ))}
                   </View>
                 ) : null}
-              </>
-            );
-
-            return toneDef && toneDisplay === 'full' ? (
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
-                <Text style={{ fontSize: 18 }}>{toneDef.emoji}</Text>
-                <View style={{ flex: 1 }}>{contentBlock}</View>
               </View>
-            ) : contentBlock;
-          })()}
+              {toneDef ? (
+                <View style={styles.inlineToneTag}>
+                  <ToneTag tone={toneDef} isDark={isDark} displayMode={toneDisplay} hovered={hovered} />
+                </View>
+              ) : null}
+            </View>
+          )}
           {message.serverInvite != null && (
             <ServerInviteCard
               serverName={message.serverInvite.serverName}
@@ -291,18 +302,11 @@ export const MessageBubble = memo(function MessageBubble({
               code={message.serverInvite.code}
             />
           )}
-          {toneDef ? (
-            <Text style={{
-              color: toneColor,
-              fontSize: 11,
-              marginTop: 2,
-              ...(toneDisplay === 'reduced' ? { opacity: 0.7 } : {}),
-            }}>
-              {toneDisplay === 'full' ? toneDef.label : `/${toneDef.key}`}
-            </Text>
+          {toneFullActive && toneDef?.emojiSet ? (
+            <ToneEmojiDrift emojiSet={toneDef.emojiSet} />
           ) : null}
         </View>
-        {(onAddReaction || onReply || onMute || onUnmute || onKick || onBan || (isOwn && (onSaveEdit || onDelete))) ? (
+        {hasHoverAction ? (
           <View style={styles.hoverButtonPlaceholder}>
             {hovered ? (
               <View style={styles.hoverButtonRow}>
@@ -394,6 +398,8 @@ export const MessageBubble = memo(function MessageBubble({
           authorNames={authorNames}
           onToggle={(emoji) => onToggleReaction?.(message._id, emoji)}
           onAddReaction={() => onAddReaction?.(message._id)}
+          toneMatchEmojis={toneDef?.matchEmojis}
+          toneColor={toneFullActive ? toneColor : undefined}
         />
       ) : null}
       </View>
@@ -431,6 +437,7 @@ const styles = StyleSheet.create({
   },
   bubbleWrapper: {
     flex: 1,
+    position: 'relative',
   },
   bubble: {
     paddingHorizontal: 14,
@@ -496,5 +503,15 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     gap: 4,
     marginTop: 4,
+  },
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  contentRowText: {
+    flex: 1,
+  },
+  inlineToneTag: {
+    marginLeft: 6,
   },
 });

@@ -169,3 +169,82 @@ test('message displays with custom tone styling', async ({ page }) => {
   const tonedMessage = page.getByLabel(/, tone: Silly/);
   await expect(tonedMessage).toBeVisible();
 });
+
+test('TonePicker shows base tones alongside custom tones', async ({ page }) => {
+  await mockSocketIO(page);
+  await mockUsersRoutes(page);
+  await mockServersRoutes(page);
+  await mockChannelsRoutes(page);
+  await mockMembersRoutes(page);
+  await mockMessagesRoutes(page);
+  await mockTonesRoutes(page, [MOCK_CUSTOM_TONE]);
+
+  await page.goto(CHANNEL_URL);
+
+  // Open the tone picker
+  await page.getByLabel('Select tone').click();
+
+  // Base tones should be visible
+  await expect(page.getByLabel('joking tone', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('sarcasm tone', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('serious tone', { exact: true })).toBeVisible();
+
+  // Custom tone should also appear
+  await expect(page.getByLabel('Silly tone', { exact: true })).toBeVisible();
+});
+
+test('selecting a tone in TonePicker, sending, and rendering the message bubble', async ({ page }) => {
+  await mockSocketIO(page);
+  await mockUsersRoutes(page);
+  await mockServersRoutes(page);
+  await mockChannelsRoutes(page);
+  await mockMembersRoutes(page);
+  await mockTonesRoutes(page, []);
+
+  // Custom messages route to capture POST and echo tone back in the response
+  await page.route(
+    /http:\/\/localhost:4000\/api\/v1\/servers\/[^/]+\/channels\/[^/]+\/messages(\?.*)?$/,
+    async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ messages: [] }),
+        });
+      } else if (route.request().method() === 'POST') {
+        const body = route.request().postDataJSON() as { content?: string; tone?: string };
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            message: {
+              _id: 'msg-picker-tone',
+              channelId: 'channel-001',
+              serverId: 'server-001',
+              authorId: 'user-001',
+              content: body.content ?? '',
+              attachmentIds: [],
+              reactions: [],
+              tone: body.tone,
+              createdAt: new Date().toISOString(),
+            },
+          }),
+        });
+      } else {
+        await route.continue();
+      }
+    },
+  );
+
+  await page.goto(CHANNEL_URL);
+
+  // Open picker, pick base "sarcasm" tone, type, send.
+  await page.getByLabel('Select tone').click();
+  await page.getByLabel('sarcasm tone', { exact: true }).click();
+  await page.getByLabel('Message input').fill('did not see that coming');
+  await page.getByLabel('Send message').click();
+
+  // Bubble should render with the sarcasm tone label embedded in its aria-label.
+  await expect(page.getByLabel(/tone: sarcasm/)).toBeVisible();
+  await expect(page.getByText('did not see that coming', { exact: true })).toBeVisible();
+});

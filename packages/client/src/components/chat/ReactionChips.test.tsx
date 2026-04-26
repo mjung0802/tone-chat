@@ -65,4 +65,51 @@ describe('ReactionChips', () => {
     );
     expect(getByLabelText('Add reaction')).toBeTruthy();
   });
+
+  describe('tone-aware chips', () => {
+    it('matched emoji gets tone color on its text', () => {
+      const { getByTestId } = renderWithProviders(
+        <ReactionChips
+          {...defaultProps}
+          toneMatchEmojis={['👍']}
+          toneColor="#ff0000"
+        />,
+      );
+      const thumbsUpText = getByTestId('reaction-chip-text-👍');
+      // Style is a nested array (Paper theme styles + our styles); flatten recursively
+      function flattenStyle(s: unknown): object[] {
+        if (Array.isArray(s)) return s.flatMap(flattenStyle);
+        if (s && typeof s === 'object') return [s];
+        return [];
+      }
+      const flatStyle = Object.assign({}, ...flattenStyle(thumbsUpText.props.style));
+      expect(flatStyle.color).toBe('#ff0000');
+    });
+
+    it('unmatched emoji retains default chip styling', () => {
+      const { getByTestId } = renderWithProviders(
+        <ReactionChips
+          {...defaultProps}
+          toneMatchEmojis={['👍']}
+          toneColor="#ff0000"
+        />,
+      );
+      const fireText = getByTestId('reaction-chip-text-🔥');
+      function flattenStyle(s: unknown): object[] {
+        if (Array.isArray(s)) return s.flatMap(flattenStyle);
+        if (s && typeof s === 'object') return [s];
+        return [];
+      }
+      const flatStyle = Object.assign({}, ...flattenStyle(fireText.props.style));
+      expect(flatStyle.color).not.toBe('#ff0000');
+    });
+
+    it('no tone props → all chips use default theme styling', () => {
+      const { getByText } = renderWithProviders(
+        <ReactionChips {...defaultProps} />,
+      );
+      expect(getByText('👍 2')).toBeTruthy();
+      expect(getByText('🔥 1')).toBeTruthy();
+    });
+  });
 });

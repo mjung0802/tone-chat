@@ -1,4 +1,4 @@
-import { getBaseTone, resolveTone, parseToneTag, customToneToDefinition } from './toneRegistry';
+import { getBaseTone, resolveTone, parseToneTag, customToneToDefinition, resolveToneColor, toneTextStyleProps } from './toneRegistry';
 import type { CustomToneDefinition } from '../types/models';
 
 describe('toneRegistry', () => {
@@ -50,6 +50,53 @@ describe('toneRegistry', () => {
         textStyle: 'italic',
       });
     });
+
+    it('passes animation fields through when present', () => {
+      const custom: CustomToneDefinition = {
+        key: 'vibe', label: 'vibe', emoji: '✌️',
+        colorLight: '#111111', colorDark: '#eeeeee', textStyle: 'normal',
+        char: 'bounce', emojiSet: ['✌️'], matchEmojis: ['✌️'],
+      };
+      const def = customToneToDefinition(custom);
+      expect(def.char).toBe('bounce');
+      expect(def.emojiSet).toEqual(['✌️']);
+      expect(def.matchEmojis).toEqual(['✌️']);
+    });
+
+    it('produces valid ToneDefinition when animation fields absent', () => {
+      const custom: CustomToneDefinition = {
+        key: 'plain', label: 'plain', emoji: '😐',
+        colorLight: '#111111', colorDark: '#eeeeee', textStyle: 'normal',
+      };
+      const def = customToneToDefinition(custom);
+      expect(def.char).toBeUndefined();
+      expect(def.emojiSet).toBeUndefined();
+      expect(def.matchEmojis).toBeUndefined();
+    });
+  });
+
+  describe('base tones animation data', () => {
+    it('all 9 base tones have char, emojiSet, and matchEmojis populated', () => {
+      const keys = ['j', 's', 'srs', 'lh', 'hj', 'pos', 'neg', 'gen', 't'];
+      for (const key of keys) {
+        const tone = getBaseTone(key);
+        expect(tone?.char).toBeDefined();
+        expect(tone?.emojiSet).toBeDefined();
+        expect(tone?.matchEmojis).toBeDefined();
+      }
+    });
+
+    it('joking tone has char=bounce', () => {
+      const tone = getBaseTone('j');
+      expect(tone?.char).toBe('bounce');
+      expect(tone?.emojiSet).toEqual(['😂', '✨']);
+      expect(tone?.matchEmojis).toEqual(['😂', '🤣']);
+    });
+
+    it('negative tone has char=sink', () => {
+      const tone = getBaseTone('neg');
+      expect(tone?.char).toBe('sink');
+    });
   });
 
   describe('parseToneTag', () => {
@@ -72,6 +119,32 @@ describe('toneRegistry', () => {
 
     it('parses multi-char tags', () => {
       expect(parseToneTag('hey /srs')).toEqual({ cleanContent: 'hey', toneKey: 'srs' });
+    });
+  });
+
+  describe('resolveToneColor', () => {
+    it('returns light color when isDark is false', () => {
+      const tone = getBaseTone('j')!;
+      expect(resolveToneColor(tone, false)).toBe(tone.color.light);
+    });
+
+    it('returns dark color when isDark is true', () => {
+      const tone = getBaseTone('j')!;
+      expect(resolveToneColor(tone, true)).toBe(tone.color.dark);
+    });
+  });
+
+  describe('toneTextStyleProps', () => {
+    it('returns fontStyle italic for "italic"', () => {
+      expect(toneTextStyleProps('italic')).toEqual({ fontStyle: 'italic' });
+    });
+
+    it('returns fontWeight 500 for "medium"', () => {
+      expect(toneTextStyleProps('medium')).toEqual({ fontWeight: '500' });
+    });
+
+    it('returns empty object for "normal"', () => {
+      expect(toneTextStyleProps('normal')).toEqual({});
     });
   });
 });

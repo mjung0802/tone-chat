@@ -12,8 +12,8 @@ Expo 55 + Expo Router v5 app targeting web, iOS, Android. Connects to BFF via HT
 | `components/` | Domain-organized UI: channels, chat, common, dms, friends, invites, layout, members, servers |
 | `theme/` | WCAG 2.1 AA color palettes, MD3 typography, 7 color theme presets |
 | `types/` | Shared model, API, and socket TypeScript interfaces |
-| `tone/` | Tone tag registry — 9 base tones + custom tone resolution + `parseToneTag()` |
-| `utils/` | Role hierarchy utilities + system notification helpers |
+| `tone/` | Tone tag registry — 9 base tones with animation config (char, emojiSet, matchEmojis) + custom tone resolution + `parseToneTag()` + `resolveToneColor()` + `toneTextStyleProps()` |
+| `utils/` | Role hierarchy utilities + system notification helpers + mention segment parsing |
 | `test-utils/` | Test fixtures + `renderWithProviders` wrapper |
 
 ## Key Files
