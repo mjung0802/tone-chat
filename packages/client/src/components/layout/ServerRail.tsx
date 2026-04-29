@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSegments } from 'expo-router';
 import { ServerIcon } from '@/components/servers/ServerIcon';
 import { useServers } from '@/hooks/useServers';
 import { useNotificationStore, selectTotalDmUnread } from '@/stores/notificationStore';
-import { useLogout } from '@/hooks/useAuth';
+import { useLogout, useSwitchInstance } from '@/hooks/useAuth';
 import { DmRailAvatar } from '@/components/dms/DmRailAvatar';
 import { JoinServerDialog } from '@/components/servers/JoinServerDialog';
 
@@ -19,6 +19,7 @@ export function ServerRail() {
   const dmUnreadCount = useNotificationStore(selectTotalDmUnread);
   const dmUnreadEntries = useNotificationStore((s) => s.dmUnreadEntries);
   const logout = useLogout();
+  const switchInstance = useSwitchInstance();
   const [joinDialogVisible, setJoinDialogVisible] = useState(false);
 
   const dmEntries = Object.entries(dmUnreadEntries)
@@ -116,6 +117,13 @@ export function ServerRail() {
           size={28}
           onPress={() => router.push(`/(main)/profile`)}
           accessibilityLabel="Profile"
+          accessibilityRole="button"
+        />
+        <IconButton
+          icon="swap-horizontal"
+          size={24}
+          onPress={switchInstance}
+          accessibilityLabel="Switch instance"
           accessibilityRole="button"
         />
         <IconButton

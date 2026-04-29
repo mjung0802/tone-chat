@@ -3,6 +3,7 @@ import * as authApi from '../api/auth.api';
 import { useAuthStore } from '../stores/authStore';
 import { useSocketStore } from '../stores/socketStore';
 import { useNotificationStore } from '../stores/notificationStore';
+import { useInstanceStore } from '../stores/instanceStore';
 import type { RegisterRequest, LoginRequest, VerifyEmailRequest } from '../types/api.types';
 
 function useAuthSuccess() {
@@ -47,6 +48,28 @@ export function useLogout() {
     clearAuth();
     useNotificationStore.getState().clearAllDmUnreads();
     queryClient.clear();
+  };
+}
+
+export function useSwitchInstance() {
+  const disconnect = useSocketStore((s) => s.disconnect);
+  const clearActiveInstance = useInstanceStore((s) => s.clearActiveInstance);
+  const queryClient = useQueryClient();
+
+  return () => {
+    disconnect();
+    // Reset in-memory auth without persisting nulls — stored tokens for the
+    // current instance must survive so the user can return to it later.
+    useAuthStore.setState({
+      accessToken: null,
+      refreshToken: null,
+      userId: null,
+      isAuthenticated: false,
+      emailVerified: false,
+    });
+    useNotificationStore.getState().clearAllDmUnreads();
+    queryClient.clear();
+    clearActiveInstance();
   };
 }
 

@@ -2,7 +2,7 @@
 
 - **useMessages.ts** — `useMessages()` (useInfiniteQuery, cursor pagination, 50/page), `useSendMessage()`, `useEditMessage()` (updates cache on success), `useDeleteMessage()`, `injectMessage()`, `updateMessageInCache()`, `removeMessageFromCache()`
 - **useSocket.ts** — `useSocketConnection()` (lifecycle), `useChannelSocket()` (join/leave rooms; handles `new_message`, `reaction_updated`, `message_edited`, `message_deleted` cache updates), `useTypingEmit()` (2s debounce)
-- **useAuth.ts** — `useLogin()`, `useRegister()`, `useLogout()`, `useVerifyEmail()`, `useResendVerification()` — success handlers set tokens + connect socket
+- **useAuth.ts** — `useLogin()`, `useRegister()`, `useLogout()`, `useSwitchInstance()` (tears down session and returns to /connect without erasing per-instance stored tokens), `useVerifyEmail()`, `useResendVerification()` — success handlers set tokens + connect socket
 - **useServers.ts** — `useServers()`, `useServer()`, `useCreateServer()`, `useUpdateServer()`, `useDeleteServer()`, `useTransferOwnership()`
 - **useChannels.ts** — `useChannels()`, `useChannel()`, `useCreateChannel()`, `useUpdateChannel()`, `useDeleteChannel()`
 - **useMembers.ts** — `useMembers()`, `useMember()`, `useJoinServer()`, `useUpdateMember()`, `useRemoveMember()`, `useKickMember()`, `useMuteMember()`, `useUnmuteMember()`, `usePromoteMember()`, `useDemoteMember()`, `useBanMember()`

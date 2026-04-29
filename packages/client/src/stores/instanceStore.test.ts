@@ -52,6 +52,52 @@ describe('instanceStore', () => {
     });
   });
 
+  describe('clearActiveInstance', () => {
+    it('sets activeInstance to null when one is set', () => {
+      useInstanceStore.getState().addInstance('https://a.com');
+      useInstanceStore.getState().clearActiveInstance();
+      expect(useInstanceStore.getState().activeInstance).toBeNull();
+    });
+
+    it('persists null activeInstance and leaves instances JSON intact', () => {
+      useInstanceStore.getState().addInstance('https://a.com');
+      useInstanceStore.getState().addInstance('https://b.com');
+      useInstanceStore.getState().clearActiveInstance();
+      expect(localStorage.getItem('activeInstance')).toBeNull();
+      expect(localStorage.getItem('instances')).toBe(
+        JSON.stringify(['https://a.com', 'https://b.com']),
+      );
+    });
+
+    it('is a no-op when activeInstance is already null', () => {
+      // Pre-state: nothing saved, nothing active
+      const before = useInstanceStore.getState();
+      expect(before.activeInstance).toBeNull();
+      expect(() => useInstanceStore.getState().clearActiveInstance()).not.toThrow();
+      const after = useInstanceStore.getState();
+      expect(after.activeInstance).toBeNull();
+      expect(after.instances).toEqual([]);
+    });
+
+    it('preserves the cleared URL in instances and supports re-selecting it', () => {
+      useInstanceStore.getState().addInstance('https://a.com');
+      useInstanceStore.getState().clearActiveInstance();
+      expect(useInstanceStore.getState().instances).toEqual(['https://a.com']);
+      useInstanceStore.getState().setActiveInstance('https://a.com');
+      expect(useInstanceStore.getState().activeInstance).toBe('https://a.com');
+    });
+
+    it('multi-instance: leaves both saved instances in the list', () => {
+      useInstanceStore.getState().addInstance('https://a.com');
+      useInstanceStore.getState().addInstance('https://b.com');
+      useInstanceStore.getState().setActiveInstance('https://a.com');
+      useInstanceStore.getState().clearActiveInstance();
+      const state = useInstanceStore.getState();
+      expect(state.instances).toEqual(['https://a.com', 'https://b.com']);
+      expect(state.activeInstance).toBeNull();
+    });
+  });
+
   describe('removeInstance', () => {
     it('removes the URL from instances', () => {
       useInstanceStore.getState().addInstance('https://a.com');
