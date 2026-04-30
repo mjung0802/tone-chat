@@ -8,6 +8,7 @@ import { useNotificationStore, selectTotalDmUnread } from '@/stores/notification
 import { useLogout, useSwitchInstance } from '@/hooks/useAuth';
 import { DmRailAvatar } from '@/components/dms/DmRailAvatar';
 import { JoinServerDialog } from '@/components/servers/JoinServerDialog';
+import { RailTooltip } from '@/components/common/RailTooltip';
 
 export function ServerRail() {
   const theme = useTheme();
@@ -34,24 +35,26 @@ export function ServerRail() {
       accessibilityLabel="Server navigation rail"
     >
       {/* Home button */}
-      <View style={styles.homeButtonContainer}>
-        <IconButton
-          icon="home"
-          size={28}
-          onPress={() => {
-            const lastSegment = segments[segments.length - 1];
-            const isOnHomeIndex = lastSegment === 'home' || lastSegment === 'index';
-            if (!isOnHomeIndex) router.push('/(main)/home');
-          }}
-          accessibilityLabel="Home — direct messages"
-          accessibilityRole="button"
-        />
-        {dmUnreadCount > 0 && (
-          <Badge style={styles.badge} size={16}>
-            {dmUnreadCount > 99 ? '99+' : dmUnreadCount}
-          </Badge>
-        )}
-      </View>
+      <RailTooltip label="Home">
+        <View style={styles.homeButtonContainer}>
+          <IconButton
+            icon="home"
+            size={28}
+            onPress={() => {
+              const lastSegment = segments[segments.length - 1];
+              const isOnHomeIndex = lastSegment === 'home' || lastSegment === 'index';
+              if (!isOnHomeIndex) router.push('/(main)/home');
+            }}
+            accessibilityLabel="Home — direct messages"
+            accessibilityRole="button"
+          />
+          {dmUnreadCount > 0 && (
+            <Badge style={styles.badge} size={16}>
+              {dmUnreadCount > 99 ? '99+' : dmUnreadCount}
+            </Badge>
+          )}
+        </View>
+      </RailTooltip>
 
       {/* DM avatars (max 5 with unread) */}
       {dmEntries.map(([conversationId, entry]) => (
@@ -79,60 +82,72 @@ export function ServerRail() {
         accessibilityLabel="Server list"
       >
         {servers?.map((server) => (
-          <View key={server._id} style={styles.serverIconWrapper}>
-            <IconButton
-              icon={() => <ServerIcon name={server.name} icon={server.icon} size={32} />}
-              onPress={() => router.push(`/(main)/servers/${server._id}`)}
-              accessibilityLabel={`${server.name} server`}
-              accessibilityRole="button"
-              {...(server._id === activeServerId ? { mode: 'contained-tonal' as const } : {})}
-              size={32}
-            />
-          </View>
+          <RailTooltip key={server._id} label={server.name}>
+            <View style={styles.serverIconWrapper}>
+              <IconButton
+                icon={() => <ServerIcon name={server.name} icon={server.icon} size={32} />}
+                onPress={() => router.push(`/(main)/servers/${server._id}`)}
+                accessibilityLabel={`${server.name} server`}
+                accessibilityRole="button"
+                {...(server._id === activeServerId ? { mode: 'contained-tonal' as const } : {})}
+                size={32}
+              />
+            </View>
+          </RailTooltip>
         ))}
 
         {/* Add server button */}
-        <IconButton
-          icon="plus-circle-outline"
-          size={28}
-          onPress={() => router.push('/(main)/servers/create')}
-          accessibilityLabel="Create server"
-          accessibilityRole="button"
-        />
+        <RailTooltip label="Create server">
+          <IconButton
+            icon="plus-circle-outline"
+            size={28}
+            onPress={() => router.push('/(main)/servers/create')}
+            accessibilityLabel="Create server"
+            accessibilityRole="button"
+          />
+        </RailTooltip>
 
         {/* Join server button */}
-        <IconButton
-          icon="link-plus"
-          size={28}
-          onPress={() => setJoinDialogVisible(true)}
-          accessibilityLabel="Join server via invite code"
-          accessibilityRole="button"
-        />
+        <RailTooltip label="Join server">
+          <IconButton
+            icon="link-plus"
+            size={28}
+            onPress={() => setJoinDialogVisible(true)}
+            accessibilityLabel="Join server via invite code"
+            accessibilityRole="button"
+          />
+        </RailTooltip>
       </ScrollView>
 
       {/* Bottom actions */}
       <View style={styles.bottomActions}>
-        <IconButton
-          icon="account-circle"
-          size={28}
-          onPress={() => router.push(`/(main)/profile`)}
-          accessibilityLabel="Profile"
-          accessibilityRole="button"
-        />
-        <IconButton
-          icon="swap-horizontal"
-          size={24}
-          onPress={switchInstance}
-          accessibilityLabel="Switch instance"
-          accessibilityRole="button"
-        />
-        <IconButton
-          icon="logout"
-          size={24}
-          onPress={logout}
-          accessibilityLabel="Sign out"
-          accessibilityRole="button"
-        />
+        <RailTooltip label="Profile">
+          <IconButton
+            icon="account-circle"
+            size={28}
+            onPress={() => router.push(`/(main)/profile`)}
+            accessibilityLabel="Profile"
+            accessibilityRole="button"
+          />
+        </RailTooltip>
+        <RailTooltip label="Switch server">
+          <IconButton
+            icon="swap-horizontal"
+            size={24}
+            onPress={switchInstance}
+            accessibilityLabel="Switch instance"
+            accessibilityRole="button"
+          />
+        </RailTooltip>
+        <RailTooltip label="Logout">
+          <IconButton
+            icon="logout"
+            size={24}
+            onPress={logout}
+            accessibilityLabel="Sign out"
+            accessibilityRole="button"
+          />
+        </RailTooltip>
       </View>
 
       <JoinServerDialog
