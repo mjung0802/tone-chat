@@ -81,6 +81,58 @@ test('Switch Instance from ServerRail navigates back to /connect', async ({ page
   await expect(page).toHaveURL(/\/connect$/);
 });
 
+test('Switch Instance from login screen navigates back to /connect', async ({ page }) => {
+  await mockAuthRoutes(page);
+  await mockSocketIO(page);
+
+  // Seed two saved instances, A active — confirms both remain after the switch
+  await page.addInitScript(
+    ({ a, b }: { a: string; b: string }) => {
+      localStorage.setItem('activeInstance', a);
+      localStorage.setItem('instances', JSON.stringify([a, b]));
+    },
+    { a: INSTANCE_A, b: INSTANCE_B },
+  );
+
+  // Root layout redirects unauthenticated users with an active instance to /(auth)/login
+  await page.goto('/');
+  await expect(page.getByText('Welcome Back')).toBeVisible();
+
+  await page.getByLabel('Switch to a different Tone server').click();
+
+  await expect(page).toHaveURL(/\/connect$/);
+  await expect(page.getByLabel(`Connect to ${INSTANCE_A}`)).toBeVisible();
+  await expect(page.getByLabel(`Connect to ${INSTANCE_B}`)).toBeVisible();
+});
+
+test('Switch Instance from register screen navigates back to /connect', async ({ page }) => {
+  await mockAuthRoutes(page);
+  await mockSocketIO(page);
+
+  await page.addInitScript(
+    ({ a, b }: { a: string; b: string }) => {
+      localStorage.setItem('activeInstance', a);
+      localStorage.setItem('instances', JSON.stringify([a, b]));
+    },
+    { a: INSTANCE_A, b: INSTANCE_B },
+  );
+
+  // Reach register via the "Sign Up" link on login — URL convention agnostic
+  await page.goto('/');
+  await expect(page.getByText('Welcome Back')).toBeVisible();
+  await page.getByLabel('Create account').click();
+  // Username field is only present on register, disambiguates from login
+  await expect(page.getByLabel('Username')).toBeVisible();
+
+  // Both auth screens stay mounted in the Stack — the register screen is the
+  // visible/active one, so click the last (most recent) Switch Instance button.
+  await page.getByLabel('Switch to a different Tone server').last().click();
+
+  await expect(page).toHaveURL(/\/connect$/);
+  await expect(page.getByLabel(`Connect to ${INSTANCE_A}`)).toBeVisible();
+  await expect(page.getByLabel(`Connect to ${INSTANCE_B}`)).toBeVisible();
+});
+
 test('multi-instance: both saved instances remain in the list after switching', async ({ page }) => {
   await mockAuthRoutes(page);
   await mockSocketIO(page);

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { TextInput, Button, Text, HelperText, useTheme } from 'react-native-paper';
 import { Link } from 'expo-router';
-import { useRegister } from '../../src/hooks/useAuth';
+import { useRegister, useSwitchInstance } from '../../src/hooks/useAuth';
 import { getAuthErrorMessage } from '../../src/api/errors';
 
 export default function RegisterScreen() {
@@ -12,6 +12,7 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const registerMutation = useRegister();
+  const switchInstance = useSwitchInstance();
 
   const errorMessage = getAuthErrorMessage(registerMutation.error, 'register');
 
@@ -123,6 +124,16 @@ export default function RegisterScreen() {
             </Button>
           </Link>
         </View>
+
+        <Button
+          mode="text"
+          icon="swap-horizontal"
+          onPress={switchInstance}
+          accessibilityLabel="Switch to a different Tone server"
+          style={styles.switchInstance}
+        >
+          Switch to a different Tone server
+        </Button>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -161,5 +172,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 24,
+  },
+  switchInstance: {
+    marginTop: 8,
   },
 });
