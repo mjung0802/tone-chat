@@ -4,7 +4,6 @@ import { Surface, Button, Text, useTheme } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { ApiClientError } from '../../api/client';
 import { useJoinViaCode, useInviteStatus } from '../../hooks/useInvites';
-import { useServers } from '../../hooks/useServers';
 import type { InviteStatusResponse } from '../../types/api.types';
 
 interface ServerInviteCardProps {
@@ -58,6 +57,17 @@ function reasonFromErrorCode(code: string): DisabledReason | null {
   }
 }
 
+function deriveReason(
+  clickReason: DisabledReason | null,
+  status: InviteStatusResponse | undefined,
+): DisabledReason | null {
+  if (clickReason) return clickReason;
+  if (!status) return null;
+  if (status.alreadyMember) return 'already-member';
+  if (status.banned) return 'banned';
+  return reasonFromStatus(status.status);
+}
+
 export function ServerInviteCard({ serverName, serverId, code }: ServerInviteCardProps) {
   const theme = useTheme();
   const router = useRouter();
@@ -65,25 +75,9 @@ export function ServerInviteCard({ serverName, serverId, code }: ServerInviteCar
   const [genericError, setGenericError] = useState<string | null>(null);
 
   const { data: status, isLoading: statusLoading } = useInviteStatus(code);
-  const { data: servers } = useServers();
   const { mutate: joinViaCode, isPending } = useJoinViaCode();
 
-  const localMember = !!servers?.some((s) => s._id === serverId);
-
-  let derivedReason: DisabledReason | null = clickReason;
-  if (!derivedReason) {
-    if (localMember) {
-      derivedReason = 'already-member';
-    } else if (status) {
-      if (status.alreadyMember) {
-        derivedReason = 'already-member';
-      } else if (status.banned) {
-        derivedReason = 'banned';
-      } else {
-        derivedReason = reasonFromStatus(status.status);
-      }
-    }
-  }
+  const derivedReason = deriveReason(clickReason, status);
 
   const displayName = serverName || status?.serverName || 'this server';
   const isLoading = statusLoading && !derivedReason;
@@ -146,7 +140,7 @@ export function ServerInviteCard({ serverName, serverId, code }: ServerInviteCar
         >
           {buttonLabel}
         </Button>
-        {helperText !== null && helperText !== undefined ? (
+        {helperText ? (
           <Text
             variant="bodySmall"
             style={{ color: derivedReason ? theme.colors.onSurfaceVariant : theme.colors.error }}

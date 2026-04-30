@@ -1,10 +1,19 @@
 import type { Request, Response } from 'express';
-import { Invite } from './invite.model.js';
+import { Invite, type IInvite } from './invite.model.js';
 import { Server } from '../servers/server.model.js';
 import { ServerMember } from '../members/serverMember.model.js';
 import { ServerBan } from '../bans/serverBan.model.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
 import { getRoleLevel, type Role } from '../shared/roles.js';
+
+type InviteAvailability = 'valid' | 'revoked' | 'expired' | 'exhausted';
+
+function evaluateInviteAvailability(invite: IInvite): InviteAvailability {
+  if (invite.revoked) return 'revoked';
+  if (invite.expiresAt && invite.expiresAt < new Date()) return 'expired';
+  if (invite.maxUses && invite.uses >= invite.maxUses) return 'exhausted';
+  return 'valid';
+}
 
 export async function getDefaultInvite(req: Request, res: Response): Promise<void> {
   const userId = req.userId!;
@@ -112,19 +121,10 @@ export async function getInviteStatus(req: Request, res: Response): Promise<void
     return;
   }
 
-  let status: 'valid' | 'revoked' | 'expired' | 'exhausted';
-  if (invite.revoked) {
-    status = 'revoked';
-  } else if (invite.expiresAt && invite.expiresAt < new Date()) {
-    status = 'expired';
-  } else if (invite.maxUses && invite.uses >= invite.maxUses) {
-    status = 'exhausted';
-  } else {
-    status = 'valid';
-  }
+  const status = evaluateInviteAvailability(invite);
 
   const [server, member, ban] = await Promise.all([
-    Server.findById(invite.serverId),
+    Server.findById(invite.serverId).select('name').lean(),
     ServerMember.findOne({ serverId: invite.serverId, userId }),
     ServerBan.findOne({ serverId: invite.serverId, userId }),
   ]);
@@ -148,15 +148,12 @@ export async function joinViaInvite(req: Request, res: Response): Promise<void> 
     throw new AppError('INVITE_NOT_FOUND', 'Invalid invite code', 404);
   }
 
-  if (invite.revoked) {
+  switch (evaluateInviteAvailability(invite)) {
+  case 'revoked':
     throw new AppError('INVITE_REVOKED', 'This invite has been revoked', 410);
-  }
-
-  if (invite.expiresAt && invite.expiresAt < new Date()) {
+  case 'expired':
     throw new AppError('INVITE_EXPIRED', 'This invite has expired', 410);
-  }
-
-  if (invite.maxUses && invite.uses >= invite.maxUses) {
+  case 'exhausted':
     throw new AppError('INVITE_EXHAUSTED', 'This invite has reached its maximum uses', 410);
   }
 

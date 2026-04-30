@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import type { InviteStatusResponse } from '../../src/types/api.types';
 import {
   MOCK_ACCESS_TOKEN,
   MOCK_REFRESH_TOKEN,
@@ -443,14 +444,7 @@ export async function mockInvitesRoutes(page: Page): Promise<void> {
   });
 }
 
-export interface InviteStatusMock {
-  code: string;
-  serverId: string;
-  serverName: string;
-  status: 'valid' | 'not-found' | 'expired' | 'revoked' | 'exhausted';
-  alreadyMember: boolean;
-  banned: boolean;
-}
+export type InviteStatusMock = InviteStatusResponse;
 
 export async function mockInviteStatusRoute(
   page: Page,

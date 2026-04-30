@@ -4,10 +4,9 @@ import { ServerInviteCard } from './ServerInviteCard';
 import { renderWithProviders } from '../../test-utils/renderWithProviders';
 import { useAuthStore } from '../../stores/authStore';
 import * as invitesApi from '../../api/invites.api';
-import * as serversApi from '../../api/servers.api';
 import { ApiClientError } from '../../api/client';
 import type { InviteStatusResponse } from '../../types/api.types';
-import type { Server } from '../../types/models';
+import type { Server, ServerMember } from '../../types/models';
 
 const mockPush = jest.fn();
 
@@ -16,7 +15,6 @@ jest.mock('expo-router', () => ({
 }));
 
 jest.mock('../../api/invites.api');
-jest.mock('../../api/servers.api');
 
 const SERVER: Server = {
   _id: 'server-1',
@@ -39,6 +37,17 @@ function statusFixture(overrides: Partial<InviteStatusResponse> = {}): InviteSta
   };
 }
 
+function memberFixture(overrides: Partial<ServerMember> = {}): ServerMember {
+  return {
+    _id: 'm1',
+    serverId: 'server-1',
+    userId: 'me',
+    role: 'member',
+    joinedAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   useAuthStore.setState({
@@ -49,7 +58,6 @@ beforeEach(() => {
     isHydrated: true,
     emailVerified: true,
   });
-  jest.mocked(serversApi.getServers).mockResolvedValue({ servers: [] });
 });
 
 function renderCard(overrides?: { serverName?: string; serverId?: string; code?: string }) {
@@ -71,16 +79,6 @@ describe('ServerInviteCard — render states', () => {
     await findByText('Join Server');
   });
 
-  it('shows "Already a member" instantly when user is already in the server (local data)', async () => {
-    jest.mocked(serversApi.getServers).mockResolvedValue({ servers: [SERVER] });
-    jest.mocked(invitesApi.getInviteStatus).mockResolvedValue(statusFixture());
-
-    const { findByText } = renderCard();
-
-    await findByText('Already a member');
-    await findByText("You're already a member of this server.");
-  });
-
   it('shows "Already a member" when status response says alreadyMember', async () => {
     jest.mocked(invitesApi.getInviteStatus).mockResolvedValue(
       statusFixture({ alreadyMember: true }),
@@ -89,6 +87,7 @@ describe('ServerInviteCard — render states', () => {
     const { findByText } = renderCard();
 
     await findByText('Already a member');
+    await findByText("You're already a member of this server.");
   });
 
   it('shows expired state when status is expired', async () => {
@@ -151,7 +150,7 @@ describe('ServerInviteCard — click flow', () => {
   it('navigates to the server on successful join', async () => {
     jest.mocked(invitesApi.getInviteStatus).mockResolvedValue(statusFixture());
     jest.mocked(invitesApi.joinViaCode).mockResolvedValueOnce({
-      member: { _id: 'm1', userId: 'me', serverId: 'server-1' } as never,
+      member: memberFixture(),
       server: SERVER,
     });
 

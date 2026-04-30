@@ -371,7 +371,9 @@ describe('getInviteStatus', () => {
     mockBanFindOne.mock.resetCalls();
     mockBanFindOne.mock.mockImplementation(async () => null);
     mockMemberFindOne.mock.mockImplementation(async () => null);
-    mockServerFindById.mock.mockImplementation(async () => ({ _id: 's1', name: 'Test Server' }));
+    mockServerFindById.mock.mockImplementation(() => ({
+      select: () => ({ lean: async () => ({ _id: 's1', name: 'Test Server' }) }),
+    }));
   });
 
   it('returns status: not-found when invite is null (no server lookup)', async () => {
