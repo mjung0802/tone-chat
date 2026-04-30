@@ -443,6 +443,32 @@ export async function mockInvitesRoutes(page: Page): Promise<void> {
   });
 }
 
+export interface InviteStatusMock {
+  code: string;
+  serverId: string;
+  serverName: string;
+  status: 'valid' | 'not-found' | 'expired' | 'revoked' | 'exhausted';
+  alreadyMember: boolean;
+  banned: boolean;
+}
+
+export async function mockInviteStatusRoute(
+  page: Page,
+  status: InviteStatusMock,
+): Promise<void> {
+  await page.route(/\/api\/v1\/invites\/[^/]+\/status$/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(status),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+}
+
 export async function mockJoinViaCodeRoute(
   page: Page,
   server = MOCK_SERVER,

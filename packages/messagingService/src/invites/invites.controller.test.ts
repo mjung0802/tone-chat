@@ -37,7 +37,7 @@ mock.module('../bans/serverBan.model.js', {
   namedExports: { ServerBan: { findOne: mockBanFindOne } },
 });
 
-const { createInvite, listInvites, revokeInvite, joinViaInvite, getDefaultInvite } = await import('./invites.controller.js');
+const { createInvite, listInvites, revokeInvite, joinViaInvite, getDefaultInvite, getInviteStatus } = await import('./invites.controller.js');
 
 type RequestOverrides = Partial<Pick<Request, 'body' | 'params' | 'headers' | 'query'>> & { userId?: string };
 type TestResponse = Response & { statusCode: number; _json: unknown; end: () => TestResponse };
@@ -360,5 +360,154 @@ describe('joinViaInvite', () => {
     assert.equal(invite.uses, 3);
     assert.equal(invite.save.mock.callCount(), 1);
     assert.deepEqual((res._json as { member: unknown }).member, member);
+  });
+});
+
+describe('getInviteStatus', () => {
+  beforeEach(() => {
+    mockInviteFindOne.mock.resetCalls();
+    mockMemberFindOne.mock.resetCalls();
+    mockServerFindById.mock.resetCalls();
+    mockBanFindOne.mock.resetCalls();
+    mockBanFindOne.mock.mockImplementation(async () => null);
+    mockMemberFindOne.mock.mockImplementation(async () => null);
+    mockServerFindById.mock.mockImplementation(async () => ({ _id: 's1', name: 'Test Server' }));
+  });
+
+  it('returns status: not-found when invite is null (no server lookup)', async () => {
+    mockInviteFindOne.mock.mockImplementation(async () => null);
+
+    const res = makeRes();
+    await getInviteStatus(makeReq({ userId: 'u1', params: { code: 'missing' } }), res);
+
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(res._json, {
+      code: 'missing',
+      serverId: '',
+      serverName: '',
+      status: 'not-found',
+      alreadyMember: false,
+      banned: false,
+    });
+    assert.equal(mockServerFindById.mock.callCount(), 0);
+  });
+
+  it('returns status: revoked', async () => {
+    mockInviteFindOne.mock.mockImplementation(async () => ({
+      code: 'abc',
+      serverId: { toString: () => 's1' },
+      revoked: true,
+    }));
+
+    const res = makeRes();
+    await getInviteStatus(makeReq({ userId: 'u1', params: { code: 'abc' } }), res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal((res._json as { status: string }).status, 'revoked');
+    assert.equal((res._json as { serverName: string }).serverName, 'Test Server');
+  });
+
+  it('returns status: expired', async () => {
+    mockInviteFindOne.mock.mockImplementation(async () => ({
+      code: 'abc',
+      serverId: { toString: () => 's1' },
+      revoked: false,
+      expiresAt: new Date('2000-01-01'),
+    }));
+
+    const res = makeRes();
+    await getInviteStatus(makeReq({ userId: 'u1', params: { code: 'abc' } }), res);
+
+    assert.equal((res._json as { status: string }).status, 'expired');
+  });
+
+  it('returns status: exhausted', async () => {
+    mockInviteFindOne.mock.mockImplementation(async () => ({
+      code: 'abc',
+      serverId: { toString: () => 's1' },
+      revoked: false,
+      expiresAt: null,
+      maxUses: 5,
+      uses: 5,
+    }));
+
+    const res = makeRes();
+    await getInviteStatus(makeReq({ userId: 'u1', params: { code: 'abc' } }), res);
+
+    assert.equal((res._json as { status: string }).status, 'exhausted');
+  });
+
+  it('returns status: valid + alreadyMember when caller is a member', async () => {
+    mockInviteFindOne.mock.mockImplementation(async () => ({
+      code: 'abc',
+      serverId: { toString: () => 's1' },
+      revoked: false,
+      expiresAt: null,
+      maxUses: 0,
+      uses: 0,
+    }));
+    mockMemberFindOne.mock.mockImplementation(async () => ({ userId: 'u1' }));
+
+    const res = makeRes();
+    await getInviteStatus(makeReq({ userId: 'u1', params: { code: 'abc' } }), res);
+
+    assert.equal((res._json as { status: string }).status, 'valid');
+    assert.equal((res._json as { alreadyMember: boolean }).alreadyMember, true);
+    assert.equal((res._json as { banned: boolean }).banned, false);
+  });
+
+  it('returns status: valid + banned when caller is banned', async () => {
+    mockInviteFindOne.mock.mockImplementation(async () => ({
+      code: 'abc',
+      serverId: { toString: () => 's1' },
+      revoked: false,
+      expiresAt: null,
+      maxUses: 0,
+      uses: 0,
+    }));
+    mockBanFindOne.mock.mockImplementation(async () => ({ userId: 'u1' }));
+
+    const res = makeRes();
+    await getInviteStatus(makeReq({ userId: 'u1', params: { code: 'abc' } }), res);
+
+    assert.equal((res._json as { status: string }).status, 'valid');
+    assert.equal((res._json as { banned: boolean }).banned, true);
+  });
+
+  it('returns joinable response with serverId, serverName, code', async () => {
+    mockInviteFindOne.mock.mockImplementation(async () => ({
+      code: 'abc',
+      serverId: { toString: () => 's1' },
+      revoked: false,
+      expiresAt: null,
+      maxUses: 0,
+      uses: 0,
+    }));
+
+    const res = makeRes();
+    await getInviteStatus(makeReq({ userId: 'u1', params: { code: 'abc' } }), res);
+
+    assert.deepEqual(res._json, {
+      code: 'abc',
+      serverId: 's1',
+      serverName: 'Test Server',
+      status: 'valid',
+      alreadyMember: false,
+      banned: false,
+    });
+  });
+
+  it('revoked beats expired (precedence check)', async () => {
+    mockInviteFindOne.mock.mockImplementation(async () => ({
+      code: 'abc',
+      serverId: { toString: () => 's1' },
+      revoked: true,
+      expiresAt: new Date('2000-01-01'),
+    }));
+
+    const res = makeRes();
+    await getInviteStatus(makeReq({ userId: 'u1', params: { code: 'abc' } }), res);
+
+    assert.equal((res._json as { status: string }).status, 'revoked');
   });
 });

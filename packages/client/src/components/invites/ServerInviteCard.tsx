@@ -3,7 +3,9 @@ import { View, StyleSheet } from 'react-native';
 import { Surface, Button, Text, useTheme } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { ApiClientError } from '../../api/client';
-import { useJoinViaCode } from '../../hooks/useInvites';
+import { useJoinViaCode, useInviteStatus } from '../../hooks/useInvites';
+import { useServers } from '../../hooks/useServers';
+import type { InviteStatusResponse } from '../../types/api.types';
 
 interface ServerInviteCardProps {
   serverName: string;
@@ -11,33 +13,111 @@ interface ServerInviteCardProps {
   code: string;
 }
 
+type DisabledReason =
+  | 'already-member'
+  | 'banned'
+  | 'expired'
+  | 'revoked'
+  | 'exhausted'
+  | 'not-found';
+
+const DISABLED_COPY: Record<DisabledReason, string> = {
+  'already-member': "You're already a member of this server.",
+  'banned': 'You are banned from this server.',
+  'expired': 'This invite has expired.',
+  'revoked': 'This invite was revoked.',
+  'exhausted': 'This invite has reached its maximum uses.',
+  'not-found': 'This invite is no longer valid.',
+};
+
+const DISABLED_BUTTON_LABEL: Record<DisabledReason, string> = {
+  'already-member': 'Already a member',
+  'banned': 'Cannot join',
+  'expired': 'Invite expired',
+  'revoked': 'Invite revoked',
+  'exhausted': 'Invite unavailable',
+  'not-found': 'Invite unavailable',
+};
+
+function reasonFromStatus(status: InviteStatusResponse['status']): DisabledReason | null {
+  if (status === 'expired' || status === 'revoked' || status === 'exhausted' || status === 'not-found') {
+    return status;
+  }
+  return null;
+}
+
+function reasonFromErrorCode(code: string): DisabledReason | null {
+  switch (code) {
+    case 'INVITE_EXPIRED': return 'expired';
+    case 'INVITE_REVOKED': return 'revoked';
+    case 'INVITE_EXHAUSTED': return 'exhausted';
+    case 'INVITE_NOT_FOUND': return 'not-found';
+    case 'BANNED': return 'banned';
+    case 'ALREADY_MEMBER': return 'already-member';
+    default: return null;
+  }
+}
+
 export function ServerInviteCard({ serverName, serverId, code }: ServerInviteCardProps) {
   const theme = useTheme();
   const router = useRouter();
-  const [alreadyMember, setAlreadyMember] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [clickReason, setClickReason] = useState<DisabledReason | null>(null);
+  const [genericError, setGenericError] = useState<string | null>(null);
 
+  const { data: status, isLoading: statusLoading } = useInviteStatus(code);
+  const { data: servers } = useServers();
   const { mutate: joinViaCode, isPending } = useJoinViaCode();
 
+  const localMember = !!servers?.some((s) => s._id === serverId);
+
+  let derivedReason: DisabledReason | null = clickReason;
+  if (!derivedReason) {
+    if (localMember) {
+      derivedReason = 'already-member';
+    } else if (status) {
+      if (status.alreadyMember) {
+        derivedReason = 'already-member';
+      } else if (status.banned) {
+        derivedReason = 'banned';
+      } else {
+        derivedReason = reasonFromStatus(status.status);
+      }
+    }
+  }
+
+  const displayName = serverName || status?.serverName || 'this server';
+  const isLoading = statusLoading && !derivedReason;
+  const isDisabled = isPending || isLoading || derivedReason !== null;
+
+  let buttonLabel: string;
+  if (isLoading) {
+    buttonLabel = 'Checking invite…';
+  } else if (derivedReason) {
+    buttonLabel = DISABLED_BUTTON_LABEL[derivedReason];
+  } else {
+    buttonLabel = 'Join Server';
+  }
+
   const handleJoin = () => {
-    setErrorMessage(null);
+    setGenericError(null);
     joinViaCode(code, {
       onSuccess: () => {
         router.push(`/(main)/servers/${serverId}` as Parameters<typeof router.push>[0]);
       },
       onError: (err) => {
-        if (err instanceof ApiClientError && err.status === 409) {
-          setAlreadyMember(true);
-        } else if (err instanceof ApiClientError && err.status === 403) {
-          setErrorMessage('You are banned from this server.');
-        } else if (err instanceof ApiClientError && err.status === 404) {
-          setErrorMessage('This invite is no longer valid.');
-        } else {
-          setErrorMessage('Something went wrong. Please try again.');
+        if (err instanceof ApiClientError) {
+          const reason = reasonFromErrorCode(err.code);
+          if (reason) {
+            setClickReason(reason);
+            return;
+          }
         }
+        setGenericError('Something went wrong. Please try again.');
       },
     });
   };
+
+  const helperText = derivedReason ? DISABLED_COPY[derivedReason] : genericError;
 
   return (
     <Surface
@@ -49,21 +129,31 @@ export function ServerInviteCard({ serverName, serverId, code }: ServerInviteCar
         <Text variant="bodyMedium" style={styles.label}>
           You've been invited to join{' '}
           <Text variant="bodyMedium" style={styles.bold}>
-            {serverName}
+            {displayName}
           </Text>
         </Text>
         <Button
           mode="contained"
           onPress={handleJoin}
           loading={isPending}
-          disabled={isPending || alreadyMember}
+          disabled={isDisabled}
           style={styles.button}
-          accessibilityLabel={alreadyMember ? `Already a member of ${serverName}` : `Join ${serverName}`}
+          accessibilityLabel={
+            derivedReason
+              ? `${DISABLED_BUTTON_LABEL[derivedReason]} — ${displayName}`
+              : `Join ${displayName}`
+          }
         >
-          {alreadyMember ? 'Already a member' : 'Join Server'}
+          {buttonLabel}
         </Button>
-        {errorMessage !== null ? (
-          <Text variant="bodySmall" style={{ color: theme.colors.error }} accessibilityRole="alert">{errorMessage}</Text>
+        {helperText !== null && helperText !== undefined ? (
+          <Text
+            variant="bodySmall"
+            style={{ color: derivedReason ? theme.colors.onSurfaceVariant : theme.colors.error }}
+            accessibilityRole="alert"
+          >
+            {helperText}
+          </Text>
         ) : null}
       </View>
     </Surface>

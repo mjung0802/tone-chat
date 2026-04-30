@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createInvite, listInvites, revokeInvite, joinViaInvite, getDefaultInvite } from './invites.controller.js';
+import { createInvite, listInvites, revokeInvite, joinViaInvite, getDefaultInvite, getInviteStatus } from './invites.controller.js';
 import { requireRole } from '../shared/middleware/requireRole.js';
 import { requireMember } from '../shared/middleware/requireMember.js';
 
@@ -14,4 +14,5 @@ invitesRouter.delete('/:code', requireRole('admin'), revokeInvite);
 // Top-level join route (separate router)
 export const joinRouter = Router();
 
+joinRouter.get('/:code/status', getInviteStatus);
 joinRouter.post('/:code/join', joinViaInvite);

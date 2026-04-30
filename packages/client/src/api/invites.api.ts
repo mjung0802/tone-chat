@@ -4,6 +4,7 @@ import type {
   InvitesResponse,
   CreateInviteRequest,
   JoinInviteResponse,
+  InviteStatusResponse,
 } from '../types/api.types';
 
 export function getInvites(serverId: string) {
@@ -24,4 +25,8 @@ export function revokeInvite(serverId: string, code: string) {
 
 export function joinViaCode(code: string) {
   return post<JoinInviteResponse>(`/invites/${code}/join`);
+}
+
+export function getInviteStatus(code: string) {
+  return get<InviteStatusResponse>(`/invites/${code}/status`);
 }
