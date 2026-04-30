@@ -7,6 +7,7 @@ interface InstanceState {
   isHydrated: boolean;
   addInstance: (url: string) => void;
   setActiveInstance: (url: string) => void;
+  clearActiveInstance: () => void;
   removeInstance: (url: string) => void;
   hydrate: () => Promise<void>;
 }
@@ -88,6 +89,11 @@ export const useInstanceStore = create<InstanceState>((set, get) => ({
     const normalized = normalizeUrl(url);
     set({ activeInstance: normalized });
     void persistInstances(get().instances, normalized);
+  },
+
+  clearActiveInstance: () => {
+    set({ activeInstance: null });
+    void persistInstances(get().instances, null);
   },
 
   removeInstance: (url: string) => {

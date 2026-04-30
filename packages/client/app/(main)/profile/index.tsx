@@ -4,8 +4,9 @@ import { ActivityIndicator, Icon, SegmentedButtons, TextInput, Button, Text, Hel
 import type { AppTheme } from '@/theme';
 import { themePresets, THEME_IDS, type ThemeId } from '@/theme/presets';
 import { useMe, useUpdateProfile } from '@/hooks/useUser';
-import { useLogout } from '@/hooks/useAuth';
+import { useLogout, useSwitchInstance } from '@/hooks/useAuth';
 import { useUpload } from '@/hooks/useAttachments';
+import { useInstanceStore } from '@/stores/instanceStore';
 import { useUiStore } from '@/stores/uiStore';
 import { useNotificationStore, type NotificationPreference } from '@/stores/notificationStore';
 import { requestNotificationPermission } from '@/utils/systemNotifications';
@@ -19,6 +20,8 @@ export default function ProfileScreen() {
   const updateProfile = useUpdateProfile();
   const upload = useUpload();
   const logout = useLogout();
+  const switchInstance = useSwitchInstance();
+  const activeInstance = useInstanceStore((s) => s.activeInstance);
   const theme = useTheme<AppTheme>();
   const themePreference = useUiStore((s) => s.themePreference);
   const setThemePreference = useUiStore((s) => s.setThemePreference);
@@ -136,6 +139,15 @@ export default function ProfileScreen() {
       <Text variant="bodySmall" style={[styles.email, { color: theme.colors.onSurfaceVariant }]}>
         {user.email}
       </Text>
+      {activeInstance ? (
+        <Text
+          variant="bodySmall"
+          style={[styles.instanceLine, { color: theme.colors.onSurfaceVariant }]}
+          accessibilityLabel={`Connected to ${activeInstance}`}
+        >
+          Connected to {activeInstance}
+        </Text>
+      ) : null}
 
       {errorMessage || avatarError ? (
         <HelperText type="error" visible accessibilityLiveRegion="polite">
@@ -258,6 +270,16 @@ export default function ProfileScreen() {
       >
         Log Out
       </Button>
+
+      <Button
+        mode="outlined"
+        icon="swap-horizontal"
+        onPress={switchInstance}
+        accessibilityLabel="Switch to a different Tone server"
+        style={styles.button}
+      >
+        Switch Instance
+      </Button>
     </ScrollView>
     <Portal>
       <Snackbar
@@ -307,7 +329,11 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   email: {
+    marginBottom: 4,
+  },
+  instanceLine: {
     marginBottom: 24,
+    textAlign: 'center',
   },
   input: {
     marginBottom: 12,
