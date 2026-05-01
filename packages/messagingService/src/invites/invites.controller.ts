@@ -1,10 +1,19 @@
 import type { Request, Response } from 'express';
-import { Invite } from './invite.model.js';
+import { Invite, type IInvite } from './invite.model.js';
 import { Server } from '../servers/server.model.js';
 import { ServerMember } from '../members/serverMember.model.js';
 import { ServerBan } from '../bans/serverBan.model.js';
 import { AppError } from '../shared/middleware/errorHandler.js';
 import { getRoleLevel, type Role } from '../shared/roles.js';
+
+type InviteAvailability = 'valid' | 'revoked' | 'expired' | 'exhausted';
+
+function evaluateInviteAvailability(invite: IInvite): InviteAvailability {
+  if (invite.revoked) return 'revoked';
+  if (invite.expiresAt && invite.expiresAt < new Date()) return 'expired';
+  if (invite.maxUses && invite.uses >= invite.maxUses) return 'exhausted';
+  return 'valid';
+}
 
 export async function getDefaultInvite(req: Request, res: Response): Promise<void> {
   const userId = req.userId!;
@@ -95,6 +104,41 @@ export async function revokeInvite(req: Request, res: Response): Promise<void> {
   res.json({ invite });
 }
 
+export async function getInviteStatus(req: Request, res: Response): Promise<void> {
+  const userId = req.userId!;
+  const { code } = req.params as { code: string };
+
+  const invite = await Invite.findOne({ code });
+  if (!invite) {
+    res.json({
+      code,
+      serverId: '',
+      serverName: '',
+      status: 'not-found',
+      alreadyMember: false,
+      banned: false,
+    });
+    return;
+  }
+
+  const status = evaluateInviteAvailability(invite);
+
+  const [server, member, ban] = await Promise.all([
+    Server.findById(invite.serverId).select('name').lean(),
+    ServerMember.findOne({ serverId: invite.serverId, userId }),
+    ServerBan.findOne({ serverId: invite.serverId, userId }),
+  ]);
+
+  res.json({
+    code: invite.code,
+    serverId: invite.serverId.toString(),
+    serverName: server?.name ?? '',
+    status,
+    alreadyMember: !!member,
+    banned: !!ban,
+  });
+}
+
 export async function joinViaInvite(req: Request, res: Response): Promise<void> {
   const userId = req.userId!;
   const { code } = req.params;
@@ -104,15 +148,12 @@ export async function joinViaInvite(req: Request, res: Response): Promise<void> 
     throw new AppError('INVITE_NOT_FOUND', 'Invalid invite code', 404);
   }
 
-  if (invite.revoked) {
+  switch (evaluateInviteAvailability(invite)) {
+  case 'revoked':
     throw new AppError('INVITE_REVOKED', 'This invite has been revoked', 410);
-  }
-
-  if (invite.expiresAt && invite.expiresAt < new Date()) {
+  case 'expired':
     throw new AppError('INVITE_EXPIRED', 'This invite has expired', 410);
-  }
-
-  if (invite.maxUses && invite.uses >= invite.maxUses) {
+  case 'exhausted':
     throw new AppError('INVITE_EXHAUSTED', 'This invite has reached its maximum uses', 410);
   }
 

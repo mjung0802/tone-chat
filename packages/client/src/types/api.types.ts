@@ -151,6 +151,17 @@ export interface AuditLogResponse { entries: AuditLogEntry[] }
 export interface AuditLogQuery { limit?: number | undefined; before?: string | undefined }
 export interface JoinInviteResponse { member: ServerMember; server: Server }
 
+export type InviteAvailability = 'valid' | 'not-found' | 'expired' | 'revoked' | 'exhausted';
+
+export interface InviteStatusResponse {
+  code: string;
+  serverId: string;
+  serverName: string;
+  status: InviteAvailability;
+  alreadyMember: boolean;
+  banned: boolean;
+}
+
 export interface SendDmRequest {
   content?: string | undefined;
   attachmentIds?: string[] | undefined;

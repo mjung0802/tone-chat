@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import type { InviteStatusResponse } from '../../src/types/api.types';
 import {
   MOCK_ACCESS_TOKEN,
   MOCK_REFRESH_TOKEN,
@@ -440,6 +441,25 @@ export async function mockInvitesRoutes(page: Page): Promise<void> {
       contentType: 'application/json',
       body: JSON.stringify({ invites: [] }),
     });
+  });
+}
+
+export type InviteStatusMock = InviteStatusResponse;
+
+export async function mockInviteStatusRoute(
+  page: Page,
+  status: InviteStatusMock,
+): Promise<void> {
+  await page.route(/\/api\/v1\/invites\/[^/]+\/status$/, async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(status),
+      });
+    } else {
+      await route.continue();
+    }
   });
 }
 

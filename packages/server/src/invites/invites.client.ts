@@ -19,6 +19,10 @@ export function joinViaInvite(userToken: string, code: string) {
   return serviceRequest(base(), `/invites/${code}/join`, { method: 'POST', userToken });
 }
 
+export function getInviteStatus(userToken: string, code: string) {
+  return serviceRequest(base(), `/invites/${code}/status`, { userToken });
+}
+
 export function getDefaultInvite(userToken: string, serverId: string) {
   return serviceRequest(base(), `/servers/${serverId}/invites/default`, { userToken });
 }

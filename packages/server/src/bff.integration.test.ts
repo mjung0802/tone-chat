@@ -627,6 +627,102 @@ describe('BFF Invites', () => {
     });
     assert.equal(joinRes.status, 410);
   });
+
+  it('GET /invites/:code/status — valid invite, non-member', async () => {
+    const alice = await registerUser('alice', 'alice@test.com', 'password123');
+    const bob = await registerUser('bob', 'bob@test.com', 'password123');
+    const { serverId } = await createTestServer(alice.accessToken);
+
+    const createRes = await fetch(`${bffUrl}/api/v1/servers/${serverId}/invites`, {
+      method: 'POST',
+      headers: authHeaders(alice.accessToken),
+      body: JSON.stringify({}),
+    });
+    const { invite } = await createRes.json() as { invite: { code: string } };
+
+    const statusRes = await fetch(`${bffUrl}/api/v1/invites/${invite.code}/status`, {
+      headers: authHeaders(bob.accessToken),
+    });
+    assert.equal(statusRes.status, 200);
+    const body = await statusRes.json() as {
+      code: string;
+      serverId: string;
+      serverName: string;
+      status: string;
+      alreadyMember: boolean;
+      banned: boolean;
+    };
+    assert.equal(body.code, invite.code);
+    assert.equal(body.serverId, serverId);
+    assert.equal(body.status, 'valid');
+    assert.equal(body.alreadyMember, false);
+    assert.equal(body.banned, false);
+    assert.ok(body.serverName.length > 0);
+  });
+
+  it('GET /invites/:code/status — already-member flag set for the inviter', async () => {
+    const alice = await registerUser('alice', 'alice@test.com', 'password123');
+    const { serverId } = await createTestServer(alice.accessToken);
+
+    const createRes = await fetch(`${bffUrl}/api/v1/servers/${serverId}/invites`, {
+      method: 'POST',
+      headers: authHeaders(alice.accessToken),
+      body: JSON.stringify({}),
+    });
+    const { invite } = await createRes.json() as { invite: { code: string } };
+
+    const statusRes = await fetch(`${bffUrl}/api/v1/invites/${invite.code}/status`, {
+      headers: authHeaders(alice.accessToken),
+    });
+    assert.equal(statusRes.status, 200);
+    const body = await statusRes.json() as { status: string; alreadyMember: boolean };
+    assert.equal(body.status, 'valid');
+    assert.equal(body.alreadyMember, true);
+    assert.equal(serverId, serverId);
+  });
+
+  it('GET /invites/:code/status — revoked invite reports status: revoked', async () => {
+    const alice = await registerUser('alice', 'alice@test.com', 'password123');
+    const bob = await registerUser('bob', 'bob@test.com', 'password123');
+    const { serverId } = await createTestServer(alice.accessToken);
+
+    const createRes = await fetch(`${bffUrl}/api/v1/servers/${serverId}/invites`, {
+      method: 'POST',
+      headers: authHeaders(alice.accessToken),
+      body: JSON.stringify({}),
+    });
+    const { invite } = await createRes.json() as { invite: { code: string } };
+
+    await fetch(`${bffUrl}/api/v1/servers/${serverId}/invites/${invite.code}`, {
+      method: 'DELETE',
+      headers: authHeaders(alice.accessToken),
+    });
+
+    const statusRes = await fetch(`${bffUrl}/api/v1/invites/${invite.code}/status`, {
+      headers: authHeaders(bob.accessToken),
+    });
+    assert.equal(statusRes.status, 200);
+    const body = await statusRes.json() as { status: string };
+    assert.equal(body.status, 'revoked');
+  });
+
+  it('GET /invites/:code/status — unknown code reports status: not-found', async () => {
+    const alice = await registerUser('alice', 'alice@test.com', 'password123');
+
+    const statusRes = await fetch(`${bffUrl}/api/v1/invites/does-not-exist/status`, {
+      headers: authHeaders(alice.accessToken),
+    });
+    assert.equal(statusRes.status, 200);
+    const body = await statusRes.json() as { status: string; serverId: string; serverName: string };
+    assert.equal(body.status, 'not-found');
+    assert.equal(body.serverId, '');
+    assert.equal(body.serverName, '');
+  });
+
+  it('GET /invites/:code/status — requires auth', async () => {
+    const statusRes = await fetch(`${bffUrl}/api/v1/invites/anything/status`);
+    assert.equal(statusRes.status, 401);
+  });
 });
 
 // ─── Attachments ────────────────────────────────────────────

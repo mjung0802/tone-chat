@@ -29,6 +29,11 @@ serverInvitesRouter.delete('/:code', mutationLimiters.invite, async (req: AuthRe
 // Top-level join route
 export const joinRouter = Router();
 
+joinRouter.get('/:code/status', async (req: AuthRequest, res) => {
+  const result = await client.getInviteStatus(req.token!, req.params['code'] as string);
+  res.status(result.status).json(result.data);
+});
+
 joinRouter.post('/:code/join', mutationLimiters.invite, async (req: AuthRequest, res) => {
   const result = await client.joinViaInvite(req.token!, req.params['code'] as string);
   res.status(result.status).json(result.data);

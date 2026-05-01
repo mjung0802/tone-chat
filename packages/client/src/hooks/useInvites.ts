@@ -42,7 +42,18 @@ export function useJoinViaCode() {
     mutationFn: (code: string) => invitesApi.joinViaCode(code),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['servers'] });
+      void queryClient.invalidateQueries({ queryKey: ['invite-status'] });
     },
+  });
+}
+
+export function useInviteStatus(code: string) {
+  const authReady = useAuthStore((s) => s.isHydrated && s.isAuthenticated);
+  return useQuery({
+    queryKey: ['invite-status', code],
+    queryFn: () => invitesApi.getInviteStatus(code),
+    enabled: !!code && authReady,
+    staleTime: 30_000,
   });
 }
 

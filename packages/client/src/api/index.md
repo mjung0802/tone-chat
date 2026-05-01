@@ -10,7 +10,7 @@
 - **attachments.api.ts** — `uploadAttachment()` (filename in query param), `getAttachment()`
 - **auditLog.api.ts** — `getAuditLog()` (cursor pagination)
 - **bans.api.ts** — `getBans()`, `unbanUser()`
-- **invites.api.ts** — `getInvites()`, `getDefaultInvite()`, `createInvite()`, `revokeInvite()`, `joinViaCode()`
+- **invites.api.ts** — `getInvites()`, `getDefaultInvite()`, `createInvite()`, `revokeInvite()`, `joinViaCode()`, `getInviteStatus(code)`
 - **users.api.ts** — `getMe()`, `updateMe()`, `getUser()`
 - **tones.api.ts** — `getCustomTones()`, `addCustomTone()`, `removeCustomTone()`
 - **dms.api.ts** — `getOrCreateConversation()`, `listConversations()`, `getConversation()`, `getDmMessages()` (cursor pagination), `sendDmMessage()`, `updateDmMessage()`, `reactToDmMessage()`; `getBlockedIds()`, `blockUser()`, `unblockUser()`
