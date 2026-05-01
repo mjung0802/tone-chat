@@ -99,7 +99,7 @@ export default function ServerSettingsScreen() {
   const currentMember = members?.find((m) => m.userId === userId);
   const isAdmin = currentMember ? (getRoleLevel((currentMember.role ?? 'member') as Role, false) >= getRoleLevel('admin', false) || server?.ownerId === userId) : false;
 
-  if (isLoading || !server) {
+  if (isLoading || !server || !members) {
     return <LoadingSpinner />;
   }
 

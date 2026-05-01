@@ -21,7 +21,7 @@ export default function AuditLogScreen() {
   const { data: members } = useMembers(sid);
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useAuditLog(sid);
 
-  if (serverLoading) return <LoadingSpinner message="Loading..." />;
+  if (serverLoading || !members) return <LoadingSpinner message="Loading..." />;
   if (!server) return <EmptyState title="Server not found" description="This server does not exist." />;
 
   const me = members?.find((m) => m.userId === userId);
